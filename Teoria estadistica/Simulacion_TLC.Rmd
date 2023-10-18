@@ -1,0 +1,120 @@
+---
+title: "Simulacion TLC"
+output:
+  pdf_document: default
+  html_document: default
+date: "2023-05-03"
+---
+En este ejemplo, vamos a usar una población con una distribución uniforme de 0 
+a 1. La siguiente es una función en R que genera una muestra aleatoria de esta 
+población:
+
+```{r}
+generate_population <- function(size) {
+  runif(size, 0, 1)
+}
+```
+Esta función devuelve un vector de tamaño size con números aleatorios uniformemente 
+distribuidos entre 0 y 1.
+
+Ahora vamos a tomar muestras de esta población y calcular la media de cada 
+muestra. La siguiente función en R toma num_samples muestras de tamaño
+sample_size de la población y calcula la media de cada muestra:
+
+```{r}
+
+generate_sample_means <- function(population, sample_size, num_samples) {
+  sample_means <- numeric(num_samples)
+  for (i in 1:num_samples) {
+    sample <- sample(population, sample_size)
+    sample_means[i] <- mean(sample)
+  }
+  return(sample_means)
+}
+```
+
+La función generate_sample_means() toma la población generada por 
+generate_population(), el tamaño de cada muestra (sample_size),
+y el número de muestras que queremos tomar (num_samples). La función
+devuelve un
+vector de longitud num_samples con la media de cada muestra.
+
+Finalmente, podemos graficar la distribución de las medias muestrales 
+y compararla con la distribución normal teórica que se espera según el
+Teorema del Límite Central. La siguiente es una función en R que hace esto:
+
+```{r}
+plot_sample_means <- function(sample_means) {
+  hist(sample_means, breaks = 30, main = "Distribución de las medias muestrales",
+       xlab = "Media muestral", ylab = "Frecuencia relativa",
+       col = "lightblue", border = "white")
+  x <- seq(min(sample_means), max(sample_means), length = 100)
+  y <- dnorm(x, mean = mean(sample_means), sd = sd(sample_means))
+  lines(x, y, col = "red", lwd = 2)
+}
+```
+
+
+La función plot_sample_means() toma el vector de medias muestrales generado por 
+generate_sample_means(), y traza un histograma de las medias muestrales junto con 
+la distribución normal teórica correspondiente.
+
+Ahora podemos poner todas estas funciones juntas y ver cómo funciona el Teorema
+del Límite Central en acción:
+ Generar una población
+ 
+```{r}
+population <- generate_population(100000)
+```
+ 
+
+
+Tomar muestras de la población y calcular las medias muestrales
+```{r}
+sample_means <- generate_sample_means(population, sample_size = 100, num_samples = 10000)
+```
+
+
+Graficar la distribución de las medias muestrales y la distribución normal teórica
+
+```{r}
+plot_sample_means(population)
+plot_sample_means(sample_means)
+
+```
+Este código generará un histograma de las medias muestrales junto con la
+distribución normal teórica correspondiente. Verás que las medias 
+muestrales se distribuyen normalmente, lo que demuestra el Teorema 
+del Límite Central.
+
+
+#Ejemplo simple
+
+Creamos una muestra de bastantes numeros aleatorios provenientes de una exponencial
+```{r}
+vector= NULL
+for (i in 1:100000){
+  x=rexp(1,rate = 1)
+  vector[i]=x
+}
+hist(vector,breaks = 100)
+```
+
+
+sacamos una muestra del vector que creamos el cual se distribuye exponencial
+```{r}
+vector_sample = NULL
+for (i in 1:100000){
+x2=mean(sample(vector,10,replace = T))
+vector_sample[i]=x2
+}
+hist(vector_sample,breaks=100)
+```
+
+
+
+
+
+
+
+

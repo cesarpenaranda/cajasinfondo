@@ -1,0 +1,380 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#----Paquetes utilizados----
+
+# Nota: si aun no tienen instalados los paquetes deben correr la siguiente linea antes de ejecurar los library
+
+install.packages("BSDA")
+library(BSDA)
+library(car)
+library(ggplot2) # Este lo uso para graficar la linealidad.
+
+
+#----Problemas del 15 al 33----
+
+#----Ejercicio 15----
+
+lavolpe = matrix(c(48,18,2,132),nrow = 2, byrow = T, dimnames = list("2006" = c("Sí", "No"), "2008" = c("Sí", "No")))
+lavolpe
+
+mcnemar.test(lavolpe, correct = F)
+
+oc12_oc21 = 18+2
+
+binom.test(18, oc12_oc21, p = 0.5, alternative = "t")
+
+#----Ejercicio 16----
+
+acreedor_antes = c(18,27,32,23,31,36,18,35)
+acreedor_después = c(12,22,31,24,28,24,16,25)
+
+t.test(acreedor_antes, acreedor_después, paired = T, alternative = "g")
+wilcox.test(acreedor_antes, acreedor_después, paired = T, alternative = "g")
+
+diferencia_acreedor = acreedor_antes - acreedor_después
+summary(diferencia_acreedor)
+
+diferencia_acreedor_recodf = Recode(diferencia_acreedor, "-100:-1 = -1; 0 = NA; 1:12 = 1")
+table(diferencia_acreedor_recodf)
+
+prueba_signos = binom.test(7, 8, p = 0.5, alternative = "g")
+prueba_signos
+
+SIGN.test(diferencia_acreedor, md = 0.5, alternative = "t", conf.level = 0.95)
+
+?SIGN.test
+
+#----Ejercicio 17----
+
+# Este ejercicio no lo revise con R, sin embargo si es posible hacerlo.
+
+
+#----Ejercicio 18----
+
+ingreso = c(97,58,69,47,58,38,91,67,68,47,48)
+consumo = c(55,63,54,37,45,38,71,52,53,37,37)
+
+cor.test(ingreso, consumo, use = "pairwise.complete.obs", method = "pearson")
+cor.test(ingreso, consumo, use = "pairwise.complete.obs", method = "spearman")
+cor.test(ingreso, consumo, use = "pairwise.complete.obs", method = "kendall")
+
+
+shapiro.test(ingreso)
+shapiro.test(consumo)
+
+# Algunos graficos 
+
+qqPlot(ingreso, main = "Ingresos (variable X)")
+qqPlot(consumo, main = "Consumo (variable Y)")
+
+scatterplot(ingreso, consumo)
+
+# Grafico de linealidad ggplot2
+
+ejercicio_18 = data.frame(ingreso, consumo)
+attach(ejercicio_18)
+
+ggplot(ejercicio_18, aes(x = ingreso, y = consumo))+
+  geom_point() +
+  stat_smooth(method = "lm", col = "#FA8072", fill = "#69b3a2") +
+  labs(title = "Linealidad", 
+       subtitle = "Asociación entre la variable Ingreso y Consumo", 
+       x = "Ingreso",
+       y = "Consumo") +
+  theme_minimal()
+
+
+#----Ejercicio 19----
+
+vida = c(8,7,7,8,9,10,14,12,12,13,14,14,11,16,16)
+humedad = c(95,90,85,80,75,70,65,60,55,50,45,40,35,30,25)
+
+cor.test(vida, humedad, use = "pairwise.complete.obs", method = "pearson")
+cor.test(vida, humedad, use = "pairwise.complete.obs", method = "spearman")
+cor.test(vida, humedad, use = "pairwise.complete.obs", method = "kendall")
+
+# Grafico de linealidad
+
+ejercicio_19 = data.frame(vida, humedad)
+attach(ejercicio_19)
+
+ggplot(ejercicio_19, aes(x = vida, y = humedad))+
+  geom_point() +
+  stat_smooth(method = "lm", col = "#FA8072", fill = "#69b3a2") +
+  #stat_ellipse(size = .5) +
+  labs(title = "Linealidad", 
+       subtitle = "Asociación entre la variable Vida (en días) y Humedad (en %)", 
+       x = "Vida (en días)",
+       y = "Humedad (en %)") +
+  theme_minimal()
+
+## Tambien lo pueden graficar con esta linea 
+
+plot(vida ~ humedad, main = "Linealidad", cex = 1.1, pch = 16, col = "lightcyan4") ; abline(lm(vida ~ humedad), lty = 1, lwd = 3, col="salmon")
+
+
+#----Ejercicio 20----
+
+horas = c(100,96,88,78,75,68,60,55)
+tasa_fallas = c(2,4,10,10,13,6,16,20)
+
+qqPlot(horas, main = "Horas (variable X)")
+qqPlot(tasa_fallas, main = "Tasa de fallas (variable Y)")
+
+shapiro.test(horas)
+shapiro.test(tasa_fallas)
+
+cor.test(horas, tasa_fallas, use = "pairwise.complete.obs", method = "pearson")
+cor.test(horas, tasa_fallas, use = "pairwise.complete.obs", method = "spearman")
+cor.test(horas, tasa_fallas, use = "pairwise.complete.obs", method = "kendall")
+
+# Grafico de linealidad
+
+ejercicio_20 = data.frame(horas, tasa_fallas)
+attach(ejercicio_20)
+
+ggplot(ejercicio_20, aes(x = horas, y = tasa_fallas))+
+  geom_point() +
+  stat_smooth(method = "lm", col = "#FA8072", fill = "#69b3a2") +
+  #stat_ellipse(size = .5) +
+  labs(title = "Linealidad", 
+       subtitle = "Asociación entre la variable Horas y Tasa de fallas", 
+       x = "Horas",
+       y = "Tasa de fallas") +
+  theme_minimal()
+
+
+#----Ejercicio 21----
+
+presion = c(1.1,1.3,1.1,1.3,1.2,1.2,1.2,1.2,1.3)
+pureza = c(83,85.7,84,86,84,83.5,83,84,86.3)
+
+cor.test(presion, pureza, use = "pairwise.complete.obs", method = "pearson")
+cor.test(presion, pureza, use = "pairwise.complete.obs", method = "spearman")
+cor.test(presion, pureza, use = "pairwise.complete.obs", method = "kendall")
+
+shapiro.test(presion)
+shapiro.test(pureza)
+
+qqPlot(presion, main = "Presión (variable X)")
+qqPlot(pureza, main = "Pureza (variable Y)")
+
+# Grafico de linealidad
+
+ejercicio_21 = data.frame(presion, pureza)
+attach(ejercicio_21)
+
+ggplot(ejercicio_21, aes(x = presion, y = pureza))+
+  geom_point() +
+  stat_smooth(method = "lm", col = "#FA8072", fill = "#69b3a2") +
+  #stat_ellipse(size = .5) +
+  labs(title = "Linealidad", 
+       subtitle = "Asociación entre la variable Presión y Pureza", 
+       x = "Presión",
+       y = "Pureza") +
+  theme_minimal()
+
+
+#----Ejercicio 22----
+
+# Este ejercicio se hace a mano.
+
+
+#----Ejercicio 23----
+
+# Este problema se puede hacer en Excel, recodificado o con R
+
+aditivo = c(rep(1,4),rep(2,4),rep(3,4),rep(4,4),rep(5,4))
+aditivo # variable cualitativa, son los tipos de aditivos
+
+rendimiento = c(17,14,13,12,14,14,13,10,12,13,12,9,13,11,11,12,11,12,10,8) # variable cuantitativa
+
+tapply(rendimiento,aditivo,mean)
+
+mean(rendimiento)
+sd(rendimiento)
+
+anova(lm(aditivo ~ rendimiento))
+
+eta = sqrt(15.023 / (15.023 + 24.977) )
+eta
+
+
+#----Ejercicio 24----
+
+sexo = c(rep(1,12), rep(0,12)) #Donde 1 es hombre y 2 es mujer
+sexo
+
+indice_felicidad = c(9,4.5,6.3,5.8,8.3,3.1,2.5,9.1,7.4,3.3,4.1,2.1,6.6,2.7,5.2,8,3.6,5.9,2.4,6,2,
+                     3.6,3,5.2)
+
+tapply(indice_felicidad, sexo, mean)
+mean(indice_felicidad)
+sd(indice_felicidad)
+
+anova(lm(sexo ~ indice_felicidad))
+
+eta_24 = sqrt(0.2742 / (0.2742 + 5.7258))
+eta_24
+
+# p-value del estadístico F
+
+n = length(sexo)
+k = 2 # hombres y mujeres
+k_1 = k - 1 #grados de libertad 1
+n_k = n - k #grados de libertad 2
+eta_24_cuadrado = eta_24 * eta_24
+
+f_estadistico = ((eta_24_cuadrado/(1-eta_24_cuadrado)) * ((n-k)/(k-1)))
+f_estadistico
+
+p_value_24 = pf(f_estadistico, k_1, n_k, lower.tail = F) # Este es el p-value
+p_value_24
+
+
+#----Ejercicio 25----
+
+# Nota: este ejercicio en R da muy distinto a Excel.
+
+depresion = cbind(c(190, 60), c(13,3), c(25,9))
+depresion
+
+depresion_x2 = chisq.test(depresion, correct = F)
+depresion_x2
+
+v_cramer_depresion = sqrt((depresion_x2$statistic)/(length(depresion)))
+v_cramer_depresion
+
+
+#----Ejercicio 26----
+
+depresion_2 = matrix(c(13,25,3,9),nrow = 2, byrow = T)
+depresion_2
+
+fisher.test(depresion_2, conf.level = 0.95)
+
+# Tambien se pueden calcular el OR
+
+prop.test(c(9,3), c(9+25, 3+13))
+
+or_26 = ((0.2647/(1-0.2647))/(0.1875/(1-0.1875)))
+or_26
+
+#----Ejercicio 27----
+
+papel_higenico = matrix(c(19,14,1,0),nrow = 2, byrow = T, dimnames = list("Marca A" = c("Sí", "No"), "Marca B" = c("Sí", "No")))
+papel_higenico
+
+chisq.test(papel_higenico, correct = F) 
+
+#----Ejercicio 28----
+
+# En este ejercicio importé la tabala que venia adjunta en el ejercicio
+
+attach(Tabla_ejercicio_28)
+
+diferencias_28 = antes - despues
+summary(diferencias_28)
+
+diferencias_28_rec = Recode(diferencias_28, "-2:-1 = -1; 0 = NA; 0.00001:1 = 1")
+table(diferencias_28_rec)
+
+signos_28 = binom.test(2, 21, p = 0.5, alternative = "t")
+signos_28
+
+SIGN.test(diferencias_28, md = 0.5, alternative = "t") #Da un poco distinto, pero se llega a la misma respuesta
+
+
+#----Ejercicio 29----
+
+sobrepeso = matrix(c(60,4,20,56), nrow = 2, dimnames = list("Antes" = c("Sí", "No"), "Despues" = c("Sí", "No")))
+sobrepeso
+
+mcnemar.test(sobrepeso, correct = F)
+
+signos_29 = binom.test(4, 20, p = 0.5, alternative = "t")
+signos_29
+
+
+#----Ejercicio 30----
+
+nivel_escolaridad = c(1,4,3,2,2,3,4,1,3,2,2)
+puesto_ocupa = c(1,5,4,2,3,3,5,1,4,2,2) #variable cualitativa, no es necesario hacerle el shapiro.test
+
+shapiro.test(nivel_escolaridad)
+qqPlot(nivel_escolaridad, main = "Test de normalidad para Nivel de escolaridad", xlab = "Quantiles norm", ylab = "Nivel de escolaridad")
+
+cor.test(nivel_escolaridad, puesto_ocupa, use = "pairwise.complete.obs", method = "pearson")
+cor.test(nivel_escolaridad, puesto_ocupa, use = "pairwise.complete.obs", method = "spearman")
+cor.test(nivel_escolaridad, puesto_ocupa, use = "pairwise.complete.obs", method = "kendall")
+
+#Grafico de linealidad ggplot2
+
+ejercicio_30 = data.frame(nivel_escolaridad, puesto_ocupa)
+attach(ejercicio_30)
+
+ggplot(ejercicio_30, aes(x = nivel_escolaridad, y = puesto_ocupa))+
+  geom_point() +
+  stat_smooth(method = "lm", col = "#FA8072", fill = "#69b3a2") +
+  #stat_ellipse(size = .5) +
+  labs(title = "Linealidad", 
+       subtitle = "Asociación entre el nivel de escolaridad y el puesto que ocupa", 
+       x = "Nivel de escolaridad",
+       y = "Puesto que ocupa") +
+  theme_minimal()
+
+
+#----Ejercicio 31----
+
+calib_uno = c(0.265, 0.265, 0.266, 0.267, 0.267, 0.265, 0.267, 0.267, 0.265, 0.268, 0.268, 0.265)
+calib_dos = c(0.264, 0.265, 0.264, 0.266, 0.267, 0.268, 0.264, 0.265, 0.265, 0.267, 0.268, 0.269)
+
+diferencia_calib = calib_uno - calib_dos
+
+t.test(diferencia_calib, alternative = "t")
+t.test(calib_uno, calib_dos, paired = T, alternative = "t")
+
+wilcox.test(calib_uno, calib_dos, paired = T, alternative = "g")
+
+summary(diferencia_calib)
+
+diferencia_calib_rec = Recode(diferencia_calib, "-1:-0.000000001 = -1; 0=NA; 0.000000001: 0.00400 = 1")
+
+table(diferencia_calib_rec)
+
+signo_31 = binom.test(6, 8, p = 0.5, alternative = "t")
+signo_31
+
+SIGN.test(calib_uno, calib_dos, alternative = "t", conf.level = 0.95)
+
+
+#----Ejercicio 32----
+
+rho = .95
+r_pearson = .9
+n_32 = 200
+alfa = .05
+alfa_dos_colas = 1 - (alfa/2)
+
+ztabular_32 = qnorm(alfa_dos_colas)
+ztabular_32
+
+zcalculado_32 = 0.5*sqrt(n_32-3)*(log(1+r_pearson) + log(1-rho) - log(1-r_pearson) - log(1+rho))
+zcalculado_32
+
+p_value_32 = 2*pnorm(zcalculado_32)
+p_value_32
+
+
+#----Ejercicio 33----
+
+indice_1976 = c(106.4,118.7,93.2,112.6,82.2,167)
+indice_1977 = c(99.3,123.9,91,117.1,84.8,169.5)
+
+t.test(indice_1976,indice_1977, paired = T, alternative = "t")
+wilcox.test(indice_1976, indice_1977, paired = T, alternative = "t")
+
+
+#----Final----

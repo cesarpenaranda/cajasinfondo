@@ -1,0 +1,296 @@
+---
+title: "Mues.Cap-2"
+output: html_document
+date: "2023-04-30"
+---
+
+#1. Definición y ajuste del marco muestral. 
+El archivo a trabajar contiene datos 
+sociodemográficos y económicos de los residentes habituales en viviendas particulares de 
+“Tiquicia”, a mediados del presente año. Siga las siguientes instrucciones.
+
+```{r}
+load("marco2a.Rdata")
+```
+
+a. Lea el archivo marco2a, vea en pantalla el número casos (personas) y de variables, y verifique 
+con summary() que contiene información de las personas de 18 años y más.
+
+```{r}
+str(marco2a)
+summary(marco2a)
+sum(marco2a$edad>18)
+```
+
+b. En marco2a la variable parentesco identifica con el código 1 a la persona que es jefa de hogar 
+y esa persona contiene la información de la vivienda en la que residen. En otras palabras, 
+escoger a las personas jefas de hogar es equivalente a escoger viviendas. ¿Cuántas viviendas 
+tendrá el marco muestral de “Tiquicia”? Use la función table().
+```{r}
+table(marco2a$parentesco)
+cat("la cantidad de viviendas seria: ", table(marco2a$parentesco)[1])
+
+```
+c. Construya el marco de viviendas usando la función subset(). Guarde el archivo (marco 
+muestral) en formato R, con nombre marco2b y use la función save().
+
+```{r}
+marco2b=subset(marco2a,marco2a$parentesco==1)
+save(marco2b,file = "marco2b")
+```
+
+d. El archivo marco2b posee información de las viviendas. Algunos datos son referidos a las 
+personas residentes en las viviendas (cantidad de personas en la vivienda, de hombres y de 
+mujeres, ingreso total mensual y percápita del hogar, y gasto mensual en combustible), otros 
+están relacionados con la persona jefa de hogar (sexo, edad e instrucción, entre otros) y 
+también hay datos para las viviendas (metros cuadrados de construcción y tenencia de carro, 
+moto e internet, entre otros). Verifique la información del archivo usando str().
+```{r}
+str(marco2b)
+```
+
+e. Calcule del marco los siguientes parámetros poblacionales: total de personas (𝑌) y de 
+viviendas (𝑁), así como el promedio de personas por vivienda (𝑀𝐸𝐷𝐼𝐴 = 𝑌/𝑁).
+
+```{r}
+total_personas=sum(marco2b$qpersonas)
+total_viviendas=length(marco2b$qpersonas)
+media_pvie=total_personas/total_viviendas
+cat("El total de personas es de",total_personas,"el total de viviendas es",total_viviendas,"el promedio de personas por vivienda es de",media_pvie)
+
+```
+
+#2. Selección con muestreo irrestricto aleatorio (mia).
+Desean realizarse inferencias que permitan conocer características básicas de los habitantes y las viviendas de “Tiquicia”. Por este motivo, seleccione una muestra mia de 800 viviendas, usando la función sample() y guárdela en el 
+archivo muestra2a usando save().
+```{r}
+set.seed(123)
+muestra0 = sample(1:nrow(marco2b), size=800, replace=FALSE)
+muestra2a = marco2b[muestra0,] 
+muestra2a = na.omit(muestra2a)
+save(muestra2a,file="muestra2a.Rdata")
+```
+
+#3. Inferencias con funciones descriptivas simples. 
+Calcule el promedio de personas por vivienda 
+y su intervalo, con una confianza del 95%, y compare con el valor poblacional. Para realizar los 
+cálculos use funciones descriptivas simples.
+x1 ± t_(n-1, α/2) * (s / sqrt(n))
+```{r}
+m=mean(muestra2a$qpersonas)
+ds=sd(muestra2a$qpersonas)
+n=length(muestra2a$qpersonas)
+alfa=0.05
+t=qt(1-alfa/2,n-1)
+
+up=m+t*(ds/sqrt(n))
+low=m-t*(ds/sqrt(n))
+
+media=mean(marco2b$qpersonas)         
+
+res1=c(media, m,low,up)
+names(res1)=c("mu", "media", "Li", "Ls")
+round(res1,2)
+cat("Con un 95% de confianza la media de cantidad de personas por vivienda,
+se encuentra entre",low,"y",up)
+
+```
+
+4. Definición del diseño mia con survey(). Especifique el diseño mia con el paquete survey()
+y la función svydesign().
+
+```{r}
+library(survey)
+n=sum(muestra2a$caso)
+N=sum(marco2b$caso)
+diseno=svydesign(ids=~1,data=muestra2a,fpc=rep(N,n))
+```
+
+5. Inferencias con survey(). Calcule el promedio de personas por vivienda y su intervalo, con 
+una confianza del 95%, y compare con el valor poblacional. Compare con los resultados obtenidos
+en la pregunta 3.
+```{r}
+(svmen=svymean(~muestra2a$qpersonas,diseno))
+sdmean=sqrt(svyvar(~muestra2a$qpersonas,diseno))
+n=length(muestra2a$qpersonas)
+up=svmen+1.96*(sdmean/sqrt(n))
+low=svmen-1.96*(sdmean/sqrt(n))
+res=c(mean(marco2b$qpersonas),svmen,low,up)
+names(res)=c("MEDIA","media","li","ls")
+round(res,2)
+
+confint(svmen,df=n-1)
+
+cat("con un 95% de confianza la media de cantidad de personas por vivienda se encuentra entre",low,"y",up)
+```
+#6. Inferencias con variables métricas.
+Cálculo de promedios (svymean()), totales 
+(svytotal()) y diferenciales (svyby()).
+
+a. La última pregunta del ejercicio anterior proporcionó la estimación del número de personas 
+por vivienda en el país. Ahora surge la pregunta ¿difiere por zona de residencia (zona) el 
+número de personas (qpersonas) por vivienda? Construya un gráfico que represente las 
+inferencias por zona.
+```{r}
+plot(qpersonas~zona,data = muestra2a)
+
+int=data.frame(zona=c("Urbana","Rural"),Ls=c(3.51,3.75),Li=c(3.25,3.34), 
+mu=c(3.38,3.54))
+ggplot(int,aes(x =fct_rev(zona),y=mu,ymin=Li,ymax =Ls))+
+geom_crossbar(fill="dodgerblue3",width=0.4)theme_classic()+
+ggtitle("Intervalos de confianza para el número\n de personas por 
+vivienda según zona")+
+theme(plot.title = element_text(hjust = 0.5,lineheight=1.0))+
+geom_point(aes(y=mu,x=zona),col="Red")+
+geom_text(aes(label=Ls),vjust=-4)+
+geom_text(aes(label=Li),vjust=4)+
+ylab("Personas por vivienda")+
+xlab("Zona de residencia")
+```
+
+
+b. Estime el total de personas que residen en el país y su intervalo de confianza. Compare con 
+el valor poblacional.
+```{r}
+(svtotal=svytotal(~muestra2a$qpersonas,diseno))
+
+up=svtotal+1.96*649.11
+low=svtotal-1.96*649.11
+
+res=c(sum(marco2b$qpersonas),svtotal,low,up)
+names(res)=c("TOTAL","total","li","ls")
+round(res,2)
+
+
+confint(svtotal)
+
+```
+
+
+c. ¿A qué monto asciende, en promedio, la estimación del ingreso total de los hogares 
+(ingresoth1) en el país?
+```{r}
+media_ing=svymean(~muestra2a$ingresoth1,diseno)
+
+#ds=sqrt(svyvar(muestra2a$ingresoth1,diseno))
+#n=length(muestra2a$ingresoth1)
+#f=length(muestra2a$ingresoth1)/length(marco2b$ingresoth1)
+#ee=ds/sqrt(n)
+#media_ing+1.96*ee;media_ing-1.96*ee*(1-f)
+confint(media_ing)
+```
+
+
+d. De acuerdo con el marco muestral (marco2b) ¿cuánto es el promedio de ingreso total del hogar en el país? ¿Ese valor está contenido en el intervalo anterior?
+```{r}
+(media_ingre=mean(marco2b$ingresoth1))
+```
+
+e. ¿Difiere por zona de residencia el ingreso total mensual promedio (ingresoth1) de los 
+hogares? Construya un gráfico que muestre los intervalos de confianza por zona.
+```{r}
+
+```
+#7. Diferencia de dos medias con variables métricas. 
+El archivo contiene el ingreso total mensual 
+del hogar al momento de la entrevista (ingresoth1) y también el devengado 12 meses antes 
+(ingresoth0). Establezca si este ingreso varió entre el momento actual y los 12 meses previos a la 
+encuesta (svymean()).
+```{r}
+m1=svymean(~muestra2a$ingresoth1,diseno)
+m0=svymean(~muestra2a$ingresoth0,diseno)
+m3=m1-m0
+
+cuad=c(m1,m2,m3)
+names(cuad)=c("media 1","media 0","M1-M0")
+round(cuad,2)
+confint(m1);confint(m0)
+
+dif=muestra2a$ingresoth1-muestra2a$ingresoth0
+svymean(~dif,diseno)
+confint(svymean(~dif,diseno))
+```
+#8. Inferencias con estimadores de razón.
+La muestra seleccionada contiene, para cada vivienda, 
+información del gasto total mensual en combustible (combustible) y del ingreso total mensual del 
+hogar (ingresoth1). Proceda a calcular razones (svyratio()) y diferenciales (svyy()) según se 
+solicita a continuación.
+
+a. ¿En promedio, por mes, cuánto gastan las familias en combustible del ingreso total mensual 
+que reciben? Calcule el intervalo con 95% de confianza e interprételo.
+```{r}
+prom_total=svymean(~muestra2a$ingresoth1,diseno)
+com_med=svymean(~muestra2a$combustible,diseno)
+(com_med/prom_total)*100
+(prom_total/com_med)
+
+svyratio(~muestra2a$ingresoth1,~muestra2a$combustible,diseno)
+
+x=confint(svyratio(~muestra2a$combustible,~muestra2a$ingresoth1,diseno))
+cat("Con un 95% de confianza en promedio las familias gastan en combustible entre",x[1]*100,"% y",x[2]*100, "% del total que resiben al mes")
+```
+
+b. ¿El gasto mensual de combustible que realizan las familias de sus ingresos totales es similar 
+por zona de residencia? Construya un gráfico que muestre los intervalos de confianza según 
+zona.
+```{r}
+combustible=muestra2a$combustible
+zona=muestra2a$zona 
+ingresoth1=muestra2a$ingresoth1
+svyby(~combustible, by=~zona, denominator=~ingresoth1, design=diseno, 
+svyratio)
+```
+
+9. Inferencias con variables dicotómicas. Cálculo de proporciones (svymean()), totales con 
+proporciones (svytotal()) y diferenciales (svyby()). Para el cálculo de proporciones y sus 
+intervalos de confianza (media y variancia), se trabajará la variable que determina la tenencia de 
+internet en la vivienda (internet), incluida en el archivo como variable “integer” y codificada como 
+0=no y 1=sí.
+
+a. ¿Cuál es el porcentaje de viviendas que posee internet en el país?
+```{r}
+(prop=svymean(~muestra2a$internet,diseno))
+```
+
+b. ¿Es similar esta estimación por zona de residencia? Construya un gráfico con los intervalos 
+de confianza por zona.
+```{r}
+
+```
+
+c. ¿Cuál es el total de viviendas en el país que posee internet?
+```{r}
+(total=svytotal(~muestra2a$internet,diseno))
+```
+
+d. ¿Cuál es el total de viviendas que posee internet por zona de residencia?
+```{r}
+internet=muestra2a$internet
+zona=muestra2a$zona
+svyby(~internet, by=~zona, design=diseno, svytotal)
+
+confint(svyby(~internet, by=~zona, design=diseno, svytotal))
+```
+
+
+10. Inferencias con variables categóricas. Cálculo de proporciones (svymean()), totales 
+(svytotal()) y diferenciales (svyby()). Las estimaciones con variables categóricas son una 
+generalización del caso de las variables dicotómicas.
+
+a. Estime la proporción de viviendas que se encuentra en diferentes situaciones de pobreza 
+(pobrezah) en el país. Construya un gráfico que permita visualizar la situación de pobreza de 
+los hogares.
+```{r}
+svymean(~muestra2a$pobrezah,diseno)*100
+pie(svymean(~muestra2a$pobrezah,diseno),labels=c("6.635% Probreza extrema","13% Pobreza","80% No pobre"))
+```
+
+b. Determine si la situación de pobreza es similar entre hombres y mujeres jefes de hogar. 
+Construya un gráfico con los intervalos de confianza.
+```{r}
+probrezah=muestra2a$pobrezah
+sexo=muestra2a$sexo
+svyby(~pobrezah, by=~sexo, design=diseno, svymean)
+confint(svyby(~pobrezah, by=~sexo, design=diseno, svymean))*100
+```
+

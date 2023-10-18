@@ -1,0 +1,1949 @@
+
+#Tortugas 1
+
+Se desea determinar si la falta de alimento afecta el nivel de proteínas en sangre en
+tortugas de la especie Chelonia midas (de agua salada) y si afecta de forma diferente
+a los machos que a las hembras. Se escogen 8 machos y 8 hembras. A cada uno se
+le asigna aleatoriamente una de las siguientes condiciones: 1) dieta regulada y 2)
+alimento en abundancia. Se registra el nivel de proteína en gramos por decilitro.
+
+#(a) Lectura:
+```{r}
+base=read.csv("Bases/tortugas1.csv")
+str(base)
+```
+
+Definicion del factor
+```{r}
+base$genero=as.factor(base$genero)
+levels(base$genero)=c("macho","hembra")
+base$cond=factor(base$cond)
+```
+
+#(b) Factores:
+Hay dos factores: el que se está investigando es la condición de alimento y el
+otro es el género.
+
+#(c) Características de los factores:
+El factor de diseño es la condición de alimento pues el interés del estudio
+es analizar el efecto que tiene cada una de las condiciones sobre la proteína
+promedio en sangre que tienen las tortugas que se alimentan de cada forma.
+A cada tortuga se le puede asignar aleatoriamente una condición, con lo cual las
+diferencias que se observen se pueden ligar a la condición viendo una relación
+de causa y efecto. Por otra parte, se incluye el género porque posiblemente el
+comportamiento no es el mismo entre ambos. Es importante incluir este factor
+puesto que el estudio también tiene como objetivo analizar si el efecto de la
+condición es el mismo en cada género (interacción).
+
+#(d) Enfoque del análisis:
+Interesa ver primero si el efecto que tiene la condición de alimento es el mismo
+en ambos géneros. De ser así, puede darse una conclusión general sobre el efecto
+que tiene cada condición en la proteína promedio en sangre, sin diferenciar
+por género, de lo contrario, debe cuantificarse ese efecto por separado en cada
+género.
+
+#(e) Número de tratamientos:
+Hay en total 4 tratamientos que se obtienen de combinar las dos condiciones
+para los dos géneros.
+
+
+#(f) Número de repeticiones:
+```{r}
+table(base$cond,base$genero)
+```
+#2. Efectos:
+(a) Media general:
+```{r}
+(medgen=mean(base$proteina))
+
+```
+#(b) Efectos simples de condición:
+```{r}
+(alfa=tapply(base$proteina,base$cond,mean)-medgen)
+
+```
+
+#(c) Efectos simples de género:
+```{r}
+(beta=tapply(base$proteina,base$genero,mean)-medgen)
+
+```
+
+#(d) Promedios observados:
+
+```{r}
+#estos son los promedios observados o obtenidos al realizar el experimento
+(med=tapply(base$proteina,list(base$cond,base$genero),mean))
+```
+
+#(e) Promedios estimados bajo el modelo sin interacción:
+```{r}
+#recordemos que estas son estimaciones bajo el modelo sin interaccion donde m11=mu+a1*alfa+b1*beta
+
+m11=medgen+alfa[1]+beta[1] #macho;alimento=43.11875
+m21=medgen+alfa[2]+beta[1] #hembra;alimento=39.28125
+m12=medgen+alfa[1]+beta[2] #macho;dieta=40.00625
+m22=medgen+alfa[2]+beta[2] #hembra;dieta=36.16875
+(mest=c(m11,m21,m12,m22))
+
+```
+
+#(f) Comparación:
+```{r}
+M=cbind(as.vector(med),mest)
+colnames(M)=c("Observados","Estimados")
+M
+```
+Los promedios estimados son muy parecidos a los observados, lo cual indica
+que hay muy poca interacción.
+
+#(g) Gráfico de interacción entre condición y género:
+```{r}
+library(ggplot2) #recordar que en group se pone el factor de mayor interes en el estudio, o factor de diseño en este caso el mayo interes se encontraba en la condicion de alimentacion
+ggplot(base, aes(x=genero, y=proteina, group = cond)) +
+stat_summary(fun="mean", geom="line", aes(linetype = cond))
+```
+
+#(h) Distancia entre medias para cada género:
+En la Figura 3.3 se observa que, en esta muestra, la distancia entre la media
+de proteína cuando se proporciona alimento con respecto a la media cuando
+se tiene dieta para los machos es muy similar a la distancia en el caso de las
+hembras. Esto es una indicación de que no existe interacción entre condición y
+género.
+
+#(i) Efectos simples:
+```{r}
+#esta es la forma de conseguir los efectos(alfa,beta) con el modelo
+mod1=aov(proteina~cond+genero,data=base)
+model.tables(mod1)
+```
+
+#3. Efectos de interacción en el modelo:
+
+#(a) Modelo con interacción con modelo de suma nula:
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod2=lm(proteina~cond*genero,data=base)
+```
+
+#(b) Matriz de estructura:
+
+```{r}
+contrasts(base$cond)
+```
+```{r}
+contrasts(base$genero)
+```
+
+```{r}
+model.matrix(mod2)
+```
+
+La matriz de estructura tiene una columna para condición con códigos 1 y -1.
+Similarmente una columna para género con códigos 1 y -1. El -1 corresponde
+siempre al nivel que no aparece que es dieta o hembra. La columna de
+interacción es el producto de las otras dos columnas
+
+#(c) Efectos de interacción:
+```{r}
+round(mod2$coef,2)
+```
+
+Los efectos de interacción son todos iguales en valor absoluto (0,11). Esto sucede
+por tratarse de un diseño 2^2. Esta cantidad representa cuánto se debe restar o
+sumar a la media observada en cada tratamiento para obtener promedios en
+condición de no interacción.
+
+#4. Variancia del error:
+
+#(a) Variancias por tratamiento:
+```{r}
+(v=tapply(base$proteina,list(base$cond,base$genero),var))
+```
+
+#(b) Supuesto de homocedasticidad:
+
+```{r}
+bartlett.test(base$proteina~interaction(base$cond,base$genero))
+
+```
+
+Ante la hipótesis de homocedasticidad se obtiene una probabilidad asociada
+de 0,96, por lo que se decide no rechazarla, con lo cual no se tiene evidencia
+de heterocedasticidad. Se continúa suponiendo que los datos provienen de
+poblaciones cuyas variancias son iguales.
+
+
+#(c) Variabilidad del error:
+```{r}
+(v1=mean(v)) #esto es porque el experimento es balanceado
+
+```
+#5. Prueba de hipótesis para la interacción:
+
+#(a) Tabla de análisis de variancia:
+```{r}
+anova(mod2)
+pf(0.0240,1,12, lower.tail = F) #1 grados de libertad del numerador y 12 de denominador
+```
+
+
+#(b) Hipótesis:
+Sólo interesa probar en esta etapa si existe interacción entre condición y género.
+No interesa probar los efectos simples si no se ha eliminado la interacción. La
+hipótesis es
+
+H0: (αβ)ij = 0
+
+Esta hipótesis dice que el efecto de la condición de alimento sobre la proteína
+promedio en sangre es independiente del género, es decir, es el mismo en
+cualquiera de los dos géneros.
+
+#(c) Cuadrado medio residual:
+```{r}
+anova(mod2)[4,3]
+
+```
+Este valor coincide con la media de las variancias obtenida anteriormente y es
+una medida de la variabilidad de la respuesta dentro de cada tratamiento.
+
+#(d) Cuadrado medio de interacción:
+El cuadrado medio de interacción es 0,18 y mide la magnitud general de los
+efectos de interacción. Si esta magnitud tiende a ser pequeña se tiene un caso con
+poca interacción, lo que sería una evidencia débil de interacción entre condición
+y género. En caso contrario, si esta magnitud tiende a ser grande, hay más
+evidencia de presencia de interacción.
+
+#(e) Conclusión:
+```{r}
+(f=0.18/7.54) #f=0.02387268
+pf(f,1,12,lower.tail = F) #1 gl del CMinteraccion y 12 delgl de CMres 
+```
+La variabilidad de los efectos de interacción es sumamente baja con respecto a
+la variabilidad residual y la probabilidad asociada es altísima (p = 0,88), con lo
+cual no se rechaza la hipótesis de independencia. Se asume que el efecto de la
+condición de alimento es igual para machos y hembras.
+
+#6. Estimaciones bajo el modelo sin interacción:
+#(a) Modelo sin interacción:
+
+```{r}
+mod3=lm(proteina~cond+genero,data=base)
+```
+#(b) Efectos simples:
+```{r}
+round(mod3$coef,2)
+#(Intercept)       cond1     genero1 
+#      39.64        1.56        1.92
+#en este caso no olvidemos que los faltantes cond2 y genero2 son iguales pero con signo negatico en este caso
+```
+El efecto de la condición 1 (alimento en abundancia) es 1,56, lo que indica que
+con alimento el nivel de proteína en sangre sube 1,56 gr/ml con respecto al
+promedio general. Similarmente el efecto de la condición 2 (dieta regulada) es
+que baja el nivel promedio de proteína 1,56 gr/ml.
+Los machos (género 1) presentan un nivel de proteína que está 1,92 gr/ml sobre
+la media general, mientras que las hembras tienen una media de proteína 1,92
+gr/ml por debajo de la media general.
+
+#(c) Hipótesis:
+
+Puesto que no hay interacción se desea simplemente verificar si hay un efecto
+de la condición sobre la respuesta promedio sin tomar en cuenta el género.
+Entonces la hipótesis nula es:
+H0 : αi = 0
+Esta hipótesis dice que la condición de alimento no tiene efecto sobre la
+proteína promedio, es decir, ambas condiciones producen el mismo promedio
+de proteína en sangre. Lo anterior sucede en ambos géneros.
+
+#(d) Cuadrado medio de condición y cuadrado medio de género:
+
+```{r}
+anova(mod3)[1,3]
+anova(mod3)[2,3]
+
+```
+
+El cuadrado medio de condición es 38,75 y es una medida de la distancia entre
+las medias de las dos condiciones. Similarmente el cuadrado medio de género
+es 58,91 y es una medida de la distancia entre las medias de los dos géneros.
+
+#(e) Cálculo de cuadrados medios:
+```{r}
+table(base$cond)
+table(base$genero)
+c(sum(8*alfa^2)/1, sum(8*beta^2)/1) #8 son las replicas por tratamiento 1 son los gl correspondientes
+#CMtratcond 
+#CMtratgenero
+```
+
+#(f) Cuadrado medio residual:
+```{r}
+v2=anova(mod3)[3,3]
+c(v1,v2)
+```
+
+La variancia que se obtiene a partir de la media de las variancias (7,54) asume un
+modelo con interacción, donde los residuales se calculan con respecto a la media
+observada. En cambio el CMRes en este caso (6,97) se obtiene con los residuales
+calculados con respecto a las medias estimadas en el modelo sin interacción.
+Debido a que la interacción es muy pequeña, las medias se movieron muy poco
+y las dos cantidades obtenidas son muy similares.
+
+
+#(g) Aumento en la suma de cuadrados residual:
+
+```{r}
+anova(mod2)[4,2]
+anova(mod3)[3,2]
+anova(mod3)[3,2]-anova(mod2)[4,2]
+
+```
+
+La diferencia entre las sumas de cuadrados residual de los dos modelos
+es 0,18, la cual coincide con la suma de cuadrados de interacción en el
+anova del punto 5(a). Tiene sentido que el modelo que no tiene interacción
+tenga una mayor suma de cuadrados residual porque ahora los residuales se
+calculan con respecto a un promedio estimado con el modelo sin interacción.
+En general estos residuales serán un poco más grandes que los calculados
+con respecto a los promedios observados. Puesto que la suma de cuadrados
+total es fija y se mantiene la misma suma de cuadrados de tratamiento en
+ambos modelos, la parte correspondiente a la suma de cuadrados residual
+en el modelo sin interacción absorbe la parte que correspondía a la suma de
+cuadrados de interacción. Todas las sumas de cuadrados deben sumar la misma
+cantidad independientemente del modelo utilizado, esa cantidad es la suma de
+cuadrados total.
+
+#(h) Conclusión:
+```{r}
+round(anova(mod3),3)
+
+```
+La variabilidad asociada a las medias de condición es 5,56 veces la variabilidad
+residual, lo cual indica que las medias están bastante distantes entre sí; esto
+se confirma con una probabilidad asociada baja (p = 0,035). Puesto que esta
+probabilidad está debajo del límite establecido de 0,05, se rechaza la hipótesis
+de que no hay efecto de la condición. Se concluye, con un nivel de significancia
+de 0,05, que las dos condiciones producen medias de proteína diferentes
+(independientemente del género).
+
+#(i) Cálculo de cota inferior:
+```{r}
+mod3$coef
+contrasts(base$cond)
+```
+
+Para construir los contrastes se toma en cuenta que el factor condición toma
+valores 1 y -1 según sea alimento o dieta, respectivamente, mientras que para el
+factor género se pone 0 para que el modelo calcule la media marginal de cada
+condición. Esto se puede hacer solamente cuando se usa el modelo de suma
+nula, ya que cuando se usa el modelo de tratamiento referencia, si se pone
+un 0 se estaría indicando que se use el nivel de referencia. Entonces el vector
+para el primer contraste es v1 = c(1,1,0) que produce la estimación de la media
+marginal de alimento, mientras que v2 = c(1,−1,0) produce la media marginal
+de dieta. Puesto que el coeficiente de condición es 1.56, el cual corresponde al
+efecto simple de alimento, se deduce que el efecto simple de dieta es -1.56. De
+aquí se concluye que la media marginal de alimento es mayor que la de dieta y
+la diferencia entre ellas se podría calcular simplemente como 2∗1,56 = 3,12. Otra
+forma de obtener este mismo valor es restando los dos vectores de contrastes y
+multiplicando por el vector de coeficientes.
+
+```{r}
+v1=c(1,1,0); v2=c(1,-1,0); c=v1-v2
+(L=t(c)%*%mod3$coef)
+
+```
+
+```{r}
+ee=sqrt(t(c)%*%vcov(mod3)%*%c)
+t=qt(0.95,13)#13 son los grados de libertad reciduales 
+(LIM=L-t*ee)
+
+```
+
+De forma puntual se obtiene en las muestras que el promedio de proteína en
+sangre cuando se provee de alimento en abundancia es 3,11 gr/ml mayor que
+con dieta. Sin embargo, este resultado está basado solo en una muestras de 16
+individuos (8 de cada género). A partir de estos resultados se puede esperar
+con 95% de confianza, que con alimento en abundancia el promedio de proteína
+en sangre sea al menos 0,77 gr/ml mayor que con dieta. Esto sucede tanto en
+machos como en hembras por el hecho de que se asume que no hay interacción
+entre condición de alimentación y género.
+
+#Tortugas 2
+
+Se desea determinar si la falta de alimento afecta el nivel de proteínas en sangre en
+tortugas de las especies Kinosternum scorpioides (de agua dulce) y Chelonia midas
+(de agua salada), y si el efecto es diferente de una especie a otra.
+Se escogen 12 ejemplares de cada especie y se les asigna aleatoriamente a cada tortuga
+una de las siguientes condiciones: 1) dieta estricta, 2) dieta balanceada y 3) alimento
+en abundancia. Se registra el nivel de proteína en gramos por decilitro.
+
+#1. Preparación:
+##(a) Lectura:
+```{r}
+base=read.csv("Bases/tortugas2.csv")
+base$cond=factor(base$cond)
+levels(base$cond)=c("estricta","balanceada","abundancia")
+base$especie=factor(base$especie)
+```
+
+##(b) Factores:
+Hay dos factores: el que se está investigando es la condición de alimento y se
+tiene otro que es la especie de tortuga.
+
+##(c) Enfoque del análisis:
+Interesa ver primero si el efecto que tiene la condición de alimento es el mismo
+en ambas especies. Si el efecto es el mismo en ambas especies entonces puede
+darse una conclusión general sobre el efecto que tiene cada condición en la
+proteína promedio en sangre sin diferenciar esta conclusión por especie, de lo
+contrario, debe cuantificarse ese efecto por separado en cada especie.
+
+#2. Efectos:
+##(a) Media general:
+```{r}
+(medgen=mean(base$proteina))
+```
+
+##(b) Efectos simples de condición:
+```{r}
+(alfa=tapply(base$proteina,base$cond,mean)-medgen)
+```
+##(c) Efectos simples de especie:
+```{r}
+(beta=tapply(base$proteina,base$especie,mean)-medgen)
+```
+
+##(d) Promedios observados:
+```{r}
+(med=tapply(base$proteina,list(base$cond,base$especie),mean))
+```
+
+##(e) Promedios estimados bajo el modelo sin interacción:
+```{r}
+m11=medgen+alfa[1]+beta[1]
+m21=medgen+alfa[2]+beta[1]
+m31=medgen+alfa[3]+beta[1]
+m12=medgen+alfa[1]+beta[2]
+m22=medgen+alfa[2]+beta[2]
+m32=medgen+alfa[3]+beta[2]
+(mest=matrix(c(m11,m21,m31,m12,m22,m32),nrow=3,
+dimnames=list(c("estricta","balanceada","abundancia"),
+c("chelonia","kynosternon"))))
+```
+
+##(f) Gráfico de interacción entre condición y especie:
+```{r}
+library(ggplot2)
+ggplot(base, aes(x=especie, y=proteina, group = cond)) +
+stat_summary(fun="mean", geom="line", aes(linetype = cond))
+```
+
+En la Figura 3.4 se observa que la distancia entre la media de proteína en sangre
+cuando se proporciona dieta estricta con respecto a la media cuando se tiene
+dieta balanceada para chelonia es mucho mayor a esta distancia en el caso
+de kynosternon. Esto es una fuerte indicación de que existe interacción entre
+condición y especie.
+
+##(g) Comparación entre promedios observados y promedios estimados:
+```{r}
+(efint=med-mest) #estos son mis efectos de interaccion
+```
+Estas cantidades deben restarse al promedio observado para obtener la
+estimación que asegura que no haya interacción. Por ejemplo, en el caso de
+estricta para chelonia debería sumarse 0,88, en el caso de balanceada debería
+restarse 2,63 y en el caso de abundancia debería sumarse 1,75, de esta forma
+los promedios distarían una cantidad idéntica a la que se obtendría en el
+caso correspondiente para kynosternon. Estas cantidades se llaman efectos de
+interacción.
+
+##(h) Efectos simples y de interacción:
+```{r}
+mod1=aov(proteina~cond*especie,data=base)
+model.tables(mod1)
+```
+
+##(i) Comparación:
+Se obtienen los mismos efectos simples (alfa y beta), así como los mismos efectos
+de interacción.
+
+#3. Variancia del error:
+##(a) Boxplot:
+```{r}
+boxplot(proteina~cond+especie,ylab="proteína",xlab="condición:especie",data=base)
+```
+En la Figura 3.5 se observa mayor variabilidad en el tratamiento de estricta
+para chelonia, mientras que hay mucho menos variabilidad en el tratamiento
+de abundancia para kynosternon. Se puede esperar que las distribuciones de
+los 6 tratamientos no tengan la misma variabilidad. Por otra parte, se nota que
+para chelonia, el tratamiento con dieta balanceada produce un mayor promedio
+de proteína que para las otras condiciones, mientras que para kynosternon la
+diferencia es muy pequeña, por lo que se confirma que sí se espera que haya
+interacción entre condición y especie.
+
+##(b) Variancias por tratamiento:
+```{r}
+(v=tapply(base$proteina,list(base$cond,base$especie),var))
+```
+
+##(c) Supuesto de homocedasticidad:
+```{r}
+bartlett.test(base$proteina~interaction(base$cond,base$especie))
+```
+
+Ante la hipótesis de homocedasticidad se obtiene una probabilidad asociada
+de 0,39, por lo que se decide no rechazarla, con lo cual no se tiene evidencia
+de heteroscedasticidad. Cuando se calcularon las variancias en los diferentes
+tratamientos se ven grandes diferencias ya que la menor es 0,25 y la mayor 4,91,
+sin embargo, la prueba no logra demostrar que las variancias son diferentes
+seguramente por la poca cantidad de réplicas en cada tratamiento. Se continúa
+suponiendo que los datos provienen de poblaciones cuyas variancias son
+iguales.
+
+##(d) Variabilidad del error:
+```{r}
+mean(v)
+```
+
+#4. Estimaciones bajo el modelo con interacción:
+##(a) Modelo con interacción:
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod2=lm(proteina~cond*especie,data=base)
+```
+##(b) Matriz de estructura:
+```{r}
+contrasts(base$cond)#me indica las auxiliares
+contrasts(base$especie)
+model.matrix(mod2)
+```
+La matriz de estructura tiene dos columnas para condición con códigos 0, 1 y -1,
+puesto que el factor condición tiene 3 niveles. Similarmente una columna para
+especie con códigos 1 y -1, puesto que el factor especie tiene dos niveles. El -1
+corresponde siempre al nivel que no aparece que es kynosternon o abundancia.
+La columna de interacción es el producto de las otras dos columnas. Así, por
+ejemplo, las filas 1 a 4 corresponden a las tortugas de la especie chelonia
+(especie1 = 1) con condición estricta (cond1 =1 y cond2 = 0), las filas 21 a
+24 corresponden a las tortugas de la especie kynosternon (especie1 = -1) con
+condición abundancia (cond1 = -1 y cond2= -1).
+
+##(c) Efectos obtenidos con los coeficientes del modelo:
+```{r}
+mod2$coef
+#(Intercept)          cond1          cond2       especie1 cond1:especie1 cond2:especie1 
+#     36.000         -3.375          2.375          1.000         -0.875          2.625 
+```
+El efecto de cond1 (estricta) es −3,38, el de cond2 (dieta regulada) es 2,38. El
+de cond3 (abudancia) se obtiene a partir de los otros dos por la restricción de
+suma nula como: −(−3,38 + 2,38) = 1. El efecto de especie1 (chelonia) es 1 y el
+de especie2 (kynosternon) es -1.
+El efecto de interacción para cond1:especie1 es −0,88, por lo que para
+cond1:especie2 es 0,88. El efecto de interacción para cond2:especie1 es 2,63,
+por lo que para cond2:especie2 es −2,63. El efecto de interacción para
+cond3:especie1 se obtiene a partir de cond1:especie1 y cond2:especie1, para que
+los 3 sumen cero: −(−0,88+2,63) = −1,75. A partir de este se obtiene el último
+efecto de interacción para cond3:especie2 que es 1,75.
+
+##(d) Promedio de chelonia-estricta:
+El vector para el cálculo del promedio del tratamiento chelonia-estricta es
+[1,1,0,1,1,0]T
+el cual se multiplica por el vector de coeficientes estimados del
+modelo:
+```{r}
+#(Intercept)          cond1          cond2       especie1 cond1:especie1 cond2:especie1 
+#     36.000         -3.375          2.375          1.000         -0.875          2.625 
+coef=mod2$coef
+c(1,1,0,1,1,0)%*%coef #32.75
+```
+
+##(e) Promedio para todos los otros tratamientos:
+A continuación se dan los vectores necesarios para obtener los promedios de los
+diferentes tratamientos:
+
+Chelonia-balanceada: [1, 0, 1, 1, 0, 1]T
+Chelonia-abundancia: [1,−1,−1, 1,−1,−1]T
+Kynostenron-estricta: [1, 1, 0,−1,−1, 0]T
+Kynostenron-balanceada: [1, 0, 1,−1, 0,−1]T
+Kynostenron-abundancia: [1,−1,−1,−1, 1, 1]T
+
+```{r}
+ch.e = c(1,1,0,1,1,0)
+ch.b = c(1,0,1,1,0,1)
+ch.a = c(1,-1,-1,1,-1,-1)
+ky.e = c(1,1,0,-1,-1,0)
+ky.b = c(1,0,1,-1,0,-1)
+ky.a = c(1,-1,-1,-1,1,1)
+h = cbind(ch.e,ch.b,ch.a,ky.e,ky.b,ky.a)
+
+```
+
+```{r}
+(L = t(h)%*%coef)
+```
+
+#5. Hipótesis de independencia:
+##(a) Tabla de análisis de variancia:
+```{r}
+anova(mod2)
+```
+
+##(b) Hipótesis nula:
+HO : (αβ)i j = 0
+Esta hipótesis dice que el efecto de la condición de alimento sobre la proteína
+promedio en sangre no depende de la especie, es decir, es el mismo en cualquiera
+de las dos especies.
+
+##(c) Cuadrado medio residual:
+```{r}
+anova(mod2)[4,3]
+```
+Este valor coincide con la media de las variancias obtenida anteriormente y es
+una medida de la variabilidad de la respuesta dentro de cada tratamiento.
+
+##(d) Grados de libertad:
+Para condición hay 2 grados de libertad porque son tres condiciones, mientras
+que para especie hay un grado de libertad porque son 2 especies. Para la
+interacción entre condición y especie hay 2 grados de libertad que se obtiene
+del producto de los grados de libertad de cada uno de los factores.
+
+##(e) Cuadrado medio de condición y cuadrado medio de especie:
+```{r}
+anova(mod2)[1:2,3]
+```
+El cuadrado medio de condición es 72,13, el cual es una medida de la distancia
+entre las medias de las tres condiciones. Similarmente el cuadrado medio de
+especie es 24, el cual es una medida de la distancia entre las medias de las dos
+especies.
+
+##(f) Cálculo de cuadrados medios:
+```{r}
+table(base$cond)
+table(base$especie)
+c(sum(8*alfa^2)/2, sum(12*beta^2)/1)
+```
+
+##(g) Suma de cuadrados de interacción:
+```{r}
+table(base$cond,base$especie)
+sum(4*efint^2)
+```
+
+##(h) Cuadrado medio de interacción:
+El cuadrado medio de interacción es 42,88, el cual mide la magnitud general
+de los efectos de interacción. Si esta magnitud tiende a ser pequeña se tiene un
+caso con poca interacción, lo que sería una evidencia débil de interacción entre
+condición y especie. En caso contrario, si esta magnitud tiende a ser grande, hay
+más evidencia de presencia de interacción.
+##(i) Conclusión:
+```{r}
+(f=42.88/2.56)
+(pf(f,2,18,lower.tail=F))
+```
+Se tiene que la variabilidad de los efectos de interacción es sumamente alta con
+respecto a la variabilidad residual. Al ser la primera casi 17 veces la segunda,
+se tiene una probabilidad asociada bajísima (p < 0,001), con lo cual se rechaza
+la hipótesis de no interacción. Se concluye que el efecto de la condición de
+alimento no es el mismo cuando se trata de Chelonia midas que en el caso de
+Kynosternum scorpioides.
+
+#6. Comparaciones bajo el modelo con interacción:
+
+##(a) Modelo con interacción y contrastes:
+
+El modelo es
+µi j = µ+αi +βj + (αβ)i j
+El primer subíndice indica la condición y el segundo la especie. Como el
+factor de interés es la condición, debe fijarse la especie y comparar para
+diferentes condiciones dada cada especie. Para tener estimaciones positivas de
+las diferencias de promedios, se crean los contrastes de tal forma que el contraste
+estimado sea positivo, es decir, se pone primero aquella media cuya estimación
+sea mayor.
+
+Se tienen los contrastes para chelonia:
+µ21 −µ11
+µ21 −µ31
+µ31 −µ11
+
+Los contrastes para kynosternon son:
+µ22 −µ12
+µ32 −µ22
+µ32 −µ12
+
+##(b) Ortogonalidad:
+Tomando el vector de promedios
+(µ11,µ21,µ31,µ12,µ22,µ32)
+
+Los vectores para obtener el primer grupo de hipótesis (chelonia) son:
+(−1,1,0,0,0,0)
+(0,1,−1,0,0,0)
+(1,0,−1,0,0,0)
+
+```{r}
+v1 = c(-1,1, 0,0,0,0)
+v2 = c( 0,1,-1,0,0,0)
+v3 = c(1,0,-1,0,0,0)
+c(v1%*%v2, v1%*%v3, v2%*%v3)
+```
+
+Estos 3 vectores no son ortogonales, por lo que hay que hacer corrección.
+De forma similar sucede para el segundo grupo de hipótesis (kynosternon):
+(0,0,0,−1,1,0)
+(0,0,0,0,−1,1)
+(0,0,0,−1,0,1)
+```{r}
+v4 = c(0,0,0,-1, 1,0)
+v5 = c(0,0,0, 0,-1,1)
+v6 = c(0,0,0,-1, 0,1)
+c(v4%*%v5, v4%*%v6, v5%*%v6)
+```
+
+Estos 3 vectores tampoco son ortogonales.
+##Ahora comparamos los dos bloques entre sí:
+```{r}
+c(v1%*%v4, v1%*%v5, v1%*%v6, v2%*%v4, v2%*%v5, v2%*%v6, v3%*%v4, v3%*%v5, v3%*%v6)
+```
+El primer grupo de vectores sí es ortogonal con respecto al segundo grupo
+de vectores. Por lo que dentro de cada grupo de hipóteis debe hacerse la
+corrección de Bonferroni, pero cada grupo de hipótesis se puede probar de
+forma independiente al otro grupo. Por lo tanto, se debe usar corrección de
+Bonferroni tomando en cuenta que en cada caso son 3 hipótesis.
+
+##(c) Matriz de contrastes:
+Para hacer el cálculo de los contrastes se deben restar los dos vectores que
+producen cada una de las medias del contraste:
+```{r}
+ch.be = ch.b-ch.e
+ch.ba = ch.b-ch.a
+ch.ae = ch.a-ch.e
+ky.be = ky.b-ky.e
+ky.ab = ky.a-ky.b
+ky.ae = ky.a-ky.e
+(h=cbind(ch.be,ch.ba,ch.ae,ky.be,ky.ab,ky.ae))
+```
+
+#(d) Estimación del contraste y variancia:
+ch.be 9.25
+ch.ba 5.75
+ch.ae 3.50
+ky.be 2.25
+ky.ab 3.00
+ky.ae 5.25
+
+```{r}
+(L=t(h)%*%coef)
+```
+
+```{r}
+(var=diag(t(h)%*%vcov(mod2)%*%h))
+```
+Todas las variancias son iguales porque es un diseño balanceado
+
+##(e) Prueba simultánea de las hipótesis:
+```{r}
+ee=sqrt(var)
+t=L/ee
+row.names(t)=row.names(L)
+p=pt(t,18,lower.tail = F)
+row.names(p)=row.names(L)
+p
+
+```
+
+Las probabilidades deben compararse contra α/3 = 0.017. Todas las hipótesis
+se rechazan, con excepción de una. Se concluye que en cada especie el nivel
+promedio de proteína en sangre es diferente en casi todas las condiciones,
+excepto para kynosternon, donde no se ha encontrado que la dieta balanceada
+produzca un nivel promedio de proteína en sangre más alto que la dieta estricta.
+
+##(f) Cálculo de cotas inferiores:
+```{r}
+tc1=qt(1-0.05/3,18)
+tc2=qt(1-0.05/2,18)
+lim1=L[1:3]-tc1*ee[1:3]
+lim2=L[5:6]-tc2*ee[5:6]
+names(lim1)=row.names(L)[1:3]
+names(lim2)=row.names(L)[5:6]
+lim1
+lim2
+```
+
+##(g) Conclusión:
+Se concluye, con 95% de confianza, que el nivel promedio de proteína en sangre
+para chelonia es al menos 6,88 gr/ml mayor con dieta balanceada que con dieta
+estricta y al menos 3,38 gr/ml mayor con dieta balanceada que con abundancia.
+Para kynosternon, el alimento en abundancia aventaja a la dieta estricta en
+al menos 2,65 gr/ml. Las otras dos diferencias son pequeñas, por lo que es
+importante contrastar sus magnitudes con la diferencia mínima que establezca
+un investigador para determinar si son relevantes.
+
+
+#Refrescos
+Una empresa embotelladora de refrescos está interesada en obtener alturas de
+llenado más uniformes en las botellas que se fabrican en su proceso de manufactura.
+Teóricamente, una máquina llena cada botella a la altura objetivo correcta, pero en
+la práctica, existe variación en torno a este objetivo, y a la embotelladora le gustaría
+entender mejor las fuentes de esta variabilidad y, en última instancia, reducirla. El
+ingeniero del proceso puede controlar tres variables durante el proceso de llenado:
+
+• el porcentaje de carbonatación,
+• la presión de operación en el llenador y
+• las botellas producidas por minuto o rapidez de línea.
+
+Es sencillo controlar la presión y la rapidez, pero el porcentaje de carbonatación
+es más difícil de controlar durante la manufactura real debido a que varía con la
+temperatura. Sin embargo, para los fines de un experimento, el ingeniero puede
+controlar la carbonatación en tres niveles: 10, 12 y 14%. Elige dos niveles para la
+presión (25 y 30psi) y dos niveles para la rapidez de línea (200 y 250bpm).
+
+Interesa analizar qué tanto se desvía la altura real con respecto a la altura establecida
+como objetivo. Las desviaciones positivas son alturas de llenado arriba del objetivo,
+mientras que las negativas son alturas de llenado abajo del objetivo. Puesto que
+pueden existir desviaciones en ambas direcciones, el interés del estudio es analizar si
+las botellas se han llenado correctamente, por lo que se toma el valor absoluto de cada
+desviación. Debido a que las botellas se producen en corridas de cerca de 50 botellas,
+la unidad de observación es una corrida, y la variable respuesta es la desviación
+absoluta promedio en cada corrida de producción de botellas. Las mediciones se
+hacen en milímetros.
+El ingeniero decide correr dos réplicas de un diseño factorial con estos tres factores,
+por lo que realiza dos corridas de producción con cada conjunto de condiciones,
+haciendo las 24 corridas en un orden aleatorio.
+
+#1. Preparación:
+##(a) Lectura:
+```{r}
+load("Bases/refrescos.Rdata")
+str(base)
+
+```
+
+##(b) Promedios de todos los tratamientos:
+```{r}
+(m.cpr=tapply(base$desvabs, list(base$carbonatacion,base$presion,base$rapidez),mean))
+
+```
+
+##(c) Tratamiento que parece acercarse más al objetivo de la producción: El tratamiento que produce la menor desviación (0,5 mm) es con 10% de carbonatación, presión de 30 psi y rapidez de 200 bpm.
+
+#2. Interacciones dobles:
+##(a) Interacción entre pares de variables:
+```{r}
+library(ggplot2)
+ggplot(base, aes(x=carbonatacion, y=desvabs, group = presion)) +
+stat_summary(fun.y="mean", geom="line", aes(linetype = presion))
+
+```
+Parece no haber interacción entre carbonatación y presión, ya que para todos los
+niveles de carbonatación se aprecia un efecto de la presión, se nota un aumento
+de la media de la desviación cuando se usa mayor presión (Figura 4.2 superior
+izquierda). De forma similar, parece que no hay interacción entre carbonatación
+y rapidez, se observa una mayor media de la desviación para mayor rapidez, en
+todos los niveles de carbonatación (Figura 4.2 superior derecha). Entre presión
+y rapidez puede sospecharse de presencia de interacción (Figura 4.2 inferior),
+cuando la presión es baja el efecto de la rapidez es pequeño y cuando la presión
+es alta ese efecto se hace un poco más fuerte, siempre tendiendo a que a mayor
+rapidez hay mayor desviación promedio en el llenado (Figura 4.2 inferior).
+
+##(b) Promedios cruzando solo dos factores a la vez:
+```{r}
+(m.cp = tapply(base$desvabs, list(base$carbonatacion,base$presion),mean))
+(m.cr = tapply(base$desvabs, list(base$carbonatacion,base$rapidez),mean))
+(m.pr = tapply(base$desvabs, list(base$presion,base$rapidez),mean))
+
+```
+
+##(c) Promedios marginales:
+```{r}
+(m.c = tapply(base$desvabs,base$carbonatacion,mean))
+(m.p = tapply(base$desvabs,base$presion,mean))
+(m.r = tapply(base$desvabs,base$rapidez,mean))
+
+```
+
+##(d) Efectos simples:
+```{r}
+m = mean(base$desvabs)
+(ef.c= m.c-m)
+(ef.p= m.p-m)
+(ef.r= m.r-m)
+
+```
+##(e) Efectos de las interacciones entre pares de factores:
+```{r}
+int.cp = m.cp[1,1]-(m+ef.c[1]+ef.p[1])
+int.pr = m.pr[1,1]-(m+ef.p[1]+ef.r[1])
+int.cr = m.cr[1,1]-(m+ef.c[1]+ef.r[1])
+c(int.cp,int.pr,int.cr)
+
+```
+
+
+##(f) Efectos usando un modelo con interacciones dobles:
+
+```{r}
+mod1=aov(desvabs~carbonatacion*presion+carbonatacion*rapidez+presion*rapidez,data=base)
+model.tables(mod1)
+```
+
+#3. Interacción triple:
+##(a) Visualización de interacción triple:
+```{r}
+library(lattice)
+xyplot(desvabs~carbonatacion|rapidez,group=presion,type="a",data=base)
+```
+##(b) Comparación de interacciones dobles:
+En la Figura 4.3 se observa que la interacción entre carbonatación y presión es
+similar en ambas partes, puesto que, tanto en la parte que corresponde a rapidez
+200 como en la que corresponde a rapidez 250, parece no haber interacción entre
+carbonatación y presión. Por lo tanto, no parece haber evidencia de interacción
+triple.
+
+##(c) Modelos:
+Modelo con interacción triple:
+µCITijk = µ+αi +βj +γk + (αβ)i j + (αγ)ik + (βγ)jk + (αβγ)i jk
+
+Modelo sin interacción triple:
+µSITijk = µ+αi +βj +γk + (αβ)i j + (αγ)ik + (βγ)jk
+
+El subíndice i indica el nivel de carbonatación (i=1 para 10%, i=2 para 12%, i=3
+para 14%), j indica el nivel de presión (j=1 para 25psi, j=2 para 30psi) y k indica
+el nivel de rapidez (k=1 para 200bpi, k=2 para 250pbi).
+
+
+##(d) Derivación de estimación de los efectos dentro de la interacción triple:
+Puesto que la estimación de las medias bajo el modelo con interacción triple
+son los promedios observados, se tiene que: µCI^T_ijk = y¯_ijk, cada efecto dentro de la
+interacción triple se calcula como la diferencia entre los dos modelos, entonces:
+
+(αβγ)ijk=ybarra_ijk−(µˆ+αˆi + ˆβj +γˆk + (αβ)ˆij + (αγ)ˆik + (βγ)ˆjk)
+
+##(e) Cálculo de los efectos dentro de la interacción triple:
+```{r}
+(int.cpr=m.cpr[1,1,1]-(m+ef.c[1]+ef.p[1]+ef.r[1]+int.cp+int.cr+int.pr))
+```
+##(f) Suma de cuadrados de interacción triple:
+```{r}
+mod2=aov(desvabs~carbonatacion*presion*rapidez,data=base)
+model.tables(mod2)
+
+```
+```{r}
+int.triple=model.tables(mod2)$tables$"carbonatacion:presion:rapidez"
+(sctriple=sum(2*int.triple^2))
+```
+
+
+##(g) Grados de libertad:
+```{r}
+(gl=(3-1)*(2-1)*(2-1))
+
+```
+##(h) Cuadrado medio:
+```{r}
+(cmtriple=sctriple/gl)
+```
+Este es el cuadrado medio de interacción triple el cual mide la magnitud de los
+efectos de interacción triple. Si esta cantidad resulta ser muy grande en relación
+al CMRes, significa que hay una alta variabilidad en los efectos de interacción
+triple. Como estos efectos tienen media cero, entonces tener alta variabilidad es
+equivalente a tener efectos relativamente altos en valor absoluto.
+
+##(i) Análisis de variancia:
+```{r}
+anova(mod2)
+
+```
+
+##(j) Prueba de la hipótesis de no interacción triple:
+```{r}
+cmres=anova(mod2)[8,3]
+(f=cmtriple/cmres)
+```
+
+El valor F da 1, con lo que se pone de manifiesto lo pequeño que es el CMTriple.
+Asociado a esto se tiene un probabilidad muy alta (p = 0,40), con lo cual no
+se recomienda rechazar la hipótesis nula y, por lo tanto, se asume que no existe
+interacción conjunta entre los tres factores. Al no haber interacción triple se tiene
+que la interacción que existe entre carbonatación y presión no depende del nivel
+de rapidez que se tome. De la misma forma sucede con las otras interacciones.
+
+#4. Análisis sin interacción triple:
+
+##(a) Prueba de hipótesis de independencia entre pares de factores:
+Se puede continuar el análisis con el mod1 que no tenía interacción triple, sin
+embargo se va a estimar de nuevo usando el modelo de suma nula.
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod3=lm(desvabs~carbonatacion*presion+presion*rapidez+carbonatacion*rapidez,data=base)
+drop1(mod3,test="F")
+
+```
+La probabilidad asociada a la interacción entre carbonatación y rapidez es
+mayor a 0,05 y esta probabilidad es mayor que la de la interacción entre
+carbonatación y presión, que también es mayor a 0,05, por lo que se elimina
+esta interacción y se corre un nuevo modelo sin ella.
+
+```{r}
+mod4=lm(desvabs~carbonatacion*presion+presion*rapidez,data=base)
+mod4$coef
+drop1(mod4,test="F")
+
+```
+La probabilidad asociada a la interacción entre carbonatación y presión sigue
+siendo mayor a 0,05, por lo que se elimina esta interacción y se corre un nuevo
+modelo sin ella y con solo la interacción entre presión y rapidez. Note que esta
+probabilidad es un poco diferente a la que se obtuvo en el modelo anterior
+(mod3), ya que era 0.092 y ahora es 0.077. Esto se debe a que ahora el cuadrado
+medio residual ha cambiado un poco y la prueba F se construye al dividir el
+cuadrado medio de la interacción contra un nuevo cuadrado medio residual,
+y cambian también los grados de libertad residuales. La diferencia no debería
+ser muy grande, pero en algunos casos estos cambios provocan sorpresas, y un
+término que parecía significativo, podría resultar no serlo después de eliminar
+otros términos. Esta es la importancia de hacer la eliminación de términos de
+forma secuencial.
+
+```{r}
+mod5=lm(desvabs~carbonatacion+presion*rapidez,data=base)
+drop1(mod5,test="F")
+
+```
+Este último modelo solo tiene una interacción (entre presión y rapidez), la cual
+tiene una probabilidad asociada menor a 0,05, lo cual indica que si se elimina esa
+interacción, la suma de cuadrados residual aumentaría de forma significativa.
+En otras palabras, no todos los términos de interacción entre esos dos factores
+son cero y se debe analizar la interacción entre ellos.
+
+##(b) Modelo simplificado:
+
+```{r}
+contrasts(base$carbonatacion)
+contrasts(base$presion)
+contrasts(base$rapidez)
+(b=mod5$coef)
+
+
+```
+La media general es 4.13. El término carbonatacion1 se refiere al nivel 10 y su
+coeficiente es -2.50, lo que significa que la media marginal de carbonatación 10
+está 2.50 unidades debajo de la media general, entonces la media marginal de
+carbonatación 10 es 4.13-2.50=1.63. Por otro lado, carbonatacion2 corresponde
+al nivel 12, lo que indica que la media marginal de carbonatación 12 está 0.88
+unidades debajo de la media general (4.13-0.88=3.25). El coeficiente para el nivel
+14 debe obtenerse con el negativo de la suma de los otros 2 (2.50+0.88=3.38),
+entonces con carbonatación 14 la media marginal está 3.38 unidades sobre la
+media general (4.13+3.38=7.51).
+Similarmente, presion1 corresponde al nivel 25 y su coeficiente es -0.79, la media
+marginal es 4.13-0.79=3.34, mientras que la media marginal para una presión de
+30 es 4.13+0.79=4.92. Finalmente, rapidez1 corresponde al nivel 200 y su media
+marginal es 4.13-1.04=3.09, mientras que la media marginal para la rapidez de
+250 es 4.13+1.04=5.17.
+
+##(c) Comparación de estimaciones con las medias observadas:
+```{r}
+m.c
+```
+Se obtienen los mismos resultados.
+
+##(d) Contrastes:
+Los vectores de coeficientes para las medias de los niveles de carbonatación son
+los siguientes:
+Carbonatación 10: [1,1,0,0,0,0]T
+Carbonatación 12: [1,0,1,0,0,0]T
+Carbonatación 14: [1,−1,−1,0,0,0]T
+
+##(e) Estimaciones de las medias usando los contrastes:
+```{r}
+c10=c(1, 1, 0, 0,0,0)
+c12=c(1, 0, 1, 0,0,0)
+c14=c(1, -1, -1, 0,0,0)
+h=cbind(c10,c12,c14)
+(M.c = t(h)%*%b)
+
+```
+Se obtienen los mismos resultados.
+
+##(f) Comparación de promedios de carbonatación:
+```{r}
+c12.10=c12-c10
+c14.10=c14-c10
+c14.12=c14-c12
+h=cbind(c12.10,c14.10,c14.12)
+(L=t(h)%*%b)
+
+```
+##(g) Hipótesis y ortogonalidad:
+Los contrastes para comparar las medias marginales de carbonatación son:
+µ2∗∗ −µ1∗∗
+µ3∗∗ −µ1∗∗
+µ3∗∗ −µ2∗∗
+
+Tomando el vector de promedios
+(µ1∗∗,µ2∗∗,µ3∗∗)
+
+Los vectores para obtener los contrastes son:
+(−1,1,0)
+(−1,0,1)
+(0,1,−1)
+
+```{r}
+v1 = c(-1,1, 0)
+v2 = c(-1,0, 1)
+v3 = c( 0,1,-1)
+c(v1%*%v2, v1%*%v3, v2%*%v3)
+
+```
+
+Estos 3 vectores no son ortogonales, por lo que hay que hacer corrección.
+
+##(h) Pruebas de hipótesis de los contrastes:
+Puesto que se realizan 3 contrastes no ortogonales y se comparan todos los
+promedios marginales entre sí por pares, debe utilizarse Tukey.
+```{r}
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+(p=ptukey(t*sqrt(2),3,18,lower.tail = F))
+
+```
+
+Las probabilidades obtenidas deben compararse contra α = 0,05. Se encontraron
+diferencias entre todos los pares de promedios. Se ha observado que el nivel
+de carbonatación 10% presenta la media muestral más baja, por lo que se
+concluye que este nivel es el que baja más la desviación promedio de llenado y se
+considera que ese nivel es el más apropiado, independientemente del nivel que
+se escoja para los otros factores. Aún debe cuantificarse la diferencia esperada
+entre el promedio al nivel 10% y los otros dos niveles, con el fin de valorar si
+esta diferencia se puede considerar relevante al compararse con una diferencia
+previamente definida por el investigador.
+
+##(i) Verificación de los errores estándar.
+```{r}
+table(base$carbonatacion)
+r=8
+CMRes=anova(mod5)[5,3]
+sqrt(2*CMRes/r)
+ee
+```
+##(j) Comparación de promedios de presión para cada nivel de rapidez:
+Los contrastes para comparar las medias presión para cada nivel de rapidez son:
+µ∗21 −µ∗11
+µ∗22 −µ∗12
+
+Tomando el vector de promedios
+(µ∗11,µ∗21,µ∗12,µ∗22)
+
+Los vectores para obtener los contrastes son:
+(−1,1,0,0)
+(0,0,−1,1)
+
+```{r}
+v1 = c(-1,1, 0,0)
+v2 = c( 0,0,-1,1)
+v1%*%v2
+```
+
+Estos 2 vectores son ortogonales, por lo que no hay que hacer corrección.
+
+
+```{r}
+p25.r200=c(1,0,0,1,1,1)
+p30.r200=c(1,0,0,-1,1,-1)
+p25.r250=c(1,0,0,1,-1,-1)
+p30.r250=c(1,0,0,-1,-1,1)
+p30.25.r200=p30.r200-p25.r200
+p30.25.r250=p30.r250-p25.r250
+h=cbind(p30.25.r200,p30.25.r250)
+
+```
+```{r}
+(L=t(h)%*%b)
+```
+```{r}
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+(p=pt(t,18,lower.tail = F))
+```
+Puesto que se realizan 2 contrastes ortogonales, las probabilidades obtenidas
+deben compararse contra α = 0,05. Se encontraron diferencias entre los
+promedios de los dos niveles de presión solo cuando la rapidez es 250 bpm.
+Se ha observado que el nivel de presión 25 psi presenta la media muestral más
+baja cuando se tiene una rapidez de 250 bpm, por lo que si se escoge ese nivel
+de rapidez, vale la pena también escoger el nivel de presión de 25 psi, pero si
+se escoge el nivel de 200 bpm, no importa cuál de los dos niveles de presión se
+escoja.
+
+##(k) Comparación de promedios de rapidez para cada nivel de presión:
+Los contrastes para comparar las medias presión para cada nivel de rapidez son:
+µ∗12 −µ∗11
+µ∗22 −µ∗21
+
+Tomando el vector de promedios
+(µ∗11,µ∗21,µ∗12,µ∗22)
+
+Los vectores para obtener los contrastes son:
+(−1,0,1,0)
+(0,−1,0,1)
+
+```{r}
+v1 = c(-1, 0,1,0)
+v2 = c( 0,-1,0,1)
+v1%*%v2
+
+```
+Estos 2 vectores son ortogonales, por lo que no hay que hacer corrección.
+
+```{r}
+r250.200.p25=p25.r250-p25.r200
+r250.200.p30=p30.r250-p30.r200
+h=cbind(r250.200.p25,r250.200.p30)
+(L=t(h)%*%b)
+
+```
+
+```{r}
+mod5$coefficients
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+(p=pt(t,18,lower.tail = F))
+h
+```
+
+Se encontraron diferencias entre los promedios de los dos niveles de rapidez,
+tanto para presión de 25 psi como 30 psi. Se ha observado que el nivel de
+rapidez 200 bpm presenta la media muestral más baja en ambas presiones, por
+lo que se prefiere este nivel de rapidez. Anteriormente se había dicho que si se
+escogía 200 bpm no importaba mucho el nivel de presión, por lo que al final,
+la recomendación es usar 10% de carbonatación, 200 bpm y cualquiera de los
+niveles de presión.
+
+#Burbujas
+Tres investigadoras quieren analizar el efecto que tienen las diferentes proporciones
+de glicerina y tipo de agua utilizados en la mezcla para la confección de burbujas,
+sobre el tiempo promedio de resistencia de las mismas. Se obtiene una mezcla simple
+y posteriormente se ajusta al propósito de la investigación. En la mezcla se van
+variando el tipo de agua (destilada, grifo, añejada) y la cantidad de glicerina (60ml,
+120ml). A partir de estos factores se obtienen 6 tratamientos.
+El experimento se realiza con 6 personas que funcionan como bloques, cada una
+de las cuales hace 5 burbujas con cada tratamiento, para un total de 30 burbujas
+por persona. El orden en que cada persona tiene que utilizar un tipo de mezcla se
+aleatoriza de la siguiente manera: por cada persona se aleatorizan los 6 tratamientos
+con repeticiones hasta completar 5 burbujas por tratamiento.
+La variable respuesta es el tiempo promedio de resistencia de las burbujas (en
+minutos) de cada tratamiento para cada persona, lo cual da un total de 36 valores
+de la respuesta. Aunque cada persona (bloque) hace 30 burbujas, solo se tienen
+6 valores de la respuesta por persona, uno para cada tratamiento. En este caso el
+promedio de las 5 burbujas es una mejor medida de la resistencia que se obtiene en
+un tratamiento en un persona específica, ya que puede haber muchísima variación
+entre esa resistencia de una burbuja a otra aún cuando sean hechas por la misma
+persona y con el mismo tratamiento.
+
+5.2.2 Solución
+#1. Preparación:
+#(a) Cargue el archivo burbujas.Rdata que contiene tres bases de datos: 1)
+base1 que contiene los datos solamente con el factor glicerina, 2) base2
+que contiene solamente el factor agua, y 3) base en donde se tienen ambos.
+```{r}
+load("Bases/burbujas.Rdata")
+```
+
+##(b) Revisión de definición de factores:
+```{r}
+str(base1)
+base1$bloque=factor(base1$bloque)
+base1$glicerina=factor(base1$glicerina)
+str(base2)
+
+```
+
+```{r}
+base2$bloque=factor(base2$bloque)
+str(base)
+```
+
+```{r}
+base$bloque=factor(base$bloque)
+base$glicerina=factor(base$glicerina)
+```
+
+#2. Visualización de datos con glicerina:
+##(a) Gráfico de líneas:
+Realice la visualización usando base1. Haga un gráfico de líneas para ver el
+comportamiento de los tratamientos dentro de cada persona. Use ggplot2
+con la persona en el eje X y poniendo group=glicerina para que haga una
+línea para cada tratamiento.
+```{r}
+library(ggplot2)#bloque es la persona osease el bloque
+ggplot(base1, aes(x=bloque, y=tiempo, group = glicerina)) +
+stat_summary(fun="mean", geom="line", aes(linetype = glicerina))+
+labs(x = "persona")
+```
+
+##(b) Comparación por niveles de glicerina:
+El tiempo tiende a ser mayor cuando el nivel de glicerina es 120 (Figura 5.3).
+##(c) Tendencia según personas:
+Las personas 1, 4 y 6 tienden a tener tiempos más bajos, mientras que la
+persona 5 tiende a tener tiempos más altos. Se quiere eliminar del análisis estas
+diferencias en los tiempos de las personas, para que la comparación se centre en
+las diferencias entre los niveles de glicerina.
+##(d) Interacción entre glicerina y persona:
+En algunas personas hay poca diferencia en los tiempos obtenidos para los dos
+niveles de glicerina (personas 1, 4, 5 y 6), mientras que para la persona 3, la
+diferencia es muy grande. Esto se puede ver como una indicación de alguna
+interacción entre glicerina y persona.
+##(e) Hipótesis de no interacción:
+Cuando hay solo una observación por tratamiento para cada bloque, no se
+puede verificar la hipótesis de no interacción porque no se tienen grados de
+libertad para los residuales. En ese caso se dice que el efecto de interacción
+se confunde con el residual y se toma la variancia residual asumiendo que la
+variancia de interacción es nula, principalmente porque esta variancia residual
+es fundamental para hacer la verificación de otras pruebas.
+
+##(f) Datos centrados por persona:
+```{r}
+mod1=lm(tiempo~bloque,data=base1)
+pre=predict(mod1)
+t1=base1$tiempo-pre+mean(base1$tiempo)
+```
+
+##(g) Comparación de gráficos:
+```{r}
+par(mfrow=c(1,2))
+boxplot(tiempo~glicerina,ylim=c(3,17),xlab="glicerina",ylab="tiempo",data=base1)
+boxplot(t1~glicerina,ylim=c(3,17),xlab="glicerina",
+ylab="tiempo centrado",data=base1)
+```
+
+##(h) Análsis sobre variabilidad en los gráficos:
+En el gráfico con los datos originales (Figura 5.4 izquierda) se observa una
+mayor variabilidad en el nivel 120 de glicerina, la cual se debe principalmente a
+las diferencias entre bloques, es decir, las diferencias entre personas. Al eliminar
+esas diferencias se observa en el gráfico de la derecha que la variabilidad se ha
+reducido. Ahora la variabilidad es más parecida en los dos tratamientos por lo
+que se podría pensar que la homocedasticidad sí se cumple.
+#3. Variancia residual:
+#(a) Estimación de modelos con datos originales y centrados:
+```{r}
+mod2=lm(tiempo~glicerina+bloque,data=base1)
+mod3=lm(t1~glicerina,data=base1)
+```
+
+##(b) Comparación de resultados:
+```{r}
+anova(mod2)
+anova(mod3)
+sct2=sum(anova(mod2)[,2])
+sct3=sum(anova(mod3)[,2])
+c(sct2,sct3)
+```
+
+```{r}
+
+scres2=anova(mod2)[3,2]
+scres3=anova(mod3)[2,2]
+c(scres2,scres3)
+```
+
+La SCTot es diferente porque la respuesta cambió. Cuando se centran los datos
+se está reduciendo la variabilidad total por lo que se tiene una menor SCTot. La
+SCTot original incluye la varibilidad debida a las personas (bloques) mientras
+que la SCTot en el caso de datos centrados ya no tiene esa variabilidad. Sin
+embargo, se mantiene la SCRes. Entonces los dos modelos dan un mismo valor
+de la SCRes pero con diferentes grados de libertad. En el caso de los datos
+centrados se olvida que el modelo incluyó los bloques por lo que estaría dando
+más grados de libertad a los residuales de los que realmente tienen.
+##(c)¿Cuál es la forma correcta de obtener la variancia residual?  Variancia residual correcta:
+Aunque los dos modelos dan la misma SCRes, el modelo con los datos centrados
+no toma en cuenta los grados de libertad que se deben atribuir a los bloques en
+el diseño, por lo tanto, la estimación correcta es la que da el modelo donde se
+incluyeron los bloques con la variable original.
+
+##(d) Estimación de la variancia del error.
+```{r}
+anova(mod2)[3,3]
+```
+La estimación correcta de la variancia del error es el CMRes del modelo que
+incluye el bloque con la respuesta original, la cual es 12,49.
+##(e) ¿Qué representa esta variancia?
+Este valor es una medida de la variabilidad de la respuesta dentro de cada
+tratamiento una vez que se ha eliminado el efecto del bloque.
+#4. Homocedasticidad:
+##(a) Verificación del supuesto de homocedasticidad:
+```{r}
+bartlett.test(mod2$res~base1$glicerina)
+```
+No se rechaza la hipótesis de homocedasticidad.
+#5. Conclusión:
+El interés es ver si el nivel de glicerina tiene un efecto sobre la resistencia
+promedio de las burbujas. Puesto que la probabilidad asociada a glicerina
+(ver anova del mod2) es alta (0,23), no se rechaza la hipótesis de igualdad de
+medias entre los dos niveles de glicerina. Se concluye que no se ha encontrado
+un efecto del nivel de glicerina sobre la resistencia promedio de las burbujas.
+Debe analizarse si este experimento tiene la suficiente potencia para detectar
+diferencias cuando en realidad existen diferencias.
+
+#6. Análisis con tipos de agua:
+##(a) Visualización: Realice la visualización usando los datos con tres tipos de agua (base2)
+```{r}
+#Recordar
+#bloque es persona ; el tiempo la respuesta ; agua es un factor (destilada,grifo,añejada)
+ggplot(base2, aes(x=bloque, y=tiempo, group = agua)) +
+stat_summary(fun="mean", geom="line", aes(linetype = agua))+labs(x = "persona")
+```
+En la Figura 5.5 se observa que el tiempo promedio tiende a ser mayor con agua
+añejada (a) especialmente que con el agua destilada (d), aunque no es tan claro
+que sea diferente del agua del grifo (n).
+
+```{r}
+mod4=lm(tiempo~bloque,data=base2)
+pre=predict(mod4)
+t2=base2$tiempo-pre+mean(base2$tiempo)
+boxplot(tiempo~agua,ylim=c(0,35),ylab="tiempo",data=base2)
+boxplot(t2~agua,ylim=c(0,35),ylab="tiempo centrado",data=base2)
+```
+Al centrar los datos se observa un promedio de tiempo mucho mayor para los
+datos con agua añejada que con agua destilada (Figura 5.6). Para el tratamiento
+con agua del grifo se observa un comportamiento intermedio.
+
+#(b) Verificación de la homocedasticidad:
+```{r}
+mod5=lm(tiempo~agua+bloque,data=base2)
+bartlett.test(mod5$res~base2$agua)
+```
+No se rechaza la hipótesis de homocedasticidad.
+
+##(c) Hipótesis sobre el efecto del tipo de agua:
+```{r}
+anova(mod5)
+```
+Se rechaza la hipótesis de igualdad de promedios para los tres tipos de agua,
+con lo cual se concluye que sí existe una efecto del tipo de agua sobre el tiempo
+promedio.
+
+##(d) Comparaciones entre los promedios de tiempo para los tres tipos de agua:
+Puesto que interesa ver cuál de los tres tipos de agua produce una resistencia
+mayor, conviene usar comparaciones múltiples con Tukey.
+```{r}
+table(base2$agua)
+(m=tapply(base2$tiempo,base2$agua,mean))
+```
+
+```{r}
+a.d=m[1]-m[2]
+a.n=m[1]-m[3]
+n.d=m[3]-m[2]
+d=c(a.d,a.n,n.d)
+cmres=anova(mod5)[3,3]
+ee=sqrt(2*cmres/6)
+q=d/ee
+p=ptukey(q*sqrt(2),3,10,lower.tail = F); names(p)=c("a-d","a-n","n-d"); p
+#gl(3,10)=gl(k,res)
+```
+        a-d         a-n         n-d 
+0.007220039 0.149694640 0.195679557 
+
+Se ha encontrado que el promedio del tiempo con agua añejada es mayor que
+el de agua destilada pero el promedio con agua del grifo no se diferencia de
+ninguno de los otros dos. Finalmente se va a cuantificar la diferencia que se
+puede encontrar entre los promedios donde se encontraron diferencias.
+```{r}
+t=qt(0.95,10) #gl residuales
+(lim=d[1]-t*ee[1])
+```
+
+Con 95% de confianza se puede esperar que el tiempo promedio cuando se
+hacen las burbujas con agua añejada sea al menos 5,11 minutos mayor que con
+agua destilada.
+
+#7. Análisis con ambos factores:
+
+#(a) Visualización:
+```{r}
+mod6=lm(tiempo~bloque,data=base)
+t3=base$tiempo-predict(mod6)+mean(base$tiempo)
+boxplot(t3~glicerina+agua,xlab="glicerina-agua",ylab="tiempo centrado",
+cex.lab=1.5,data=base)
+```
+
+```{r}
+boxplot(t3~agua+glicerina,xlab="agua-glicerina",ylab="tiempo centrado",
+cex.lab=1.5,data=base)
+```
+
+En la figura 5.7 destaca que el promedio de tiempo parece ser mayor cuando
+el nivel de glicerina es 120, mientras que en la figura 5.8 se observa que el
+promedio de tiempo parece ser mayor cuando el agua es añejada.
+#(b) Interacción entre glicerina y agua:
+```{r}
+ggplot(base, aes(x=agua, y=tiempo, group = glicerina)) +
+stat_summary(fun.y="mean", geom="line", aes(linetype = glicerina))
+```
+Parece haber interacción entre glicerina y agua ya que cuando se tiene agua
+destilada la diferencia entre los promedios para los dos niveles de glicerina es
+un poco menor que en los otros dos casos, sin embargo, puede ser que haya
+mucha variabilidad en el error y esa interacción no sea tan clara (Figura 5.9).
+```{r}
+mod7=lm(tiempo~glicerina*agua+bloque,data=base)
+anova(mod7)
+```
+Al hacer la prueba formal de la hipótesis de no interacción entre glicerina y
+agua se obtiene una probabilidad de error tipo I (0,13) más alta que el nivel de
+significancia de 0,05, por lo que no se puede afirmar que haya interacción. En
+adelante se puede asumir que estos dos factores no tienen interacción entre sí.
+##(c) Efecto de la glicerina:
+```{r}
+mod8=lm(tiempo~glicerina+agua+bloque,data=base)
+anova(mod8)
+```
+
+La probabilidad asociada al factor glicerina es pequeña (p < 0,001), por lo que
+se rechaza la hipótesis de igualdad de las medias según niveles de glicerina.
+
+#(d) Inferencia con 95% de confianza:
+```{r}
+table(base$glicerina)
+```
+
+```{r}
+(m=tapply(base$tiempo,base$glicerina,mean))
+
+```
+
+```{r}
+d=m[2]-m[1]
+cmres=anova(mod8)[4,3]
+ee=sqrt(2*cmres/18)
+t=qt(0.95,27)
+(lim=d-t*ee)
+
+```
+En este caso se observa que con mayor cantidad de glicerina se obtiene un
+tiempo promedio mayor de las burbujas. Con 95% de confianza se espera que
+el tiempo promedio de las burbujas sea al menos 4,33 minutos mayor cuando
+se usa un nivel de glicerina de 120 ml con respecto a cuando se usa 60 ml, esto
+independientemente del tipo de agua que se utilice.
+##(e) Efecto del tipo de agua:
+La probabilidad asociada al factor agua es pequeña (p = 0,003) por lo que se
+rechaza la hipótesis de igualdad de las medias según tipo de agua.
+##(f) Verificación de diferencias según tipo de agua:
+```{r}
+table(base$agua)
+```
+
+```{r}
+(m=tapply(base$tiempo,base$agua,mean))
+```
+
+```{r}
+a.d=m[1]-m[2]
+a.n=m[1]-m[3]
+n.d=m[3]-m[2]
+d=c(a.d,a.n,n.d)
+ee=sqrt(2*cmres/12)
+q=d/ee
+p=ptukey(q*sqrt(2),3,27,lower.tail = F); names(p)=c("a-d","a-n","n-d"); p
+```
+
+```{r}
+t=qt(0.95,27)
+lim=d[1:2]-t*ee
+names(lim)=names(p)[1:2]
+lim
+```
+
+Se concluye, con un nivel de signficancia de 0,05, que el promedio de tiempo con
+agua añejada es mayor que el promedio con cualquiera de los otros dos tipos de
+agua. Además se espera con 95% de confianza, que el promedio de tiempo con
+agua añejada sea al menos 3,5 minutos más que con agua destilada y al menos
+3,05 minutos más que con agua del grifo, esto independientemente del nivel de
+glicerina que se use. Por lo tanto, se tendrá una mayor resistencia promedio con
+agua añejada que sobrepasa los 3 minutos en promedio el tiempo que se obtiene
+con los otros tipos de agua. Además, usar 120 ml sobrepasa en promedio en más
+de 4 minutos que si se usa un nivel de glicerina de 60 ml.
+
+#Maderas
+Se prueban siete concentraciones de madera dura para determinar su efecto sobre la
+resistencia del papel producido. Se define que las pruebas deben hacerse en 7 días
+diferentes porque las condiciones del proceso industrial cambian de un día a otro.
+Cada uno de los días constituye un bloque. En cada día solamente se pueden probar
+tres concentraciones, lo cual indica que los bloques no son completos
+#1. Preparación:
+##(a) Lectura:
+```{r}
+base=read.csv("Bases/maderas.csv")
+```
+
+##(b) Revisión de definición de factores:
+```{r}
+str(base)
+base$dia=factor(base$dia)
+base$conc=factor(base$conc)
+```
+
+#2. Visualización de datos:
+##(a) Datos originales y centrados:
+```{r}
+mod1=lm(res~dia,data=base)
+res1=base$res-predict(mod1)+mean(base$res) #variable centrada
+boxplot(res~conc,xlab="concentracíon",ylab="resistencia",ylim=c(110,150),data=base)
+boxplot(res1~conc,xlab="concentracíon",ylab="resistencia centrada",
+ylim=c(110,150),data=base)
+```
+
+#3. Sumas de cuadrados:
+##(a) Suma de cuadrados total (SCTot):
+```{r}
+mod2=lm(res~conc+dia,data=base)
+sum(anova(mod2)[,2]) #esta es la suma de toda la columa Sum sq del anova
+```
+
+```{r}
+n=nrow(base);n #total de dias o bloques = 3*7
+(sctot=(n-1)*var(base$res)) #esta es la formula a pie para obtener la SCtotal = 2600.286
+```
+
+##(b) Suma de cuadrados residual (SCRes):
+```{r}
+(scres=anova(mod2)[3,2]) #168.5714
+```
+
+##(c) Suma de cuadrados de bloque (SCB):
+```{r}
+table(base$dia) #me dice cuantos trats se aplicaron por dia en este caso fueron 3 por cada dia de los 7 dias, p=3
+```
+
+```{r}
+p=3 
+m.b=tapply(base$res,base$dia,mean) #mu de la respuesta segun dia
+mgen=mean(base$res) #media general 
+(scb=sum(p*(m.b-mgen)^2)) #formula a pie para obtener la SCbloque 1114.286
+```
+
+
+#4. Ajuste de las sumas de cuadrados:
+
+##(a) Totales de tratamiento ajustados:
+```{r}
+yi.=tapply(base$res,base$conc,sum)
+y.j=tapply(base$res,base$dia,sum)
+nij=table(base$conc,base$dia)
+(Qi=yi.-as.vector(nij%*%y.j/3))
+```
+
+##(b) Suma de cuadrados de tratamiento ajustada:
+```{r}
+a=7; p=3; r=3 #r=replicas #a=numero de tratamientos
+lambda=r*(p-1)/(a-1)
+(sctrat=p*sum(Qi^2)/(lambda*a)) #Qi son los ajustados La SCTrat.aj es 1317.43.
+```
+La SCTrat.aj es 1317.43.
+
+##(c) Suma de cuadrados residual:
+```{r}
+scres2=sctot-scb-sctrat;scres2 #168.5714
+```
+#5. Prueba de hipótesis de igualdad de medias:
+##(a) Conclusión:
+```{r}
+#bloques=7 ; n=21 ; a=7 trats 
+cmtrat=sctrat/(a-1) #a es el numero de trats
+cmres=scres2/8 #8 grados de libertad residuales ;n-a-b+1=21-7-7+1=8
+(f=cmtrat/cmres) #obteniendo el f correspondiente
+```
+
+```{r}
+pf(f,6,8,lower.tail = F) #probabilidad asociada al f obtenido
+#6=a-1 =num
+#8=n-a-b+1 =den0
+```
+Se rechaza la hipótesis de igualdad de medias puesto que la probabilidad
+asociada de error tipo I es pequeña (p = 0,002). Se concluye que la concentración
+tiene un efecto sobre la resistencia promedio.
+
+
+##(b) Forma automática:
+```{r}
+mod3=lm(res~dia+conc,data=base)
+anova(mod3)
+```
+Se obtiene la misma probabilidad asociada a la prueba de igualdad de medias
+de resistencia para las diferentes concentraciones.
+
+#6. Análisis adicionales:
+##(a) Coeficientes con suma nula:
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod4=lm(res~dia+conc,data=base)
+mod4$coef
+```
+
+##(b) Estimación de los promedios:
+```{r}
+beta=mod4$coef[c(1,8:13)]
+c1=c(1,1,0,0,0,0,0)
+c2=c(1,0,1,0,0,0,0)
+c3=c(1,0,0,1,0,0,0)
+c4=c(1,0,0,0,1,0,0)
+c5=c(1,0,0,0,0,1,0)
+c6=c(1,0,0,0,0,0,1)
+c7=c(1,-1,-1,-1,-1,-1,-1)
+h=cbind(c1,c2,c3,c4,c5,c6,c7)
+(med.est=t(h)%*%beta)
+```
+
+##(c) Medias observadas:
+```{r}
+med.obs=tapply(base$res,base$conc,mean)
+cbind(med.est,med.obs)
+```
+
+Aunque los valores son parecidos no dan exactamente lo mismo, esto porque
+el modelo hace un ajuste basado en todos los datos aunque los bloques estén
+incompletos.
+
+##(d) Comparaciones múltiples:
+```{r}
+c1=c(1,0,0,0,0,0)
+c2=c(0,1,0,0,0,0)
+c3=c(0,0,1,0,0,0)
+c4=c(0,0,0,1,0,0)
+c5=c(0,0,0,0,1,0)
+c6=c(0,0,0,0,0,1)
+c7=c(-1,-1,-1,-1,-1,-1)
+c21=c2-c1; c31=c3-c1; c41=c4-c1; c51=c5-c1; c61=c6-c1; c71=c7-c1
+c32=c3-c2; c42=c4-c2; c52=c5-c2; c62=c6-c2; c72=c7-c2
+c43=c4-c3; c53=c5-c3; c36=c3-c6; c37=c3-c7;
+c54=c5-c4; c46=c4-c6; c47=c4-c7; c56=c5-c6; c57=c5-c7; c76=c7-c6
+h=cbind(c21,c31,c41,c51,c61,c71,c32,c42,c52,c62,c72,c43,c53,
+c36,c37,c54,c46,c47,c56,c57,c76)
+beta=mod4$coef[8:13]
+(L=t(h)%*%beta)
+```
+
+##(e) Errores estándar:
+```{r}
+v=vcov(mod4)[8:13,8:13]
+(ee=sqrt(diag(t(h)%*%v%*%h)))
+table(base$conc)
+cmres=anova(mod4)[3,3]
+sqrt(2*cmres/3)
+
+```
+El error estándar correcto es 4,25 en lugar de 3,75 que se obtendría usando la
+fórmula clásica.
+
+##(f) Prueba de los contrastes:
+```{r}
+q=L/ee
+(p=ptukey(q*sqrt(2),7,8,lower.tail = F))
+#6=a-1 =num
+#8=n-a-b+1 =den0
+```
+Se encontraron diferencias al comparar las concentraciones 4 y 1, 5 y 1, 4 y 2, 5
+y 2, 5 y 6. Esto lleva a concluir que con concentraciones 8 y 10 se obtiene una
+resistencia promedio mayor que con concentraciones 2 y 4. Además es mayor la
+resistencia promedio con concentración 10 que con 12.
+
+#Papel 
+Un fabricante de papel está interesado en tres métodos para preparar la pulpa y cuatro temperaturas de
+cocción de la pulpa. Aunque la temperatura es una variable continua, solo se van a estudiar 4 temperaturas,
+por lo que se toma como un factor fijo.
+El fabricante desea estudiar el efecto del método y de la temperatura sobre la resistencia a la tensión del papel,
+que es el esfuerzo máximo a tensión obtenido durante una prueba hasta la ruptura bajo unas condiciones
+prescritas. El esfuerzo es expresado como la fuerza por unidad del ancho de la muestra puesta a prueba,
+medido en kg/cm.
+Cada réplica de un factorial requiere 12 observaciones y el investigador ha decidido correr tres réplicas. El
+experimento se lleva a cabo de la siguiente forma:
+• Produce 3 lotes de pulpa con cada uno de los 3 métodos que está estudiando en un orden aleatorio. En
+total produce 9 lotes de pulpa.
+• Cada vez que produce un lote lo divide en cuatro partes o muestras y realiza la cocción de cada muestra
+con una temperatura diferente asignada aleatoriamente.
+
+#1. Utilice los datos que se encuentran en el archivo papel.Rdata. Asegúrese que están bien definidos los
+factores método y temperatura.
+```{r}
+load("Bases/papel.Rdata")
+str(base)
+```
+
+```{r}
+base$metodo = factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$temp = factor(base$temp)
+base$lote=factor(base$lote)
+str(base)
+
+```
+##• La variable lote indica los lotes de pulpa, y se enumeran de 1 a 9 para diferenciar todos los lotes.
+Ponga juntas las variables metodo y lote para observar la correspondencia de los lotes con los métodos.
+
+```{r}
+base[,c(2,4)]
+
+```
+Los lotes 1, 4 y 6 fueron producidos con el método 1. En la variable lote se denominan 1, 2
+y 3. Los lotes 2, 3 y 8 fueron producidos con el método 2 y también se denominan 1, 2 y 3 en
+la variable lote. Finalmente, los lotes 5, 7, 9 fueron producidos con el método 3 y también se
+denominan 1, 2 y 3 en la variable lote.
+
+##• Haga una representación gráfica de los datos para ver el comportamiento de la respuesta según método
+y temperatura. Analice primero la interacción entre método y temperatura. Use type="a" en la función
+xyplot. En los diseños de parcela divididas se pone más énfasis al factor que está en la subparcela, por
+lo que ese factor debe colocarse en groups, mientras que el factor de parcela se coloca en el eje X.
+
+```{r}
+library(lattice)
+xyplot(res ~ metodo, groups = temp,type="a",auto.key=list(columns=4),
+xlab="método",ylab="resistencia",data=base)
+```
+En el gráfico parece haber interacción entre temperatura y método ya que la distancia en el
+M3 entre los promedios de las temperaturas 200 y 225 son nulas, mientras que con el M1 son
+más diferentes. Sin embargo, esto puede causar dudas, pues en el resto de las comparaciones
+las diferencias se ven muy parecidas en todos los métodos. Más bien podría pensarse que en
+general no hay interacción
+
+##• Basado en lo que ve en el gráfico, se espararía un efecto de la temperatura?
+Los promedios para la temperatura 275 siempre son más altos que para la temperatura 200,
+las distancias son bastante grandes, por lo que sí se podría esperar un efecto. Sin embargo, es
+importante ver la variabilidad que hay en cada tratamiento.
+
+#2. ¿Qué implicaciones tendría una interacción entre método y temperatura?
+Si hubiera interacción entre método y temperatura se esperaría que el efecto que tiene la
+temperatura fuera diferente para cada método.
+
+##• Haga el análisis usando la función lmer de la librería lme4. La parte aleatoria son los bloques que se
+separan con un + del resto del modelo y se pone entre paréntesis (1|bloque). La instrucción completa
+debe quedar de la siguiente forma: lmer(Y~FP*FSP+(1|bloque)).
+
+```{r}
+library(lme4)
+mod1=lmer(res~metodo*temp+ (1|lote),data=base)
+
+```
+#• El anova que da esta librería no tiene las probabilidades asociadas, pero se pueden calcular con los
+valores de F que da el anova, siempre que se sepa cómo calcular los grados de libertad. Los grados
+de libertad para el error de parcela se obtienen sabiendo que los lotes están anidados dentro de cada
+método. Entonces se tienen a(r-1) grados de libertad, donde a es el número de métodos y r el número
+de lotes por cada método. En este caso 3*(3-1)=6. El error de subparcela se calcula con n-p-gl.parcela,
+donde p es el número de coeficientes (1 de intercepto, 2 de métodos, 3 de temperaturas, 6 de interacción,
+son 12 coeficientes), por lo que el error de parcela tiene 36-12-6=18 grados de libertad. La probabilidad
+para la interacción se calcula con el error de subparcela.
+
+```{r}
+anova(mod1)
+
+```
+```{r}
+pf(2.2967,6,18,lower.tail = F)
+```
+
+La probabilidad asociada a esta prueba es mayor que el nivel de significancia (p=0.08), por
+lo que no se rechaza la hipótesis de no interacción. De esta forma se asume que el efecto de la
+temperatura es el mismo para cada método.
+
+#3. Asumiendo que no hay interacción entre metodo y temp, se pueden probar dos hipóteis, una sobre el
+efecto del método usando los grados de libertad de parcela y otra sobre el efecto de la temperatura
+usando los grados de libertad de subparcela.
+
+##• Use un modelo sin interacción y haga la prueba sobre el efecto de la temperatura comparando los
+promedios de forma marginal. Debe ajustar los grados de libertad, pues ahora los 6 grados de libertad
+de la interacción se suman al error de subparcela. De esta forma quedan 24 grados de libertad en la
+subparcela.
+
+```{r}
+mod2=lmer(res~metodo+temp+ (1|lote),data=base)
+anova(mod2)
+```
+
+```{r}
+1-pf(24.6241,3,24)
+```
+Hay efecto de la temperatura.
+
+##• Haga la prueba sobre el efecto del método comparando los promedios de forma marginal. Use los grados
+de libertad de parcela que son 6. Estos grados de libertad no cambian haya o no interacción.
+
+```{r}
+anova(mod2)
+
+```
+```{r}
+1-pf(3.9724,2,6)
+```
+No hay efecto del método.
+
+#4. Puesto que se supone que no hay interacción entre método y temperatura, para hacer comparaciones
+múltiples entre los promedios de las 4 temperaturas, se pueden hacer comparaciones de Tukey.
+##• Compare los promedios y obtenga límites inferiores para los casos en que tenga sentido. Se usan
+solo los coeficientes fijos, los cuales se extraen mediante summary(mod)$coef. Se pueden usar solo los
+coeficientes de temperatura, lo que es equivalente a poner los de método en cero, es decir, para hacer
+las comparaciones marginales. Debe usar los grados de libertad de supbparcela que son 24.
+```{r}
+contrasts(base$temp)
+```
+
+```{r}
+summary(mod2)$coef
+
+```
+
+```{r}
+b=summary(mod2)$coef[4:6,1]
+b
+```
+```{r}
+vcov=vcov(mod2)[4:6,4:6]
+vcov
+```
+
+```{r}
+c200=c(0,0,0)
+c225=c(1,0,0)
+c250=c(0,1,0)
+c275=c(0,0,1)
+c275.200=c275-c200
+c275.225=c275-c225
+c275.250=c275-c250
+c250.200=c250-c200
+c250.225=c250-c225
+c225.200=c225-c200
+cont=cbind(c225.200,c250.200,c275.200,c250.225,c275.225,c275.250)
+L=t(cont)%*%b
+L
+```
+
+```{r}
+ee=sqrt(diag(t(cont)%*%vcov%*%cont))
+ee
+```
+
+```{r}
+q=L/ee
+p=ptukey(q*sqrt(2),4,24,lower.tail = F)
+round(p,5)
+```
+
+```{r}
+q = qt(1-0.05/5,24)
+ic = L[-4]-q*ee[-4]
+names(ic)=names(data.frame(cont))[-4]
+round(ic,2)
+
+```
+
+No se observan diferencias entre las medias de las temperaturas 250 y 225, pero sí las hay
+entre todos los demás pares. Las que más se diferencian son 200 con 275 pues la resistencia
+promedio para 275 es al menos 6.45kg/cm mayor que la de 200.
+
+##• Se pueden obtener las probabilidades de las comparaciones de Tukey usando la función lsmeans de la
+librería lsmeans con la siguiente instrucción lsmeans(mod2, pairwise~"temp", adjust="tukey").
+Note que esto solo es útil para obtener las probabilidades pero no los intervalos o límites de confianza.
+
+```{r}
+library(lsmeans)
+
+```
+
+```{r}
+lsmeans(mod2, pairwise~"temp", adjust="tukey")
+
+```
+
+
+

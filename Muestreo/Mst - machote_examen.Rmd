@@ -1,0 +1,199 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-07"
+---
+
+librerias 
+```{r}
+library(survey)
+library(readxl)
+library(PracTools)
+```
+
+#Sacar un muestra a un marco 
+Sample para seleccionar una muestra - sample(x="datos",size=n,replace=False)
+```{r}
+muestra1=sample(1:nrow(datos),size = n,replace = F)
+muestra2=base[muestra1,]
+```
+
+#Definicion del diseño
+```{r}
+diseno= svydesign(ids=~1,data=datos,fpc=rep(N,n)) 
+
+```
+
+
+#Funciones
+```{r}
+svymean(~base$num_fam,diseno_mia)
+svyvar(~base$num_fam,diseno_mia)
+svytotal(~proporcion$ingresomayora70, diseno)
+svyby(formula = proporcion$ingresomayora70,by=proporcion$Numero.de.miembros.mayor3,design = diseno,FUN = svymean)
+```
+
+
+#intervalo de confianza a pie
+```{r}
+(mu_mie= svymean(~base$num_miembros,diseno_mia))
+(ds_mie= sqrt(svyvar(~base$num_miembros,diseno_mia)))
+(n=length(base$num_miembros))
+alfa=0.05
+
+t=qt(1-alfa/2,n-1)
+
+up=mu_mie+t*(ds_mie/sqrt(n))
+low=mu_mie-t*(ds_mie/sqrt(n))
+cat("El intervalo de confianza del", (1-alfa)*100, "% es [", low, ",", up, "].")
+```
+# IC confint
+```{r}
+confint(datos)
+```
+
+#Diferencia de medias
+```{r}
+(cov(sueno.2$antes,sueno.2$despues))
+
+dif=sueno.2$despues-sueno.2$antes
+(m_dif=svymean(~dif,diseno))
+SE(m_dif)
+confint(m_dif)
+```
+
+#Tamaño de muestra
+p= Prevalencia, probabilidad.
+d= Margen de error conocido d en la estimación de p
+alfa= riesgo α, de que el error real supere a d
+
+datos:
+```{r}
+p=0.20
+d=0.02
+alfa=0.05
+q=1-p
+z=qnorm(1-alfa/2)
+```
+
+##Calculo de 𝑛0.
+```{r}
+n0=(z^2*p*q)/(d^2)
+ceiling(n0)
+```
+
+correccion por finitud?
+```{r}
+n=n0;N=3200
+f= n/N
+f>0.05
+```
+procedimiento
+```{r}
+n=n0/(1+n0/N)
+ceiling(n)
+```
+
+##nProp(cv0,v0,pU,N)
+argumentos
+cv0; coeficiente de variacion; precision deceada 
+v0; varianza deseada; precision deceada
+pU; P poblacional
+N; tamaño poblacional
+
+datos:
+```{r}
+p=0.20
+d=0.02
+alfa=0.05
+q=1-p
+z=qnorm(1-alfa/2)
+```
+
+```{r}
+n0=nProp(V0=(d/z)^2,pU=p)
+ceiling(n0)
+```
+
+correccion por finitud?
+```{r}
+n=n0;N=3200
+f= n/N
+f>0.05
+```
+procedimiento correccion por finitud
+```{r}
+  n=n0/(1+n0/N)
+   ceiling(n)
+```
+
+alfa= significa el riesgo que yo corro de que cuando seleccione la muestra por hacer,
+no cumpla con la precision deseada
+
+##Personas con la característica que se esperan en la muestra
+```{r}
+ceiling(n*p)
+```
+
+##Si se deseara realizar un estudio exclusivamente para las personas que presentan la característica de interés
+
+```{r}
+ceiling(n0/p)
+```
+
+#error relativo
+
+#funcion nCont(cv0 = ,v0= ,s2= ,ybarU = ,N) a pie
+datos
+```{r}
+r=0.10 #error relativo
+alfa=0.05
+ybarra=355773.7
+s2=272046681475
+s=sqrt(s2)
+N=11308
+z=qnorm(1-alfa/2)
+```
+
+n0 y n a pie 
+```{r}
+(n0= ((1.96*s)/(r*ybarra))^2)
+(n=n0/(1+n0/N))
+```
+#funcion nCont(cv0 = ,v0= ,s2= ,ybarU = ,N)
+argumentos
+cv0= precision deseada
+v0=precision deseada 
+s2;ybarra= informacion poblacional que necesito
+N=tamaño de muestra
+```{r}
+(n0=nCont(CV0 = r/z,S2=s2,ybarU = ybarra,N=11308))
+```
+
+#Muestra de árboles a seleccionar
+```{r}
+t=2 #valor de la tstuden
+s2=85.6
+s=sqrt(s2)
+r=0.10
+ybarra=19
+N=3200
+```
+
+```{r}
+a=t*s
+b=r*ybarra
+(n0=(a/b)^2)
+```
+
+```{r}
+f=n0/N
+f>0.05
+
+(n=n0/(1+n0/N))
+```
+
+```{r}
+(n0=nCont(CV0 = r/t,S2=s2,ybarU = ybarra))
+(n=nCont(CV0 = r/t,S2=s2,ybarU = ybarra,N=N))
+```

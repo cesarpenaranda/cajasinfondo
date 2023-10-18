@@ -1,0 +1,329 @@
+# 6.3 Asfalto
+Se hizo un estudio cuyo objetivo era investigar si al implementar antioxidantes
+como aditivos para el mortero asfáltico (agregado + asfalto), se retarda el proceso
+de oxidación. Se utilizan dos variables como indicadores de este proceso: el módulo
+complejo (MegaPascales) y el ángulo de fase (grados). En el estudio se quieren
+comparar 2 antioxidantes (ácido ascórbico y orujo), donde cada uno de ellos se utiliza
+en tres diferentes concentraciones (1, 3 y 5%).
+Además de los factores de diseño, se sabe que los resultados de las variables críticas
+se miden a temperaturas y frecuencias determinadas, las cuales van a impactar estos
+resultados. Estas temperaturas y frecuencias también se obtienen para períodos de
+envejecimiento determinados (4, 8 y 16 años). Adicionalmente se tienen dos fuentes
+de donde proviene el agregado o piedra fina (Barranca y Guápiles). Si bien el conocer
+el efecto de la fuente de agregado no es el objetivo primordial del estudio, podría
+darse que la fuente introduzca variabilidad en los resultados.
+Puesto que las dos variables respuesta están altamente correlacionadas, el
+investigador decide concentrar su análisis en el módulo. Él considera que una
+diferencia de 10 MegaPascales entre dos promedios es bastante considerable. El
+antioxidante que tenga un módulo promedio menor se considera más apropiado.
+
+1. Preparación:
+(a) Cargue el archivo asfalto.Rdata. Para iniciar se van a considerar solo los
+datos para una concentración de 5% que corresponde al nivel alto en la
+variable concentración. Cambie los niveles de agregado a las iniciales de
+cada sitio para que sea más fácil de leer en los análisis. Haga una nueva
+base donde se filtren sólo los los datos que se requieren.
+```{r}
+load("Bases/asfalto.Rdata")
+base2=subset(base,base$conc=="alto")
+```
+
+(b) ¿Cuáles son los factores de diseño? ¿Cuántos tratamientos tiene este
+experimento?
+
+**el factor de diseño es antiox, ademas con el factor de contracion fijado**
+
+* tratamientos 
+-conc.alto,antiox.ascor 
+-conc.alto,antiox.oruja
+
+
+(c) ¿Cuántas repeticiones hay en cada tratamiento?
+```{r}
+table(base2$antiox)
+```
+* hay 180 repeticiones por cada tratamiento 
+
+(d) Puesto que el envejecimiento y el agregado son dos factores que se
+controlan, se van a incluir en el análisis para reducir el ruido. Al incluir
+estos dos nuevos factores, ¿cuántas combinaciones tratamiento-factor se
+obtienen?
+
+*2 antiox
+*3 envejecimientos
+*2 agragados
+
+**se obtienen 2x3x2 da un total de 12 combinaciones trat-factor**
+
+
+(e) ¿Cuántas repeticiones hay en cada combinación?
+```{r}
+with(base2,table(antiox,env,agreg))
+```
+
+# 2. Variabilidad de la respuesta:
+(a) Obtenga la variancia de la respuesta para cada antioxidante y la media de
+estas variancias.
+```{r}
+v=tapply(base2$mod,base2$antiox,var);v
+x1=mean(v);x1
+
+```
+
+(b) Obtenga la variancia de la respuesta dentro de cada combinación
+tratamiento-factor y la media de estas variancias. Compare esta medida
+de la variabilidad con la que había obtenido anteriormente.
+```{r}
+x2=summarise(group_by(base2,antiox,env,agreg),var(mod));x2
+v2=mean(as.matrix(x2[,4]));v2
+cbind(x1,v2)
+```
+(c) Para visualizar la variabilidad dentro de cada tratamiento haga primero un
+gráfico del módulo por tratamiento. Al lado haga un gráfico del módulo
+por combinación tratamiento-factor. Observe que las etiquetas del eje X
+son muy largas por lo que no caben, entonces se pueden voltear usando
+las=2 en el boxplot.
+```{r}
+boxplot(mod~antiox,col=c(2,4),xlab="antioxidante",ylab="módulo",data=base2)
+boxplot(mod~antiox+agreg+env,col=c(2,4),cex.axis=0.5,las=2,
+xlab="antioxidante-fuente-envejecimiento",ylab="módulo",data=base2)
+```
+(d) Discuta si el haber agregado los factores controlados disminuyó la
+variabilidad, de tal forma que sea más evidente si uno de los antioxidantes
+es mejor que el otro en términos del promedio de módulo.
+
+**El agregar estos factores disminuye la variabilidad de la respuesta, se pueden apreciar mejor las diferencias entre los promedios de las respuestas segun el factor de diseño**
+
+3. Inclusión de covariable: ahora se tratará de visualizar la variabilidad de la
+respuesta tomando en cuenta una de las covariables. En este caso se tienen dos
+covariables (temperatura y frecuencia) que se incluyen porque se sabe que el
+módulo está asociado con la temperatura y con la frecuencia.
+(a) Obtenga la correlación entre la respuesta y cada una de las covariables.
+```{r}
+cor(base2$frec,base2$mod)
+cor(base2$temp,base2$mod)
+```
+
+(b) Obtenga estas mismas correlaciones pero dentro de cada uno de los niveles
+de antioxidante.
+```{r}
+cor(base2$frec[base2$antiox=="ASC"],base2$mod[base2$antiox=="ASC"])
+cor(base2$frec[base2$antiox=="OR"],base2$mod[base2$antiox=="OR"])
+cor(base2$temp[base2$antiox=="ASC"],base2$mod[base2$antiox=="ASC"])
+cor(base2$temp[base2$antiox=="OR"],base2$mod[base2$antiox=="OR"])
+```
+
+(c) Haga un grafico de puntos del módulo contra la temperatura agregando
+una línea de regresión para cada antioxidante. En la librería lattice,
+use xyplot(Y~X,groups=F,type=c("r")), donde Y es la respuesta, X es la
+covariable y F es el factor.
+```{r}
+xyplot(mod~temp,groups=antiox,type=c("r","p"),data=base2)
+xyplot(mod~temp|antiox,type=c("r","p"),data=base2)
+```
+
+
+(d) Observe la variabilidad que hay alrededor de cada línea. Si hace una
+relación con un modelo de regresión, ¿a qué concepto corresponde esta
+variabilidad?
+(e) Aunque la temperatura es una variable continua, en este caso se nota que
+hay datos agrupados en 5 rangos de temperatura, y se cuenta con otra
+variable que solo indica el rango de temperatura en su punto medio (esta
+variable es temp2). Esto permite que se pueda visualizar la variabilidad
+que hay alrededor de cada media usando un boxplot. En una sola ventana
+dividida en tres partes, repita los dos boxplots que hizo anteriormente y
+agregue otro boxplot con el módulo contra la combinación de antioxidante
+y temperatura (temp2).
+
+```{r}
+boxplot(mod~antiox,col=c(2,4),xlab="antioxidante",ylab="módulo",data=base2)
+boxplot(mod~antiox+agreg+env,col=c(2,4),cex.axis=0.5,las=2,
+xlab="antioxidante-fuente-envejecimiento",ylab="módulo",data=base2)
+boxplot(mod~antiox+temp2,col=c(2,4),cex.axis=0.5,las=2,xlab="antioxidante-temp2",ylab="módulo",data=base2)
+```
+
+(f) Para tomar en cuenta la variabilidad que está induciendo la temperatura,
+estime un modelo con el factor antioxidante y la covariable temperatura
+(use la temperatura continua original - temp). También estime un modelo
+donde sólo se tiene el factor de diseño antioxidante.
+
+```{r}
+mod0=lm(mod~temp+antiox,data=base2)
+mod02=lm(mod~antiox,data=base2)
+```
+
+(g) Obtenga el cuadrado medio residual en ambos modelos. Compare los
+resultados entre sí y compárelos con la estimación de la variancia por
+tratamiento original.
+```{r}
+anova(mod0)[3,3]
+anova(mod02)[2,3]
+mean(v)
+v2
+```
+
+# 4. Prueba formal:
+(a) Haga la prueba de hipótesis correspondiente para determinar si alguno
+de los antioxidantes es mejor en términos de reducir el módulo promedio.
+Hágalo primero en un análisis de variancia que solo considere el factor
+de diseño, luego tome en cuenta la temperatura. Cuando se tienen
+covariables hay que tener cuidado con el uso de la función anova ya que
+cada línea representa el aporte marginal de cada variable. En este caso
+interesa analizar la variabilidad que explica el antioxidante una vez que
+se ha eliminado el ruido que introduce la temperatura, por esto, debe
+introducirse primero la temperatura y luego el antioxidante. En general es
+más recomendable usar la función drop1, indicando test="F", para evitar
+confusiones.
+```{r}
+mod1=lm(mod~antiox+temp,data=base2);anova(mod1)
+mod12=lm(mod~antiox,data=base2);anova(mod12)
+mod13=lm(mod~temp+antiox,data = base2);anova(mod13)
+drop1(mod1,test = "F")
+```
+
+
+(b) ¿Cuál es el papel de la temperatura en el análisis?
+
+**Su papel es el de una covariable capaz de reducir la variabilidad de la respuesta, permitiendo detectar diferencias entre los promedios del factor de diseño de una manera mas clara**
+
+5. Análisis completo: ahora vamos a realizar el análisis tomando en cuenta todos
+los factores incluidos en el estudio. Para esto vemos que hay dos covariables
+(temperatura y frecuencia), y también se tienen el envejecimiento y el agregado
+además del factor de diseño (antioxidante). Para que las interpretaciones
+no sean tan complicadas es deseable que no exista interacción entre factor
+de diseño y las covariables continuas. El modelo inicial debe incluir estas
+interacciones para probar si el supuesto de no interacción se cumple. Además
+deben incluirse interacciones entre el factor de diseño y otros factores incluidos
+en el análisis.
+En el modelo se usa la siguiente notación: i para antioxidante, j para
+envejecimiento, k para agregado, X_1 para temperatura y X_2 para frecuencia.
+Se usa el término α(1)i para referirse a la interacción entre antioxidante
+y temperatura, y α(2)i para referirse a la interacción entre antioxidante y
+frecuencia. El modelo completo es el siguiente:
+µijk,X1,X2 = β0 +αi +δj +τk +β1X1 +β2X2 + (αδ)ij + (ατ)ik +α(1)iX1 +α(2)iX2
+
+(a) Compare el modelo completo contra otro modelo donde no hay
+interacciones entre el factor de diseño y las covariables. Debe estimar
+dos modelos: 1) el modelo completo y 2) el modelo donde no tenga las
+interacciones que se mencionan. Luego debe comparar los dos modelos
+con anova(mod.pequeño,mod.grande). Establezca la hipótesis nula que se
+va a probar y concluya.
+```{r}
+mod5.1=lm(mod~antiox*env+antiox*agreg+antiox*temp+antiox*frec,data=base2)
+mod5.2=lm(mod~antiox*env+antiox*agreg+temp+frec,data=base2)
+anova(mod5.2,mod5.1)
+```
+La hipótesis nula es que los dos modelos dan una misma explicación, lo que
+implica que \(\alpha^{(1)}_i = \alpha^{(2)}_i = 0.\) Al comparar los dos modelos se obtiene una
+probabilidad de error tipo I de 0,55, lo cual lleva a no rechazar la hipótesis nula
+y se puede asumir que ambos modelos explican lo mismo, es decir, que no existe
+interacción entre antioxidante y cada una de las covariables.
+
+(b) Ahora haga un proceso de selección hacia atrás para ir descartando
+interacciones entre el factor de diseño y los otros factores. Use la función
+drop1(mod,test="F"). En este caso debe empezar con el modelo donde ya
+se eliminaron las interacciones con las covariables.
+```{r}
+drop1(mod5.2,test = "F")
+mod5.3=lm(mod~antiox*env+agreg+temp+frec,data=base2)
+drop1(mod5.3,test="F")
+```
+**modelo final**
+mod5.3=lm(mod~antiox*env+agreg+temp+frec,data=base2)
+
+(c) Haga un gráfico del módulo contra envejecimiento diferenciando por
+antioxidante. Use xyplot con type=c("a"). Puesto que se encontró una
+interacción entre antioxidante y envejecimiento, trate de explicar con el
+gráfico por qué se da esa interacción.
+```{r}
+xyplot(mod~env,groups=antiox,type=c("a"),data=base2)
+xyplot(mod~env|antiox,type=c("a"),data=base2)
+```
+**al inicio la diferencia de promedios es mayor pero con el paso de los años la diferencia va disminuyendo entre los dos antiox**
+
+(d) Escriba el modelo resultante.
+**modelo final**
+mod5.3=lm(mod~antiox*env+agreg+temp+frec,data=base2)
+
+(e) Debido a la presencia de interacción, para hacer intervalos de confianza
+al comparar las medias de módulo entre los dos antioxidantes, debe
+considerarse el envejecimiento, pero no es importante considerar el
+agregado, la temperatura o la frecuencia. Deben hacerse tres intervalos
+de confianza, uno para cada nivel de envejecimiento. Puesto que se nota
+que el promedio para ASC es siempre mayor que para OR, es importante
+ver la media de ASC menos la de OR para cada nivel de envejecimiento.
+Verifique cuál es el nivel de referencia para antioxidante y envejecimiento.
+
+*consideramos solo env
+*se hacen tres intercalos uno para cada nivel de env
+```{r}
+contrasts(base2$antiox)
+```
+
+```{r}
+contrasts(base2$env)
+```
+
+(f) Se está usando el modelo de tratamiento de referencia y la referencia
+es ASC para antioxidante y 4 para envejecimiento, es decir que i=1 para
+ASC, i=2 para OR, j=1 para 4, j=2 para 8, j=3 para 16. Entonces α1 =
+δ1 = 0, además (αδ)11 = (αδ)12 = (αδ)13 = (αδ)21 = 0. Usamos la siguiente
+notación: µij para indicar la media del antioxiante i y el envejecimiento j,
+para un agregado cualquiera, para una temperatura fija y una frecuencia
+fija. Verifique las siguientes relaciones:
+µ11 −µ21 = −α2
+µ12 −µ22 = −α2 −(αδ)22
+µ13 −µ23 = −α2 −(αδ)23
+(g) Observe los coeficientes del modelo y escriba los coeficientes para los tres
+contrastes escritos anteriormente.
+```{r}
+coe=mod5.3$coefficients;coe
+summary(mod5.3)
+```
+```{r}
+mu11=c(1,0,0,0,0,0,0,0,0)
+mu21=c(1,1,0,0,0,0,0,0,0)
+mu12=c(1,0,1,0,0,0,0,0,0)
+mu22=c(1,1,1,0,0,0,0,1,0)
+mu13=c(1,0,0,1,0,0,0,0,0)
+mu23=c(1,1,0,1,0,0,0,0,1)
+
+ASC.4_OR.4=mu11-mu21
+ASC.8_OR.8=c2=mu12-mu22
+ASC.16_OR.16=c3=mu13-mu23
+
+
+
+```
+
+(h) Obtenga las estimaciones de los contrastes.
+```{r}
+cont=cbind(ASC.4_OR.4,ASC.8_OR.8,ASC.16_OR.16)
+L=t(cont)%*%coe;L 
+```
+
+(i) Verifique la hipótesis para cada contraste usando solo una cola, es decir,
+poniendo la alternativa H1 : L > 0. Debe verificar si los contrastes son
+ortogonales para decidir si debe ajustar el α.
+
+**Son ortogonales por su independencia por cada contraste**
+
+```{r}
+ee=sqrt(diag(t(cont)%*%vcov(mod5.3)%*%cont))
+t=L/ee
+#dos formas de obtener los gl 
+gl=nrow(base2)-length(mod5.3$coefficients)
+#la otra usar los residuales del mod
+anova(mod5.3)[7,1]
+
+p=pt(t,gl,lower.tail = F);round(p,4)
+```
+
+(j) Construya cotas inferiores con 95% de confianza en los casos de 4 y 8 años
+e interprete el resultado según la relevancia que estableció el investigador.
+```{r}
+qt=qt(1-0.05,gl)
+lim=L[1:2]-qt*ee[1:2];lim
+
+```
+**obtenemos como resultado que la diferencia en modulo entre los dos antioxidantes es relevante en los primeros 4 años ya que la cota inferior para estos es de 11.8804, pero conforme el pasa el tiempo esta diferencia va disminuyendo hasta el punto en el que no es significativa para 16 años y no es relevante para 8 años la diferencia entre los dos acidos es de 2.4256, siendo en los dos casos mayor el promedio de modulo del antioxidante asc respecto a or **

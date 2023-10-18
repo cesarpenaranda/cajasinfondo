@@ -1,0 +1,167 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+#1 Realice una función que reciba un número a y retorne un logical si el número es primo True o no es primo False.
+```{r}
+Primo = function(x){
+ if(x == 1){
+   FALSE
+      }
+  if (x == 2) {
+    TRUE
+    } else if (any( x %% 2:(x-1) == 0 )) {
+      FALSE
+      } else {
+        TRUE
+      }
+}
+   Primo(x=as.numeric(readline("Digite el valor de a: ")))
+```
+
+#2 Realice una función que reciba dos números a y b;  y retorne un vector con todos los números primos entre a y b. Incluido a y b.
+```{r}
+Vect.a.b = function( x1,y1 ) {
+  primos = NULL
+  for (i in x1:y1) {
+    if (i == 2) {
+      primos = c(primos, i)
+      } else if ( any ( i %% 2:(i-1) == 0 )){
+        
+      } else {
+        primos= c(primos, i)
+      }
+    }
+  print(paste(c(primos), "Es primo"))
+}
+Vect.a.b(x1=as.numeric(readline("Digite el valor de a: ")),
+         y1=as.numeric(readline("Digite el valor de b: ")))
+```
+
+#3. Realice una función que reciba dos números primos a y b y retorne el porcetaje de números primos que hay entre a y b (incluidos). Ejemplo  a = 1, b = 100 
+retorna 0.25 por que hay 25 números primos entre 1 y 100 
+```{r}
+porcentaje.a.b = function( a,b ) {
+  primos = NULL
+  for (i in a:b) {
+    if (i == 2) {
+    primos = c(primos, i)
+      } else if ( any ( i %% 2:(i-1) == 0 )) {
+       } else {
+      primos= c(primos, i)
+    }
+  }
+  num.primos = length(c(primos))
+  num.total = length(a:b)
+  result=round(num.primos*100/num.total,1)
+  print(paste(result,"%"))
+} 
+porcentaje.a.b(a=as.numeric(readline("Digite el valor de a: ")),
+               b=as.numeric(readline("Digite el valor de b: ")))
+```
+
+#4. Realice una función que reciba dos números a y b; y retorne un vector con todos los números compuestos incluidos a y b.  
+```{r}
+Vec.a.b = function( a,b ) {
+  no.primos = NULL
+  for (i in a:b) {
+    if (i == 2) {
+     } else if ( any ( i %% 2:(i-1) == 0 )) {
+      no.primos = c(no.primos, i)
+      }else {
+    }
+  }
+print(paste(c(no.primos), "Es compuesto"))
+}
+Vec.a.b(a=as.numeric(readline("Digite el valor de a: ")),
+               b=as.numeric(readline("Digite el valor de b: ")))
+```
+
+```{r}
+#Es necesario la library SvDialogs para la ventana
+#Fue hecho en Rmarkdown
+library(svDialogs)
+confirmation= TRUE
+while(confirmation==TRUE)   {
+winDialog(type = "ok",message ="LISTA DE EJERCICIOS:
+#1 Ejercicio 1: Realice una función que reciba un número a y retorne un logical si el número es primo True o no es primo False.
+#2 Ejercicio 2: Realice una función que reciba dos números a y b,  y retorne un vector con todos los números primos entre a y b. Incluido a y b.
+#3 Ejercicio 3: Realice una función que reciba dos números primos a y b y retorne el porcetaje de números primos que hay entre a y b (incluidos).
+#4 Ejercicio 4: Realice una función que reciba dos números a y b, y retorne un vector con todos los números compuestos incluidos a y b.
+#0 para terminar
+LOS DATOS Y RESULTADOS SERAN INGRESADOS Y VISTOS EN LA CONSOLA, POR COMODIDAD EL UNICO PROPOSITO DE ESTA VENTANA ES VER LA LISTA DE EJERCICIOS")
+
+menu=readline("Digite el numero de ejercicio que desea realizar: ")
+if (menu==1) {
+  Primo_1 = function(x){
+    if(x == 1){
+      resultado=print(FALSE)
+      }
+    if (x == 2) {
+      resultado=print(TRUE)
+      } else if (any( x %% 2:(x-1) == 0 )) {
+        resultado=print(FALSE)
+        } else {
+          resultado=print(TRUE)
+          }
+}
+  primo_1(x=as.numeric(readline("Digite un numero: ")))
+  
+  } else if (menu==2) {
+    Vec_1 = function( x1,y1 ) {
+    primos = NULL
+    for (i in x1:y1) {
+    if (i == 2) {
+      primos = c(primos, i)
+      } else if ( any ( i %% 2:(i-1) == 0 )){
+        
+      } else {
+        primos= c(primos, i)
+      }
+    }
+  print(paste(c(primos), "Es primo"))
+}
+Vec_1(x1=as.numeric(readline("Digite el valor de a: ")),
+         y1=as.numeric(readline("Digite el valor de b: ")))
+    } else if (menu==3) {
+  porcen_1 = function( a,b ) {
+  primos = NULL
+  for (i in a:b) {
+    if (i == 2) {
+    primos = c(primos, i)
+      } else if ( any ( i %% 2:(i-1) == 0 )) {
+       } else {
+      primos= c(primos, i)
+    }
+  }
+  num.primos = length(c(primos))
+  num.total = length(a:b)
+  result=round(num.primos*100/num.total,1)
+  print(paste(result,"%"))
+} 
+porcen_1(a=as.numeric(readline("Digite el valor de a: ")),
+               b=as.numeric(readline("Digite el valor de b: ")))
+      } else if (menu==4) {
+        Vec_2 = function( a,b ) {
+          no.primos = NULL
+          for (i in a:b) {
+            if (i == 2) {
+              
+            } else if ( any ( i %% 2:(i-1) == 0 )) {
+              no.primos = c(no.primos, i)
+            }else {
+                
+            }
+            }
+          print(paste(c(no.primos), "Es compuesto"))
+          }
+        Vec_2(a=as.numeric(readline("Digite el valor de a: ")),
+               b=as.numeric(readline("Digite el valor de b: ")))
+        } else if (menu==0) {
+          confirmation=FALSE
+          } else {
+            print("Digite un numero adecuado")
+            }
+}
+```

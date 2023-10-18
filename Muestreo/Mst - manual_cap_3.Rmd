@@ -1,0 +1,231 @@
+---
+title: "MST. manual-cap3"
+output: html_document
+date: "2023-05-01"
+---
+#1. Tamaño de muestra sin información previa.
+Por medio de una encuesta desea conocerse la 
+opinión de las personas de 18 años y más sobre las medidas tomadas por el gobierno de 
+“Tiquicia” para combatir el COVID 2.0. El muestreo a utilizar es mia y desea tenerse una idea de 
+lo que está pensando la gente al respecto.
+
+a. ¿Cuál fórmula debe utilizarse para calcular el tamaño de muestra?
+b. ¿Qué valor tendrán los parámetros de 𝑛0?
+n0=(Za/2)^2 pq/d^2
+za/2=1.96
+p=0.5
+q=(1-0.5)
+alfa=0.05
+p=0.5
+d=0.05
+```{r}
+p=0.5
+d=0.05
+alfa=0.05
+q=1-p
+z=qnorm(1-alfa/2)
+
+(x1=c(p,d,alfa,q,z))
+```
+
+c. Calcule 𝑛0.
+```{r}
+(n0=(z^2*p*q)/(d^2))
+```
+
+d. Si el tamaño de la población es de 𝑁 = 11308 ¿debería aplicarse la corrección por finitud?
+```{r}
+f=384.1459/11308
+f>0.05
+```
+Dado que 𝑓 = 0.034 < 0.05, no requiere aplicarse la corrección por finitud.
+
+#2. Tamaño de muestra para una subclase con una variable dicotómica.
+Se va a realizar una 
+encuesta en “Tiquicia” usando mia y se requiere calcular el número de viviendas (tamaño de 
+muestra) que deben seleccionarse para conocer, entre otros aspectos, la proporción de carros 
+particulares manejados por personas menores de 35 años.
+
+a. ¿Por qué se dice que se va a calcular el tamaño de muestra para una subclase?
+b. Lea el marco muestral marco3a y observe que mientras no se poseen datos de la variable de 
+estudio, sí existe información de las viviendas que poseen carros particulares (carro, con 
+código 0=no, 1=sí). Obtenga la proporción de viviendas que posee carro particular usando 
+summary(), pues la variable es numérica.
+```{r}
+load("marco3a.Rdata")
+prop_car=mean(marco3a$carro)
+```
+c. Debido a que se trata de una variable dicotómica ¿cuál fórmula debe usarse para calcular el 
+tamaño de muestra?
+n0=(Za/2)^2 pq/d^2
+d. ¿Cuál es el valor de los parámetros en 𝑛0?
+```{r}
+p=0.5
+q=1-p
+alfa=0.05
+z=qnorm(1-alfa/2)
+d=0.04
+```
+
+e. Calcule 𝑛0.
+```{r}
+(n0=(z^2*p*q)/(d^2))
+```
+
+f. Calcule 𝑛 con la corrección por finitud.
+```{r}
+N= length(marco3a$carro)
+f=n0/N
+f>0.05
+(n=(n0)/(1+n0/N))
+```
+
+g. ¿Cuántas viviendas deben seleccionarse del marco para que produzca una muestra de 570 
+viviendas con al menos un carro particular?
+```{r}
+n/prop_car
+```
+
+#3. Tamaño de muestra para varias variables dicotómicas. 
+Se requiere información 
+actualizada sobre el uso de las tecnologías de información y comunicación (TIC) en “Tiquicia”. 
+Por este motivo, se pide que calcule un tamaño de muestra (número de personas) para realizar 
+una encuesta. Como información base se posee el marco muestral marco3a, que contiene datos 
+actualizados de las viviendas particulares y sus residentes. Para calcular el número de personas a 
+entrevistar se aclaró que, en lo referente a las TIC, interesa conocer sobre el uso que hacen las 
+personas del celular, computadora de escritorio y portátil, tableta e internet. Se desea saber, por 
+ejemplo, tipo y cantidad de dispositivos que utiliza, tiempo de uso diario de cada uno de ellos, 
+actividades que realiza, personas con las que se comunica, etc. El marco contiene información 
+relacionada con el tema y específicamente, para las personas jefes de hogar, se sabe si usaron o 
+no estas tecnologías en los últimos 3 meses (las variables son celular3, portatil3, tablet3, 
+compu3 e internet3, todas numéricas, con códigos 0=no y 1=sí). Pese a que la información es 
+referida únicamente a la persona jefe de hogar, se toma como base para los cálculos, pues no se 
+posee otra fuente reciente que brinde información para todas las personas de la vivienda. Siga las 
+siguientes instrucciones para calcular el tamaño de muestra.
+
+a. Lea el archivo marco3a.
+```{r}
+load("marco3a.Rdata")
+library(survey)
+library(PracTools)
+```
+
+b. Debido a que las variables de estudio son dicotómicas ¿cuál es la fórmula que debe 
+utilizarse para calcular el tamaño de muestra?
+n0=(Za/2)^2 pq/d^2
+c. Obtenga una frecuencia simple de todos los dispositivos de estudio usando la función 
+summary(). Construya un gráfico que muestre el porcentaje de tenencia de cada dispositivo.
+```{r}
+attach(marco3a)
+tab=summary(tablet3)*100
+com=summary(compu3)*100
+por=summary(portatil3)*100
+int=summary(internet3)*100
+cel=summary(celular3)*100
+frec=round(c(tab[4], com[4], por[4], int[4], cel[4]),1)
+names(frec)=c("Tablet","Computadora","Portatil","Internet","Celular")
+frec
+detach(marco3a)
+```
+
+d. ¿Cómo se establece el valor de 𝑝 en este caso?
+
+e. ¿Qué dicen las frecuencias obtenidas acerca del uso de los dispositivos? Decida cómo 
+proceder 𝑝 y calcule el tamaño de muestra.
+```{r}
+```
+
+f. Calcule el tamaño de muestra. Asuma un mia, 𝑝 = 0.5, tres puntos porcentuales de error 
+(𝑑 = 0.03) y una confianza del 95% de que el valor real no supere a 𝑑 (riesgo del 5% de 
+que el error real supere a 𝑑)
+
+```{r}
+p=0.5
+q=1-p
+alfa=0.05
+z=qnorm(1-alfa/2)
+d=0.03
+
+(n0=(z^2*p*q)/(d^2))
+
+N= length(marco3a$region)
+f=n0/N
+f>0.05
+(n=(n0)/(1+n0/N))
+```
+forma alternativa con la libreria 
+library(PracTools)
+
+```{r}
+p=0.5
+q=1-p
+alfa=0.05
+z=qnorm(1-alfa/2)
+d=0.03
+
+(n0=nProp(V0=(d/z)^2,pU=p))
+(n=(n0)/(1+n0/N))
+```
+
+#5. Selección de la muestra con mia.
+De acuerdo con los cálculos anteriores, el tamaño de 
+muestra requerido es de 975 personas de 18 años y más, con un margen de error del 3%.
+
+a. Seleccione la muestra de 975 viviendas (una persona por vivienda) usando mia, guarde el 
+archivo con formato R usando save() y póngale como nombre muestra3a.Rdata. Asuma que 
+esa muestra de 975 viviendas contiene la información recolectada en el trabajo de campo.
+```{r}
+set.seed(123)
+muestra0 = sample(1:nrow(marco3a), size=975, replace=FALSE)
+muestra3a = marco3a[muestra0,] 
+muestra3a = na.omit(muestra3a)
+save(muestra3a,file="muestra3a.Rdata")
+```
+
+b. Defina el diseño utilizado usando svydesign()para analizar posteriormente la información de 
+la muestra seleccionada.
+```{r}
+(N=nrow(marco3a))
+(n=nrow(muestra3a))
+diseno=svydesign(id=~1,data = muestra3a,fpc =rep(N,n) )
+```
+
+c. Calcule los intervalos de confianza para el uso de tablet, computadora, portátil, internet y 
+celular en los últimos tres meses, para las personas jefes de hogar. Compare con los valores 
+poblacionales y obtenga sus conclusiones. Visualice la información contruyendo un gráfico 
+con los intervalos de confianza para cada dispositivo.
+```{r}
+mean(muestra3a$tablet3)
+(tt=svymean(~muestra3a$tablet3,diseno))
+(ca=svymean(~muestra3a$compu3,diseno))
+(pl=svymean(~muestra3a$portatil3,diseno))
+(it=svymean(~muestra3a$internet3,diseno))
+(cr=svymean(~muestra3a$celular3,diseno))
+confint(tt)
+confint(ca)
+confint(pl)
+confint(it)
+confint(cr)
+
+```
+
+d. Suponga que se quieren estimaciones para las TIC, con la misma precisión, en la zona 
+urbana y rural. Obtenga de marco3a las proporciones de uso de los dispositivos en ambas 
+zonas usando tapply() y analice la situación. Construya un gráfico que muestre el uso de las 
+TIC por zona. ¿Qué tamaño de muestra debería seleccionarse para cumplir con este 
+requerimiento?
+
+```{r}
+tapply(marco3a$tablet3,marco3a$zona,mean)
+tapply(marco3a$compu3,marco3a$zona,mean)
+tapply(marco3a$internet3,marco3a$zona,mean)
+tapply(marco3a$portatil3,marco3a$zona,mean)
+tapply(marco3a$celular3,marco3a$zona,mean)
+```
+#6. Tamaño de muestra a partir del error estándar deseado de 𝑝.
+Tomando como base lo 
+hecho anteriormente, relacionado con el uso de las TIC, si se solicita que el error estándar de 𝑝
+sea del 2% para todo el país ¿qué tamaño de muestra debería seleccionarse?
+```{r}
+```
+

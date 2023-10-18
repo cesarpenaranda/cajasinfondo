@@ -1,0 +1,112 @@
+# 8.2 Manzanas
+Las manzanas tienen un compuesto llamado polifenol oxidasa, el cual hace que al
+cortarse y entrar en contacto con el aire se oscurezcan rápidamente. Para evitar el
+pardeamiento se probaron tres tratamientos: tapar (código 2), poner en bolsa plástica
+cerrada (código 3), y aplicar jugo de limón (código 4). Además, se incluyó un control
+sin aplicar nada (código 1). Una vez aplicados los tratamientos el resultado fue
+evaluado por 10 jueces que calificaron el color en una escala de 1 a 6 donde 1 es
+el color normal de la fruta y 6 es el más oscuro. El objetivo final es seleccionar el
+tratamiento que mantenga mejor el color original para una empresa que se encarga
+de banquetes.
+
+# 1. Potencia:
+## (a) Datos muestrales:
+i. Promedios:
+
+```{r}
+load("Bases/manzanas.Rdata")
+tapply(base$color,base$trat,mean)
+
+```
+
+ii. Estimación de la variancia del error.
+```{r}
+mean(tapply(base$color,base$trat,var))
+```
+
+Como se trata de un diseño de un factor balanceado, para obtener el cuadrado
+medio residual basta promediar las variancias de los 4 tratamientos, y se obtiene
+como resultado 0,98.
+
+## (b) Función:
+```{r}
+med = function (r, mu, v = 1) {
+k = length(mu)
+n = r * k
+y = rnorm(n, rep(mu,each=r), sqrt(v))
+x = factor(rep(1:k, each=r))
+mod = aov(y ~ x)
+p = anova(mod)[1, 5]
+return(p)
+}
+```
+
+## (c) Simulación:
+```{r}
+M=1000
+mu1=c(3,3,2,4)
+prob=c()
+for(j in 1:M) prob[j]=med(5,mu1)
+mean(prob<0.05)
+```
+
+## (d) Potencia:
+```{r}
+library(pwr)
+power.anova.test(n=5,groups=4,between.var=var(mu1),within.var=1)
+#n es igual a numero de replicas por tratamiento
+#grops es el numero de tratamientos
+```
+
+## (e) Comparación:
+Mediante esta función se obtiene una potencia de 0,64 lo que indica que se tiene
+una probabilidad de 0,64 de detectar diferencias de 2 puntos si estas diferencias
+existen. Puede entenderse que si realmente hay diferencias de 2 puntos entre
+algún par de medias verdaderas, y se repite el experimento muchísimas veces,
+en el 64% de los casos se concluirá que sí hay diferencias mientras que en el
+36% no se llegará a esta conclusión. En la simulación se obtuvo un resultado un
+poco diferente pero se puede llegar a un resultado más cercano al obtenido en
+la función de R si se hace la simulación con un número mayor de iteraciones.
+
+# 2. Número de réplicas:
+
+## (a) Tamaño de muestra por tratamiento:
+```{r}
+pot = power.anova.test(groups=4,between.var=var(mu1),
+within.var=1,power=0.9)
+pot$n
+pot$power
+```
+Se necesitan al menos 9 réplicas por tratamiento para tener una probabilidad de
+0,90 de que se detectarán diferencias de dos unidades si esas diferencias existen.
+
+
+## (b) Variando el vector de medias verdaderas:
+```{r}
+var(c(2,4,3,3))
+power.anova.test(groups=4,between.var=var(c(2,4,3,3)),
+within.var=1,power=0.9)$n
+
+```
+
+```{r}
+var(c(2,4,2,2))
+power.anova.test(groups=4,between.var=var(c(2,4,2,2)),
+within.var=1,power=0.9)$n
+```
+
+```{r}
+var(c(2,2,4,4))
+power.anova.test(groups=4,between.var=var(c(2,2,4,4)),
+within.var=1,power=0.9)$n
+```
+
+Aquí se han puesto casos extremos. En uno hay dos medias que distan entre sí 2
+puntos pero las otras están en el centro, esto hace que la variancia sea más baja y
+se requieran más repeticiones para detectar las diferencias. En los otros casos se
+pusieron todas las medias en los extremos haciendo que haya más variabilidad,
+por lo que es más fácil detectar las diferencias y por lo tanto se requieren menos
+réplicas.
+
+
+

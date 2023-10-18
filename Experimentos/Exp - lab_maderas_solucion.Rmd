@@ -1,0 +1,184 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-31"
+---
+#5.3 Maderas
+Se prueban siete concentraciones de madera dura para determinar su efecto sobre la
+resistencia del papel producido. Se define que las pruebas deben hacerse en 7 días
+diferentes porque las condiciones del proceso industrial cambian de un día a otro.
+Cada uno de los días constituye un bloque. En cada día solamente se pueden probar
+tres concentraciones, lo cual indica que los bloques no son completos
+#5.3.2 Solución
+#1. Preparación:
+##(a) Lectura:
+```{r}
+base=read.csv("Bases/maderas.csv")
+```
+
+##(b) Revisión de definición de factores:
+```{r}
+str(base)
+base$dia=factor(base$dia)
+base$conc=factor(base$conc)
+```
+
+#2. Visualización de datos:
+##(a) Datos originales y centrados:
+```{r}
+mod1=lm(res~dia,data=base)
+res1=base$res-predict(mod1)+mean(base$res)
+boxplot(res~conc,xlab="concentracíon",ylab="resistencia",ylim=c(110,150),data=base)
+boxplot(res1~conc,xlab="concentracíon",ylab="resistencia centrada",
+ylim=c(110,150),data=base)
+```
+
+#3. Sumas de cuadrados:
+##(a) Suma de cuadrados total (SCTot):
+```{r}
+mod2=lm(res~conc+dia,data=base)
+sum(anova(mod2)[,2])
+```
+
+```{r}
+n=nrow(base)
+(sctot=(n-1)*var(base$res))
+```
+
+##(b) Suma de cuadrados residual (SCRes):
+```{r}
+(scres=anova(mod2)[3,2])
+```
+
+##(c) Suma de cuadrados de bloque (SCB):
+```{r}
+table(base$dia)
+```
+
+```{r}
+p=3
+m.b=tapply(base$res,base$dia,mean)
+mgen=mean(base$res)
+(scb=sum(p*(m.b-mgen)^2))
+```
+
+
+#4. Ajuste de las sumas de cuadrados:
+##(a) Totales de tratamiento ajustados:
+```{r}
+yi.=tapply(base$res,base$conc,sum)
+y.j=tapply(base$res,base$dia,sum)
+nij=table(base$conc,base$dia)
+(Qi=yi.-as.vector(nij%*%y.j/3))
+```
+
+##(b) Suma de cuadrados de tratamiento ajustada:
+```{r}
+a=7; p=3; r=3
+lambda=r*(p-1)/(a-1)
+(sctrat=p*sum(Qi^2)/(lambda*a))
+```
+La SCTrat.aj es 1317.43.
+
+##(c) Suma de cuadrados residual:
+```{r}
+scres2=sctot-scb-sctrat
+```
+#5. Prueba de hipótesis de igualdad de medias:
+##(a) Conclusión:
+```{r}
+cmtrat=sctrat/(a-1)
+cmres=scres2/8
+(f=cmtrat/cmres)
+```
+```{r}
+pf(f,6,8,lower.tail = F)
+
+```
+Se rechaza la hipótesis de igualdad de medias puesto que la probabilidad
+asociada de error tipo I es pequeña (p = 0,002). Se concluye que la concentración
+tiene un efecto sobre la resistencia promedio.
+
+
+##(b) Forma automática:
+```{r}
+mod3=lm(res~dia+conc,data=base)
+anova(mod3)
+```
+Se obtiene la misma probabilidad asociada a la prueba de igualdad de medias
+de resistencia para las diferentes concentraciones.
+
+#6. Análisis adicionales:
+##(a) Coeficientes con suma nula:
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod4=lm(res~dia+conc,data=base)
+mod4$coef
+```
+
+##(b) Estimación de los promedios:
+```{r}
+beta=mod4$coef[c(1,8:13)]
+c1=c(1,1,0,0,0,0,0)
+c2=c(1,0,1,0,0,0,0)
+c3=c(1,0,0,1,0,0,0)
+c4=c(1,0,0,0,1,0,0)
+c5=c(1,0,0,0,0,1,0)
+c6=c(1,0,0,0,0,0,1)
+c7=c(1,-1,-1,-1,-1,-1,-1)
+h=cbind(c1,c2,c3,c4,c5,c6,c7)
+(med.est=t(h)%*%beta)
+```
+
+##(c) Medias observadas:
+```{r}
+med.obs=tapply(base$res,base$conc,mean)
+cbind(med.est,med.obs)
+```
+
+Aunque los valores son parecidos no dan exactamente lo mismo, esto porque
+el modelo hace un ajuste basado en todos los datos aunque los bloques estén
+incompletos.
+
+##(d) Comparaciones múltiples:
+```{r}
+c1=c(1,0,0,0,0,0)
+c2=c(0,1,0,0,0,0)
+c3=c(0,0,1,0,0,0)
+c4=c(0,0,0,1,0,0)
+c5=c(0,0,0,0,1,0)
+c6=c(0,0,0,0,0,1)
+c7=c(-1,-1,-1,-1,-1,-1)
+c21=c2-c1; c31=c3-c1; c41=c4-c1; c51=c5-c1; c61=c6-c1; c71=c7-c1
+c32=c3-c2; c42=c4-c2; c52=c5-c2; c62=c6-c2; c72=c7-c2
+c43=c4-c3; c53=c5-c3; c36=c3-c6; c37=c3-c7;
+c54=c5-c4; c46=c4-c6; c47=c4-c7; c56=c5-c6; c57=c5-c7; c76=c7-c6
+h=cbind(c21,c31,c41,c51,c61,c71,c32,c42,c52,c62,c72,c43,c53,
+c36,c37,c54,c46,c47,c56,c57,c76)
+beta=mod4$coef[8:13]
+(L=t(h)%*%beta)
+```
+
+##(e) Errores estándar:
+```{r}
+v=vcov(mod4)[8:13,8:13]
+(ee=sqrt(diag(t(h)%*%v%*%h)))
+table(base$conc)
+cmres=anova(mod4)[3,3]
+sqrt(2*cmres/3)
+
+```
+El error estándar correcto es 4,25 en lugar de 3,75 que se obtendría usando la
+fórmula clásica.
+
+##(f) Prueba de los contrastes:
+```{r}
+q=L/ee
+(p=ptukey(q*sqrt(2),7,8,lower.tail = F))
+```
+Se encontraron diferencias al comparar las concentraciones 4 y 1, 5 y 1, 4 y 2, 5
+y 2, 5 y 6. Esto lleva a concluir que con concentraciones 8 y 10 se obtiene una
+resistencia promedio mayor que con concentraciones 2 y 4. Además es mayor la
+resistencia promedio con concentración 10 que con 12.
+
+

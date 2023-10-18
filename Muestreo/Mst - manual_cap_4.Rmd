@@ -1,0 +1,496 @@
+```{r}
+library(dplyr)
+library(PracTools)
+library(sampling)
+library(survey)
+```
+
+#1. Estratificación del marco muestral de viviendas.
+Se realizará una encuesta  en "Tiquicia" para conocer la estructura de los ingresos y gastos de las familias. Desea saberse cuánto se dedica del ingreso familiar al pago de alimentación, transporte, educación, vestido, vivienda, combustibles y recreación, entre otros. Como se sabe que los ingresos y los gastos varían mucho entre familias, se usará muestreo aleatorio estratificado (mae), con el objetivo de disminuir la variabilidad de las estimaciones. 
+
+##a. Lea el archivo marco4a.
+```{r}
+load("Bases/marco4a.Rdata")
+str(marco4a)
+```
+
+##b. Calcule estadísticos descriptivos (summary())
+para analizar la variabilidad del ingreso percápita mensual del hogar (ingresoph). Construya un gráfico que permita observar la forma de la distribución del ingresoph.
+
+```{r}
+summary(marco4a$ingresoph)
+```
+
+```{r}
+options(scipen=999) 
+hist(marco4a$ingresoph,breaks = 1000,xlim=c(0,2500000))
+```
+##c. Construya tres estratos estadísticos según el monto de ingreso del hogar (ingresoph) que se especifica a continuación: 
+
+- nivel de ingreso bajo: de 0 a menos de 130000 colones, 
+- nivel de ingreso medio: de 130000 a menos de 500000 y 
+- nivel de ingreso alto: de 500000 hasta 20000000 de colones. 
+
+##Incluya en el marco una variable nueva llamada estrato con base en el ingresoph y recodifíquela como se describe anteriormente usando la función recode().
+
+
+```{r}
+marco4a = marco4a %>%mutate(estrato = case_when( ingresoph <=129999 ~ "bajo" , ingresoph <= 499999 ~ "medio", TRUE ~ "alto"))
+```
+
+##d. Calcule $N=$ número total de viviendas en el marco (nrow()) y para cada estrato
+$N_h=$ número de viviendas (table()), $W_h=$ proporción de viviendas (prop.table(table()))  y $\bar y=$ ingreso percápita medio (tapply()). 
+
+```{r}
+N=nrow(marco4a);N
+table(marco4a$estrato)
+prop.table(table(marco4a$estrato))
+tapply(marco4a$ingresoph,marco4a$estrato,mean)
+```
+
+#2. Cálculo del tamaño de muestra estratificada con asignación óptima,
+costos iguales de entrevista por estrato, caso de una variable métrica y estimación de un promedio.Obtenga del marco la información que se requiere para calcular el tamaño de muestra y calcúlelo. Para lograrlo, responda las preguntas siguientes.
+
+##a. ¿Cuál es la fórmula que debe utilizarse para calcular el tamaño de muestra?
+
+num=sum(wh*sh)**2
+deno=v+(1/N)*sum(wh*sh2)
+
+##b. Calcule para cada estrato $N_h=$número de viviendas, $W_h=$proporción de viviendas,
+$\bar y=$ingreso percápita medio y $s_h=$desviación estándar del ingreso percápita del hogar. Use la función summarise().
+
+```{r}
+Nh=table(marco4a$estrato)
+wh=Nh/N
+ybar=mean(marco4a$ingresoph)
+ybar_h=tapply(marco4a$ingresoph,marco4a$estrato,mean)
+sh=sqrt(tapply(marco4a$ingresoph,marco4a$estrato,var))
+sh2=tapply(marco4a$ingresoph,marco4a$estrato,var)
+cbind(N,Nh,wh,ybar,sh,sh2,ybar_h)
+```
+
+##c. Calcule el tamaño de muestra total,
+suponiendo que se desea un coeficiente de variación del 2.5% para la estimación de la media del ingreso percápita mensual promedio del hogar) ($cv(\bar y)=0.025$). Para obtener la variancia deseada $V$ use el coeficiente de variación, pues $cv(\bar y)=s(\bar y)/\bar y$, lo que equivale a $V=s(\bar y)^2=(cv(\bar y)\bar y)^2$.
+
+```{r}
+v=(0.025*ybar)**2
+num=sum(wh*sh)**2
+deno=v+(1/N)*sum(wh*sh2)
+n0=num/deno
+ceiling(n0)
+```
+
+
+
+#3. Asignación de la muestra de viviendas a los estratos con afijación óptima y proporcional.
+Es importante valorar diferentes asignaciones de la muestra a los estratos, pensando en las ventajas y desventajas que producen los resultados. Por este motivo, asigne la muestra a los estratos con afijación óptima y proporcional.
+
+```{r}
+n=n0
+n_prop= strAlloc(n.tot=n, Nh= Nh, alloc= "prop") 
+n_ney= strAlloc(n.tot=n, Nh= Nh, Sh=sh, alloc= "neyman")
+x=cbind(n_prop$nh, n_ney$nh)
+colnames(x)=c("prop","neyman");x
+
+```
+
+
+
+
+#4. Selección de la muestra estratificada de viviendas.
+Dados los cálculos anteriores proceda a seleccionar la muestra estratificada de viviendas. 
+
+##a. Previo a la selección de la muestra, ordene el marco por estrato usando la función order().
+
+```{r}
+marco4a <- marco4a[order(marco4a$estrato),] 
+```
+##b. Seleccione la muestra usando mia dentro de cada estrato y verifique que seleccionó el número de viviendas planeado (table()).
+Use la librería sampling() y la función strata(). 
+
+```{r}
+muestra_prop = sampling::strata(data = marco4a, stratanames ="estrato", size = c(394, 26,118 ), method = "srswor"); muestra_prop
+muestra2 = getdata(marco4a, muestra_prop); muestra2
+```
+
+```{r}
+table(marco4a$estrato)
+table(muestra2$estrato)
+```
+
+
+
+
+#5. Construcción del factor de expansión por estrato para las viviendas.
+Construya el factor de expansión para cada estrato, nómbrelo pondera e inclúyalo en el archivo de la muestra. Debido a que esta nueva variable, por defecto, se crea como categórica, es indispensable cambiarla a numérica. Tome en cuenta que al hacerlo, R recodifica 1=Bajo, 2=Medio y 3=Alto, pues se guía por el ordenamiento que tenía previamente.
+
+```{r}
+f_alto=2146/394;
+f_bajo=3641/26
+f_medio=5521/118
+
+muestra2 = muestra2 %>% mutate(pondera = case_when( estrato == "bajo" ~ f_bajo, estrato == "medio" ~ f_medio, TRUE ~ f_alto ))
+table(muestra2$pondera,muestra2$estrato)
+```
+
+
+
+#6. Definición del diseño muestral estratificado de viviendas.
+Especifique el diseño muestral usando la librería survey().
+
+```{r}
+n=nrow(muestra2)
+disenoh <- svydesign(ids = ~consecutivo, strata = ~estrato, data=muestra2, weights = ~pondera)
+```
+
+#7. Inferencias y otras valoraciones. Realice los cálculos siguientes.
+
+##a. Calcule el intervalo de confianza para el ingreso percápita del hogar y compárelo con el valor poblacional.
+```{r}
+media <- svymean(~ingresoph,disenoh); media;ybar
+confint(media)
+
+```
+
+##b. Estime la media del ingreso percápita del hogar por estrato y calcule el intervalo de confianza. Compare con los valores poblacionales. 
+```{r}
+media_h<-svyby(~ingresoph, by=~estrato,disenoh,FUN = svymean,na.rm=T);media_h
+confint(media_h)
+
+tapply(marco4a$ingresoph,marco4a$estrato,mean)
+```
+
+##c. Estime estadísticos de interés para valorar el diseño muestral que se obtuvo a partir de la variable ingresoph e interprételos. 
+
+#8. Estratificación del marco muestral de fincas. Se realizará una encuesta nacional en "Tiquicia" para estimar, entre otros aspectos de interés, el hato ganadero (total de cabezas de ganado).
+El objetivo es obtener información para establecer políticas públicas en torno al tema. Para hacer la encuesta se posee un listado de fincas de hace dos años y se espera que no haya sufrido grandes cambios. Este listado contiene información del número de cabezas de ganado por finca (hatototal). Como se sabe que el tamaño de las fincas (número de cabezas de ganado) varía mucho se usará muestreo estratificado con el objetivo de disminuir la variabilidad.
+
+##a. Lea el archivo marco4b.Rdata.
+
+```{r}
+load("Bases/marco4b.Rdata")
+```
+
+##b. Calcule el número total de cabezas de ganado (hatototal) con la función sum().
+Los ganaderos indican que es bastante probable que ese número no haya variado mucho y estiman que deben existir unas 85000 cabezas de ganado, pero ese datos debe ser corroborado con la encuesta.
+
+```{r}
+hat_total=sum(marco4b$hatototal);hat_total
+```
+
+##c. Analice la variabilidad del hatototal para justificar la creación de estratos estadísticos.
+
+```{r}
+var_hat=var(marco4b$hatototal);var_hat
+summary(marco4b$hatototal)
+sd_hat=sqrt(var_hat);sd_hat
+hist(marco4b$hatototal,breaks = 1000,xlim=c(1,197))
+```
+
+##d. Construya tres estratos de la siguiente manera: 
+
+- fincas pequeñas (de 1 a 34 cabezas de ganado), 
+- fincas medianas (de 35 a 89 cg) y 
+- fincas grandes (de 90 a 199 cg). 
+
+##Introduzca en el marco la variable estrato, con base en el número de cabezas de ganado (hatototal), y recodifíquela como se describió anteriormente usando la función recode().
+
+```{r}
+N=nrow(marco4b)
+marco4b = marco4b %>% mutate(estrato = case_when( hatototal <=34 ~ "f.pequeña", hatototal <=89 ~ "f.mediana", TRUE ~"f.grande"  ))
+Nh=table(marco4b$estrato)
+wh=Nh/N
+cbind(N,Nh,wh)
+```
+
+##e. Calcule el número y porcentaje de fincas en cada estrato.
+```{r}
+porcen=Nh/N*100
+cbind(Nh,porcen)
+```
+#9. Cálculo del tamaño de muestra estratificada con asignación óptima,
+costos iguales de entrevista por estrato, caso de una variable métrica y estimación del total. Obtenga del marco la información que se requiere para calcular el tamaño de muestra y calcúlelo. Para lograrlo, responda las preguntas siguientes.
+
+##a. ¿Cuál fórmula debe utilizar para calcular el tamaño de muestra?
+
+num=sum(Nh*sh)**2
+deno=v+sum(Nh*sh2)
+
+##b. Calcule para cada estrato $N_h=$ número de viviendas,
+$\bar y=$ tamaño de finca promedio, $y_h=$ suma de cabezas de ganado  y $s_h=$ desviación estándar del número de cabezas de ganado. Use la función summarise(). 
+
+```{r}
+ybar=mean(marco4b$hatototal)
+y_h=tapply(marco4b$hatototal,marco4b$estrato,sum)
+ybar_h=tapply(marco4b$hatototal,marco4b$estrato,mean)
+sh=tapply(marco4b$hatototal,marco4b$estrato,sd)
+cbind(Nh,y_h,ybar_h,sh)
+```
+
+##c. Calcule el número de fincas en la muestra, suponiendo que se requiere un coeficiente de varianción del 2% 
+($cv(Y)=0.02$) para la estimación del total de cabezas de ganado. La variancia deseada $V$, que debe calcularse para la fórmula del tamaño de muestra, se obtiene del coeficiente de variación, pues $cv(Y)=s(Y)/Y$, lo que equivale a que $V=s(Y)^2=(Y cv(Y))^2$.
+
+```{r}
+cv=0.02
+ytotal=85000
+v=(ytotal*cv)**2
+sh2=sh**2
+cbind(N,Nh,wh,sh2)
+
+
+num=sum(Nh*sh)**2
+deno=v+sum(Nh*sh2)
+n0=num/deno;n0
+n=297
+```
+#10. Asignación de la muestra de fincas a los estratos con afijación óptima y proporcional. 
+Asigne la muestra de fincas a los estratos con afijación óptima y también con afijación proporcional. Valore ambas asignaciones pensando en las ventajas y desven
+
+```{r}
+n_prop= strAlloc(n.tot=n, Nh= Nh, alloc= "prop");n_prop
+n_ney= strAlloc(n.tot=n, Nh= Nh, Sh=sh, alloc= "neyman");n_ney
+x=cbind(n_prop$nh, n_ney$nh,Nh,sh2)
+
+colnames(x)=c("prop","neyman","Nh","sh2");x
+
+```
+#11. Selección de la muestra estratificada de fincas.
+Dados los cálculos anteriores proceda a seleccionar la muestra estratificada de fincas. 
+
+##a. Previo a la selección de la muestra, ordene el marco por estrato usando la función order().
+```{r}
+marco4b <- marco4b[order(marco4b$estrato),]
+```
+
+##b. Seleccione la muestra usando mia dentro de cada estrato y verifique el resultado de la asignación.
+
+```{r}
+muestra4b = sampling::strata(data = marco4b, stratanames ="estrato", size = c(57, 82,158 ), method = "srswor"); muestra4b # metodo default
+```
+
+```{r}
+muestra_final = getdata(marco4b, muestra4b); muestra_final  
+```
+
+```{r}
+table(marco4b$estrato)
+table(muestra_final$estrato)
+```
+
+#12. Construcción del factor de expansión por estrato. 
+Calcule el factor de expansión para cada estrato, nómbrelo pondera e inclúyalo en el archivo de la muestra. Debido a que esta nueva variable, por defecto, se crea como categórica, es indispensable cambiarla a numérica. Tome en cuenta que al hacerlo, R recodifica 1=Pequeña, 2=Mediana y 3=Grande, pues se guía por el ordenamiento que tenía previamente.
+```{r}
+f.grande=213/57
+f.mediana=620/82
+f.pequeña=1906/158
+muestra_final = muestra_final %>% mutate(pondera = case_when( estrato == "f.pequeña" ~ f.pequeña, estrato =="f.mediana" ~ f.mediana, TRUE ~f.grande  ))
+```
+
+#13. Definición del diseño muestral estratificado de fincas. 
+Especifique el diseño muestral usando la librería survey(). 
+```{r}
+disenoh <- svydesign(ids = ~1, strata = ~estrato, data=muestra_final, weights = ~pondera)
+```
+
+#14. Inferencias y otras valoraciones. Realice los siguientes cálculos.
+
+
+##a. Calcule el intervalo de confianza para el total de cabezas de ganado y compárelo con el valor poblacional.
+```{r}
+sum(marco4b$hatototal)
+n=nrow(muestra_final)
+total=svytotal(~muestra_final$hatototal,disenoh);total
+confint(total,df=n-3)
+```
+
+
+##b. Estime el total de cabezas de ganado por estrato y el intervalo de confianza. Compare con los valores poblacionales. 
+```{r}
+total_h= svyby(muestra_final$hatototal,by=muestra_final$estrato,disenoh,svytotal);total_h
+confint(total_h,df=n-3)
+
+tapply(marco4b$hatototal,marco4b$estrato,sum)
+```
+
+
+##c. Estime estadísticos de interés para valorar el diseño muestral empleado a partir de la variable hatototal e interprételos. 
+
+
+#15. Fincas autorrepresentadas en la muestra y estratificación del marco muestral de fincas.
+Suponga que se realizará una encuesta nacional en "Tiquicia" para estimar, entre otros aspectos de interés, el hato ganadero (total de cabezas de ganado). El objetivo es obtener información para establecer políticas públicas en torno al tema. Como en el caso anterior, se posee tiene el listado de fincas con información reciente del número de cabezas de ganado por finca (hatototal). No obstante, ahora también se posee un listado que contiene 21 fincas con un número muy grande de cabezas de ganado. Esto origina al menos dos cambios metodológicos de interés con respecto al ejercicio anterior. Uno es que los ganaderos, antes de conocer sobre las 21 fincas muy grandes, estimaban 85000 cabezas de ganado en el país, pero con el nuevo dato ahora estiman 100000. El otro cambio es la estrategia de muestreo, pues se decidió censar las 21 fincas grandes para que formen parte de las estimaciones. Dada la nueva información, se mantiene el hecho de que el tamaño de las fincas (número de cabezas de ganado) varía mucho, por lo que siempre es indispensable usar muestreo estratificado con el objetivo de disminuir la variabilidad de las estimaciones.
+
+##a. Lea el archivo marco4c.Rdata.
+
+```{r}
+load("Bases/marco4c.Rdata")
+```
+
+##b. Obtenga del marco el número total de cabezas de ganado (hatototal). 
+Recuerde que ahora los ganaderos estiman que es bastante probable que el número sea de 100000 cabezas de ganado, pero que ese dato debe ser corroborado con la encuesta.
+```{r}
+ytotal_estimado=100000
+total_hato=sum(marco4c$hatototal);
+cbind(ytotal_estimado,total_hato)
+```
+
+##c. Analice la variabilidad del hatototal para justificar la creación de estratos estadísticos. 
+
+```{r}
+summary(marco4c$hatototal)
+hist(marco4c$hatototal,breaks = 1000,xlim=c(1,1190),main=c("la media es",mean(marco4c$hatototal)))
+
+var_hatototal=var(marco4c$hatototal)
+ds_hatototal=sqrt(var_hatototal)
+cbind(var_hatototal,ds_hatototal)
+```
+
+##d. Construya cuatro estratos de la siguiente manera:: 
+- fincas pequeñas (de 1 a 34 cabezas de ganado), 
+- fincas medianas (de 35 a 89 cg) y 
+- fincas grandes (de 90 a 199 cg). 
+- fincas autorrepresentadas (de 200 a 1190 cg)
+
+El estrato de autorrepresentadas es para las 21 fincas nuevas, cuyo número de cabezas de ganado es muy alto. Esas 21 fincas serán censadas y su probabilidad de ser seleccionadas (estar en la muestra) es 1. Incluya en el marco la variable estrato, con base en el número de cabezas de ganado (hatototal), y recodifíquela como se describió anteriormente usando la función recode().
+
+```{r}
+marco4c = marco4c %>% mutate(estrato = case_when( hatototal <= 34 ~ "f.pequeña", hatototal  <= 89 ~ "f.mediana",hatototal <= 199 ~ "f.grande", TRUE ~"f.auto"  ))
+```
+
+##e. Calcule estadísticos de interés por estrato para valorar la situación del marco muestral con cuatro estratos estadísticos. 
+Utilice la función summarise().
+
+```{r}
+table(marco4c$estrato)
+```
+
+#16. Cálculo del tamaño de muestra estratificada con asignación óptima,
+costos iguales de entrevista por estrato, caso de una variable métrica y estimación del total.Obtenga del marco la información que se requiere para calcular el tamaño de muestra y calcúlelo. Para lograrlo, siga las instrucciones que se brindan a continuación.
+
+##a. Haga un archivo con las fincas autorrespresentadas, es decir, las que no estarán sujetas a muestreo. Guárdelas en el archivo fincasgrandes.Rdata.
+```{r}
+fincasgrandes=subset(marco4c,marco4c$estrato=="f.auto")
+```
+
+##b. Haga un marco muestral con las fincas pequeñas, medianas y grandes, 
+es decir, las que estarán sujetas a muestreo. Guárdelas en el archivo marco4d.Rdata.
+```{r}
+marco4d=subset(marco4c,!marco4c$estrato=="f.auto")
+table(marco4d$estrato)
+```
+
+##c. ¿Cuál es la fórmula para calcular el tamaño de muestra?
+
+num=sum(Nh*sh)**2
+deno=v+sum(Nh*sh2)
+#b. Con base en las fincas que estarán sujetas a muestreo (marcor4d.Rdata), calcule para cada estrato
+$N_h=$ número de viviendas, $\bar y=$ tamaño de finca promedio, $y_h=$ suma de cabezas de ganado  y $s_h=$ desviación estándar del número de cabezas de ganado. Use la función summarise().
+```{r}
+Nh=table(marco4d$estrato)
+ybar=mean(marco4d$hatototal)
+ybar_h=tapply(marco4d$hatototal,marco4d$estrato,mean)
+y_h=tapply(marco4d$hatototal,marco4d$estrato,sum)
+sh2=tapply(marco4d$hatototal,marco4d$estrato,var)
+sh=sqrt(sh2)
+h=cbind(Nh,ybar,ybar_h,y_h,sh2,sh);h
+```
+
+
+
+#c. Calcule el número de fincas en la muestra suponiendo que se requieren estimaciones con un coeficiente de varianción del 2%
+para la estimación del total de cabezas de ganado ($cv(Y)=0.02$). Para obtener la variancia deseada $V$ que debe poner en la fórmula, utilice el coeficiente de variación, pues $cv(Y)=s(Y)/Y$, lo que equivale a que $V=s(Y)^2=(Y cv(Y))^2$.
+
+num=sum(Nh*sh)**2
+deno=v+sum(Nh*sh2)
+
+```{r}
+cv=0.02
+y=100000
+v=(cv*y)**2
+N=nrow(marco4d)
+num=sum(Nh*sh)**2
+deno=v+sum(Nh*sh2)
+n0=num/deno;n0
+f=n0/N;f
+```
+#17. Asignación de la muestra de fincas a los estratos con afijación óptima y proporcional.
+Asigne la muestra de fincas a los estratos con afijación óptima y también con afijación proporcional. Valore ambas asignaciones pensando en las ventajas y desventajas que presentan.
+```{r}
+n=223
+n_prop= strAlloc(n.tot=n, Nh= Nh, alloc= "prop");n_prop
+n_ney= strAlloc(n.tot=n, Nh= Nh, Sh=sh, alloc= "neyman");n_ney
+x=cbind(n_prop$nh, n_ney$nh,Nh,sh2,sh)
+
+colnames(x)=c("prop","neyman","Nh","sh2","sh");x;n
+
+```
+
+
+#18. Selección de la muestra estratificada de fincas. 
+Dados los cálculos anteriores proceda a seleccionar la muestra estratificada de fincas. 
+
+##a. Previo a la selección de la muestra, ordene el marco por estrato usando la función order().
+```{r}
+marco4d <- marco4d[order(marco4d$estrato),]
+```
+
+##b. Seleccione la muestra usando mia dentro de cada estrato y verifique el resultado de la asignación.
+```{r}
+muestra = sampling::strata(data = marco4d, stratanames ="estrato", size = c(43, 62,118 ), method = "srswor"); muestra
+muestra_final = getdata(marco4d, muestra); muestra_final
+```
+
+```{r}
+table(marco4d$estrato)
+table(muestra_final$estrato)
+```
+
+#19. Construcción del factor de expansión por estrato para las fincas en la muestra.
+Calcule el factor de expansión para cada estrato, nómbrelo pondera e inclúyalo en el archivo de la muestra. Debido a que esta nueva variable, por defecto, se crea como categórica, es indispensable cambiarla a numérica. Tome en cuenta que al hacerlo, R recodifica 1=Pequeña, 2=Mediana y 3=Grande, pues se guía por el ordenamiento que tenía previamente.
+```{r}
+f.grande=213/43
+f.mediana=620/62
+f.pequeña=1906/118
+
+muestra_final = muestra_final %>% mutate(pondera = case_when( estrato == "f.pequeña" ~ f.pequeña, estrato  == "f.mediana" ~ f.mediana, TRUE ~f.grande))
+table(muestra_final$pondera,muestra_final$estrato)
+```
+
+#20. Definición del diseño muestral estratificado de fincas. Especifique el diseño muestral usando la librería survey(). 
+
+```{r}
+disenoh <- svydesign(ids = ~1, strata = ~estrato, data=muestra_final, weights = ~pondera)
+```
+
+#21. Estimación con base en la muestra y el censo de fincas.
+Explique con el apoyo de fórmulas cómo tomará en cuenta la información de la muestra y de las fincas autorrepresentadas para realizar las inferencias del hato ganadero en el país.
+
+
+#22. Inferencias y otras valoraciones. Realice los cálculos siguientes.
+
+##a. Calcule cuántas cabezas de ganado hay en las fincas autorrepresentadas.
+```{r}
+load("Bases/fincasgrandes.Rdata")
+total_auto=sum(fincasgrandes$hatototal)
+```
+
+##b. Calcule el intervalo de confianza para el total de cabezas de ganado, incluyendo las fincas autorrepresentadas
+y compárelo con el valor poblacional.
+```{r}
+total_auto=sum(fincasgrandes$hatototal)
+n=nrow(muestra_final)
+total_hato=svytotal(~muestra_final$hatototal,disenoh)+total_auto
+confint(total_hato,df=n-4)
+```
+
+##c. Estime el total de cabezas de ganado por estrato y el intervalo de confianza. Compare con los valores poblacionales.
+```{r}
+total_h= svyby(muestra_final$hatototal,by=muestra_final$estrato,disenoh,svytotal);total_h
+confint(total_h,df=n-4)
+
+tapply(marco4d$hatototal, marco4d$estrato, sum)
+```
+
+
+##d. Estime estadísticos de interés para valorar el diseño muestral que se obtuvo a partir de la variable hatototal e interprételos. 
+
+

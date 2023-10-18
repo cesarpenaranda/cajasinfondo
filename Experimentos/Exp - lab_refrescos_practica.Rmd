@@ -1,0 +1,281 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-23"
+---
+#4.2 Refrescos
+Una empresa embotelladora de refrescos está interesada en obtener alturas de
+llenado más uniformes en las botellas que se fabrican en su proceso de manufactura.
+Teóricamente, una máquina llena cada botella a la altura objetivo correcta, pero en
+la práctica, existe variación en torno a este objetivo, y a la embotelladora le gustaría
+entender mejor las fuentes de esta variabilidad y, en última instancia, reducirla. El
+ingeniero del proceso puede controlar tres variables durante el proceso de llenado:
+
+• el porcentaje de carbonatación,
+• la presión de operación en el llenador y
+• las botellas producidas por minuto o rapidez de línea.
+
+Es sencillo controlar la presión y la rapidez, pero el porcentaje de carbonatación
+es más difícil de controlar durante la manufactura real debido a que varía con la
+temperatura. Sin embargo, para los fines de un experimento, el ingeniero puede
+controlar la carbonatación en tres niveles: 10, 12 y 14%. Elige dos niveles para la
+presión (25 y 30psi) y dos niveles para la rapidez de línea (200 y 250bpm).
+
+Interesa analizar qué tanto se desvía la altura real con respecto a la altura establecida
+como objetivo. Las desviaciones positivas son alturas de llenado arriba del objetivo,
+mientras que las negativas son alturas de llenado abajo del objetivo. Puesto que
+pueden existir desviaciones en ambas direcciones, el interés del estudio es analizar si
+las botellas se han llenado correctamente, por lo que se toma el valor absoluto de cada
+desviación. Debido a que las botellas se producen en corridas de cerca de 50 botellas,
+la unidad de observación es una corrida, y la variable respuesta es la desviación
+absoluta promedio en cada corrida de producción de botellas. Las mediciones se
+hacen en milímetros.
+El ingeniero decide correr dos réplicas de un diseño factorial con estos tres factores,
+por lo que realiza dos corridas de producción con cada conjunto de condiciones,
+haciendo las 24 corridas en un orden aleatorio.
+
+
+#4.2.1 Ejercicios
+#1. Preparación:
+##(a) Cargue el archivo refrescos.Rdata. Verifique que todos los factores esténbien definidos.
+```{r}
+load("Bases/refrescos.Rdata")
+str(base)
+#View(base)
+```
+
+##(b) Obtenga los promedios de todos los tratamientos. Use:tapply(y,list(x1,x2,x3),mean).
+```{r}
+m=tapply(base$desvabs,list(base$carbonatacion,base$presion,base$rapidez),mean);m
+```
+
+##(c) Observe cuál es el tratamiento que parece acercarse más al objetivo de laproducción.
+El que produce una respuesta mas cercana al objetivo es el tratamiento de rapidez(200bpm) presion(30) y carbo(30) el cual es el que presenta a simple vista una diferencia absoluta promedio menor
+#2. Interacciones dobles:
+##(a) Haga un gráfico para ver la interacción entre presión y carbonatación. De forma similar, haga gráficos para analizar la interacción entre los otros pares de factores. Se puede esperar interacción entre cada par de factores? En caso afirmativo, ¿por qué sí y qué significa? En caso negativo, ¿por qué no y qué significa?
+```{r}
+library(ggplot2)
+par(mfrow = c(1, 3))
+ggplot(base, aes(x=carbonatacion, y=desvabs, group = presion)) +
+stat_summary(fun="mean", geom="line", aes(linetype = presion))
+
+ggplot(base, aes(x=carbonatacion, y=desvabs, group = rapidez)) +
+stat_summary(fun="mean", geom="line", aes(linetype = rapidez))
+
+ggplot(base, aes(x=presion, y=desvabs, group = rapidez)) +
+stat_summary(fun="mean", geom="line", aes(linetype = rapidez))
+```
+En el par de factores (carbonatacion,presion) y (carbonatacion,rapidez) se aprecia una leve interaccion pero no parece tan pronunciada ya que vemos que los efectos para cada nivel son similares, por otra parte en el par de factores(rapidez,presion) si podemos sopechar de una interaccion entre la rapidez y el factor presion,esto indica que a mayor rapidez podemos esperar mayor variabilidad entre los promedios segun la presion utilizada
+##(b) Obtenga los promedios cruzando sólo dos factores a la vez. Es decir, los promedios cruzando carbonatación y presión. Trate de calcular del gráfico más o menos cuánto tienen que ajustarse estos promedios para que NO haya interacción entre carbonatación y presión. Luego cruce rapidez y presión, y finalmente cruce rapidez y carbonatación.
+```{r}
+m.cp=tapply(base$desvabs,list(base$carbonatacion,base$presion),mean);m.cp
+m.rp=tapply(base$desvabs,list(base$rapidez,base$presion),mean);m.rp 
+m.rc=tapply(base$desvabs,list(base$rapidez,base$carbonatacion),mean);m.rc
+```
+para que no haya interacion entre carbonatacion y presion la tabla tendria que verse similar a la siguiente:
+```{r}
+x=c(1.25,2.5,2.5,3.75,6.25,7.5)
+mat=matrix(x,nrow = 3,byrow = T)
+colnames(mat)=colnames(m.cp)
+rownames(mat)=rownames(m.cp);mat
+```
+
+##(c) Obtenga los promedios marginales para cada nivel de cada factor (independientemente de los otros factores), es decir, los tres promedios para los niveles de carbonatación, los dos promedios para los niveles de presión y los dos promedios para los niveles de rapidez.
+```{r}
+m_c=tapply(base$desvabs,base$carbonatacion,mean);m_c
+m_p=tapply(base$desvabs,base$presion,mean);m_p
+m_r=tapply(base$desvabs,base$rapidez,mean);m_r
+media=mean(base$desvabs)
+```
+
+##(d) Obtenga la estimación de los efectos simples de cada factor.
+```{r}
+ef.c=m_c-media ;ef.c
+ef.p=m_p-media ;ef.p
+ef.r=m_r-media ;ef.r
+```
+
+##(e) Obtenga la estimación del efecto de la interacción entre carbonatación y presión para el caso de carbonatación 10% y presión 25 psi. Esta medida se llama interacción de primer orden. Luego obtenga el efecto de la interacción de primer orden entre presión 25 psi y rapidez 200 bpm, y finalmente entre carbonatación 10% y rapidez 200 bpm.
+```{r}
+int.cp=m.cp[1,1]-(media+ef.c[1]+ef.p[1]);int.cp
+int.pr=m.rp[1,1]-(media+ef.p[1]+ef.r[1]);int.pr
+int.rc=m.rc[1,1]-(media+ef.r[1]+ef.c[1]);int.rc
+```
+
+##(f) Verifique los efectos simples y de las interacciones de primer orden obtenidas usando un modelo con interacciones dobles.
+```{r}
+mod=aov(desvabs~carbonatacion*presion+carbonatacion*rapidez+presion*rapidez,data=base)
+model.tables(mod)
+```
+
+#3. Interacción triple:
+##(a) Para visualizar si existe interacción conjunta entre los tres factores se analiza la interacción entre dos de ellos, pero separando para cada nivel del tercer factor. Use la función xyplot en la librería lattice de la siguiente forma: y~x1|x3,group=x2,pch=18,type="a").
+```{r}
+library(lattice)
+xyplot(base$desvabs~base$carbonatacion|base$rapidez,group=base$presion,pch=18,type="a")
+```
+
+##(b) Observe si el comportamiento de estas interacciones es el mismo en ambos gráficos. Cuando el comportamiento de la interacción es diferente en cada gráfico se dice que hay interacción triple o interacción de segundo orden.
+se sospecha de interaccion triple o de segundo orden ya que las interacciones se observan diferentes en los dos graficos
+##(c) Escriba los modelos con y sin interacción triple. Use los subíndices adecuados e indique a qué corresponde cada subíndice.
+sin interaccion triple
+Mu_ijk=mu+alfa_i+beta_j+omega_k+(ab)_ij+(ao)_ik+(bo)_jk
+
+con interaccion triple
+Mu_ijk=mu+alfa_i+beta_j+omega_k+(ab)_ij+(ao)_ik+(bo)_jk+(abo)_ijk
+
+i es el efecto de (carbonatacion) donde (i=1 es 10%, i=2 es 12%, i=3 es 14%) j es el efecto de (presion) donde (j=1 es 25,j=2 es 30) k es el efecto de (rapidez) donde (k=1 es 200,k=2 es 250)
+
+##(d) Proponga una forma de calcular los efectos dentro de la interacción triple.
+Puesto que la estimación de las medias bajo el modelo con interacción triple
+son los promedios observados, se tiene que: µCI^T_ijk = y¯_ijk, cada efecto dentro de la
+interacción triple se calcula como la diferencia entre los dos modelos, entonces:
+
+(αβγ)ijk=ybarra_ijk−(µˆ+αˆi + ˆβj +γˆk + (αβ)ˆij + (αγ)ˆik + (βγ)ˆjk)
+
+##(e) Realice el cálculo para encontrar el efecto de interacción triple para carbonatación 10%, presión 25 psi y rapidez 200 bpm.
+```{r}
+m.ijk=mean(base$desvabs[base$carbonatacion=="10" & base$presion=="25"&base$rapidez=="200"]);m.ijk
+ab_11=0.4167
+ao_11=0.16667
+bo_11= 0.5417
+
+ef.int.111=m.ijk-(media+ef.c[1]+ef.p[1]+ef.r[1]+int.cp+int.pr+int.rc);ef.int.111
+```
+
+##(f) Estime un modelo con interacción triple usando aov y extraiga los efectos de interacción triple. Obtenga la suma de cuadrados de interacción triple mediante:
+∑i∑j∑kr_ijk(αβγ)^2ijk
+```{r}
+mod2=aov(desvabs~carbonatacion*presion*rapidez,data=base)
+model.tables(mod2)
+```
+  
+
+
+carbonatacion:presion:rapidez
+```{r}
+int.triple=model.tables(mod2)$tables$"carbonatacion:presion:rapidez"
+```
+∑i∑j∑kr_ijk(αβγ)^2ijk
+*1.083*
+
+```{r}
+SC.int.tri=sum(2*int.triple^2)
+x=c(SC.int.tri,anova(mod2)[7,2])
+names(x)=c("a mano","del anova");x
+```
+
+##(g) Obtenga los grados de libertad de la interacción triple.
+```{r}
+gl=(2-1)*(2-1)*(3-1);gl
+```
+
+##(h) Obtenga el cuadrado medio correspondiente y explique qué mide esta cantidad. 
+```{r}
+anova(mod2)[7,3]
+```
+Este es el cuadrado medio de interacción triple el cual mide la magnitud de los
+efectos de interacción triple. Si esta cantidad resulta ser muy grande en relación
+al CMRes, significa que hay una alta variabilidad en los efectos de interacción
+triple. Como estos efectos tienen media cero, entonces tener alta variabilidad es
+equivalente a tener efectos relativamente altos en valor absoluto.
+
+##(i) Obtenga el análisis de variancia.
+```{r}
+anova(mod2)
+```
+
+##(j) Compare el CMTriple con el CMRes para poner a prueba si la hipótesis nula de no interacción triple es factible. Concluya.
+```{r}
+CMtriple=anova(mod2)[7,3]
+CMres=anova(mod2)[8,3]
+
+f=CMtriple/CMres;f
+pf(f,2,12,lower.tail = F) #1 grados de libertad del numerador y 12 de denominador
+```
+f es igual a 1 eso nos indica el parentesco entre cmtriple y cmres, con la probabilidad asociada de f la cual es (0.39) y un alfa de 0.05 no hay suficiente evidencia estaditica para rechar la H0, por lo tanto no se recomienda rechazarla, por lo tanto asumimos que no hay presente una interacion triple entre los tres factores(carbonatacion,presion,rapides)
+
+
+#4. Análisis sin interacción triple:
+##(a) Asuma que no existe interacción triple y estime el modelo correspondiente bajo la restricción de suma nula. Elimine las interacciones que no son significativas para lo cual debe hacerlo paso a paso. Primero elimine la interacción que es menos significativa. En este proceso de eliminación es más seguro usar la función drop1 con el argumento test="F", la cual es equivalente a comparar el modelo completo con un modelo que elimina un término a la vez. Es útil usar esta función especialmente cuando el diseño no es balanceado o cuando se incluyen covariables (lo cual se verá más adelante). Estime el nuevo modelo reducido, obtenga los coeficientes y vea a qué corresponde cada uno.
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod=lm(desvabs~carbonatacion+presion+rapidez+carbonatacion*presion+carbonatacion*rapidez+presion*rapidez,data=base)
+drop1(mod,test = "F")
+```
+```{r}
+mod2=lm(desvabs~carbonatacion+presion+rapidez+carbonatacion*presion+presion*rapidez,data=base)
+drop1(mod2,test = "F")
+```
+```{r}
+mod3=lm(desvabs~carbonatacion+presion*rapidez,data=base)
+drop1(mod3,test = "F")
+```
+##(b) Obtenga los coeficientes del modelo simplificado y vea a qué corresponde cada uno de ellos. Obtenga las estimaciones de la media marginal para los niveles de carbonatación.
+```{r}
+coef=mod3$coefficients;coef
+```
+En este caso la media general es 4.12, (carbonatacion1=10%) su efecto es -2.5,(carbonatacion2=12%) su efecto es -0,875,(carbonatacion=3)=-(-2.5-0,875)=3.375, luego (presion1=25) su efecto es -0.79, (presion2=30) su efecto es 0,79, despues (rapidez1=200) su efecto es -1.041, (rapidez2=250) su efecto es 1.041, el efecto de interacion(presion1=25,rapidez1=200) su efecto es 0.54   
+##(c) Compare las estimaciones obtenidas con el modelo para las medias marginales de carbonatación con las medias observadas obtenidas previamente.
+```{r}
+m_c
+mu1=c(1,1,0,0,0,0)%*%coef;mu1
+mu2=c(1,0,1,0,0,0)%*%coef;mu2
+mu3=c(1,-1,-1,0,0,0)%*%coef;mu3
+c1=c(mu1,mu2,mu3)
+cbind(m_c,c1)
+
+```
+
+##(d) Como existe interacción entre algunos factores, hay que considerar esta interacción al hacer comparaciones. Sin embargo, carbonatación no tiene interacción con ningún otro factor, por lo que se pueden hacer las comparaciones de las medias marginales. Por otra parte, puesto que se obtienen los mismos resultados usando las medias observadas que las medias estimadas por el modelo, para hacer las pruebas e intervalos se pueden usar los contrastes largos o la comparación clásica más corta. Cree los vectores que deben multiplicar los coeficientes del modelo para calcular las medias marginales de los diferentes niveles de carbonatación. Para obtener una media marginal se pone un cero en los vectores para que multipliquen los coeficientes de los otros factores (presión y rapidez). Esto solo es válido si se usa el modelo de suma nula, ya que si se usa el de tratamiento referencia, al poner un cero en algún factor se estaría indicando el nivel de referencia.
+```{r}
+cbind(m_c,c1)
+```
+
+#(e) Obtenga estimaciones de los promedios usando estos vectores y compárelos con los obtenidos anteriormente.
+
+#(f) Escriba los contrastes para comparar las medias de los tres niveles de carbonatación y obtenga una estimación de la diferencia de los promedios por pares.
+```{r}
+mu1=c(1,1,0,0,0,0)%*%coef
+mu2=c(1,0,1,0,0,0)%*%coef
+mu3=c(1,-1,-1,0,0,0)%*%coef
+
+mu_1_2=mu1-mu2
+mu_1_3=mu1-mu3
+mu_2_3=mu2-mu3
+
+h=abs(c(mu_1_2,mu_1_3,mu_2_3));h
+```
+
+#(g) Escriba las hipótesis asociadas a esos contrastes y verifique si son ortogonales.
+Los contrastes para comparar las medias marginales de carbonatación son:
+H0: mu1.. - mu2..=0
+H0: mu1.. - mu3..=0
+H0: mu2.. - mu3..=0
+
+Tomando el vector de promedios
+(mu1..,mu2..,mu3..)
+
+vectores quedan
+v(1,-1,0)
+v(1,0,-1)
+v(0,1,-1)
+```{r}
+v1=c(1,-1,0)
+v2=c(1,0,-1)
+v3=c(0,1,-1)
+
+v1%*%v2;v1%*%v2;v2%*%v3
+```
+
+
+#(h) Lleve a cabo las pruebas de las hipótesis para estos contrastes.
+```{r}
+ee=sqrt(diag(t(h)%*%vcov(mod3)%*%h))
+t=L/ee
+(p=ptukey(t*sqrt(2),3,18,lower.tail = F))
+```
+
+#(i) Verifique que todos los errores estándar coinciden con el obtenido a partir de la fórmula clásica para la variancia de una diferencia de promedios: V(y¯i −y¯j) = 2CMRes/r.
+#(j) Considerando que hay interacción entre presión y rapidez, haga las comparaciones entre las medias de los dos niveles de presión para cada nivel de rapidez. Primero verifique si los contrastes de las hipótesis son ortogonales.
+#(k) Ahora haga las comparaciones en sentido inverso, es decir, compare entre las medias de los dos niveles de rapidez para cada nivel de presión. Primero verifique si los contrastes de las hipótesis son ortogonales.

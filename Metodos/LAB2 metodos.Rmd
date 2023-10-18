@@ -1,0 +1,218 @@
+---
+title: "Lab2_2022"
+author: "Gilbert Brenes Camacho"
+date: "3/14/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#Laboratorio II. Estadística descriptiva 
+    
+#El objetivo de este laboratorio es que aprendan a utilizar R para análisis estadísticos básicos, 
+#practiquen el escribir un informe, y recuerden los lineamientos básicos de una investigación.
+
+#Como ya se les ha dicho, R puede cargar archivos de otros paquetes estadísticos.
+
+#Utilizaremos uno de STATA, pero pueden usar de SPSS, SAS, etc.
+
+#Supongamos que ustedes están desarrollando una investigación sobre adultos mayores mexicanos, 
+#y se plantearon los siguientes objetivos:
+  
+#1.	Conocer la distribución por sexo y nivel de educación
+#2.	Conocer el peso promedio de los mexicanos por nivel de educación
+#3.	Conocer la proporción de población urbana por sexo
+#4.	Conocer la distribución de la altura de la rodilla por sexo
+#5.	Conocer la mediana de la altura de la rodilla por sexo
+#6.	Conocer la varianza de la altura de rodilla por sexo y residencia
+
+
+#Empezamos cargando el archivo.  Noten el directorio que estamos utilizando.
+#Para conocer el directorio actual se debe digitar "getwd()"
+#Para cambiarlo, ya saben que se utiliza "setwd()"
+
+```{r}
+
+rm(list=ls())
+getwd()# para saber donde estamos trabajando 
+setwd("CC:/Users/cesar/Desktop/CARPETAS/UNIVERSIDAD COMPU/METODOS/PRIMER/lab2")
+```
+
+#Cuando instalen los siguientes paquetes, RStudio les va a preguntar si quieren reiniciarlo.  
+#CONTESTEN QUE NO.
+#Corran este install.packages desde la consola si lo instalan por primera vez.
+
+
+```{r}
+install.packages(c("abind","dplyr"), dependencies = TRUE)
+install.packages(c("kable","kableExtra"))
+```
+
+#install.packages(c("rio","foreign","car"))
+#install.packages(c("haven","readr"))
+
+#Correr la linea anterior solo si no lo instalaron en el laboratorio 1.
+
+
+```{r}
+library(rio)
+library(foreign)
+library(car)
+library(faraway)
+library(abind)
+library(MASS)
+library(kableExtra)
+```
+
+```{r}
+library(dplyr)
+```
+
+#Pueden abrir el archivo antropomexicano desde "Import Dataset"
+#en la esquina superior derecha del Environment.  
+
+```{r}
+library(haven)
+library(readr)
+antropomexicano <- read_sav("antropomexicano.sav")
+
+
+attach(antropomexicano)
+names(antropomexicano)
+```
+
+
+#Para algunos comandos, R requiere factores (variables categóricas).
+
+```{r}
+table(escola)
+educacion<-Recode(escola, "0=0; 1:6=1; 7:19=2; 99=NA")
+antropomexico<-antropomexicano%>%
+  mutate(escola<-educacion)
+
+antropomexicano$educacion<-as.factor(educacion)
+
+antropomexicano$sexof<-as.factor(sexo)
+```
+
+#Verificamos que sexof y educacion estén dentro de antropomexicano
+
+```{r}
+names(antropomexicano)
+
+attach(antropomexicano)
+head(antropomexicano)
+
+```
+#Los siguientes cuadros dan una distribucion de frecuencias.  Ustedes escogen
+#si por fila o por columna.
+
+#colPercents y rowPercents están en el paquete Rcmdr
+
+
+```{r}
+cuadro1<-ftable(educacion,sexof)
+cuadro1
+prop.table((table(educacion,sexof)),2) #Porcentajes por columna
+round(prop.table((table(educacion,sexof)),1),2) #Porcentajes por fila
+```
+
+#La siguiente es la forma de generar una tabla de medias
+
+```{r}
+(cuadro2<-tapply(peso, educacion, mean, na.rm=TRUE))
+```
+
+#Para que tenga un poco de mejor presentación, le pueden correr
+
+```{r}
+cuadro2<-round(t(t(cuadro2)),2)
+cuadro2
+```
+
+
+
+#Podemos analizar también la distribución de frecuencias de una variable binaria
+
+```{r}
+table(urbano)
+
+
+(cuadro3<-t(t(table(urbano))))
+
+```
+
+#Podemos también generar un cuadro más simple de proporciones de residencia urbana
+#aprovechando las propiedades de las variables binarias
+#porque la media aritmética de una variable binaria es equivalente a la proporción de unos.
+
+```{r}
+(cuadro4<-tapply(urbano, sexof, mean, na.rm=TRUE))
+```
+#Para que se vea con mejor presentació bonita, le pueden dar
+
+```{r}
+(cuadro4<-round(t(t(cuadro4)),2))
+```
+
+#Ahora vamos a recodificar según grupos
+#Calcule con tapply la mediana de altura de la rodilla por sexo
+#Recodifique la variable rodilla de la siguiente forma, tomando como 
+#punto la mediana. La variable nueva seria rodilla.nueva
+
+#Recodifique rodilla de 0 a menos de la mediana igual a 0, y de la mediana 
+#al máximo igual a 1.
+
+```{r}
+tapply(rodilla,sexof, median, na.rm=T)
+summary(rodilla)
+```
+
+```{r}
+rodilla.nueva=rodilla
+rodilla.nueva[sexof==1]<-Recode(rodilla[sexof==1], "0:51.9999=0; 52:120=1; 880:999=NA")
+rodilla.nueva[sexof==2]<-Recode(rodilla[sexof==2], "0:46.9999=0; 47:120=1; 880:999=NA")
+table(rodilla.nueva)
+table(rodilla.nueva,sexof)
+```
+#Se puede presentar ahora un ejemplo de variancias en una tabla cruzada.  
+#La variancia por sexo y residencia urbana
+
+
+```{r}
+rodilla2<-Recode(rodilla, "880:999=NA")
+
+round(tapply(rodilla2, list(sexof,urbano), var, na.rm=T),3)
+
+levels(sexof)<-c("Hombre","Mujer")
+urbanof<-as.factor(urbano)
+levels(urbanof)<-c("Rural","Urbano")
+
+round(tapply(rodilla2, list(sexof,urbanof), var, na.rm=T),3)
+```
+
+
+#Si ya tienen una tabla así, pueden seguir con los formatos aprendidos en Estadística Introductoria I.
+
+```{r}
+cuadro5 <-round(tapply(rodilla2, list(sexof,urbanof), var, na.rm=T),2)
+cuadro5 %>%
+  kbl(caption = "Cuadro 5. Variancia de rodilla, por sexo, según zona") %>%
+  kable_classic(full_width = F, html_font = "Arial") %>%
+  row_spec(0,background ="lightgray")
+```
+
+#Ahora siguen ustedes.
+
+#Los objetivos de la investigación son:
+  
+#1.	Conocer la distribución univariada (distribución de frecuencias) de mexicanos por sexo y edad
+#2.	Estime la circunferencia promedio por grupos de edad y sexo en forma conjunta
+#3.	Defina gordos como aquellos hombres con cintura mayor a 90 cent?metros y a aquellas mujeres con cintura mayor a 85.
+#4.	Calcule la variable imc, la cual es igual a peso/((altura/100)^2)
+#5.	Estime el índice de masa corporal mediano para hombres, según si son gordos o no.
+
+#library(svdialogs)
+#winDialog(type="ok",massaje="mein es una perra")
+
+

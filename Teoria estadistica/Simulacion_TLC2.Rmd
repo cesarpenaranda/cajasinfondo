@@ -1,0 +1,25 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-22"
+---
+
+```{r}
+
+Poblacion=rexp(10000,3)
+hist(Poblacion,breaks =100,main= c("la media es",mean(Poblacion)))
+
+Muestra=100
+s=sample(Poblacion,Muestra,replace = F)
+hist(s,breaks =100,main= c("la media es",mean(s)))
+
+vector_mu=NULL
+B=2000
+for (i in 1:B){
+  x=sample(Poblacion,30,replace=F)
+  vector_mu[i]=mean(x)
+}
+hist(vector_mu,breaks =100,main= c("la media es",mean(vector_mu)))
+
+```
+

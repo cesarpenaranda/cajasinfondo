@@ -1,0 +1,446 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-23"
+---
+
+4.2 Refrescos
+Una empresa embotelladora de refrescos está interesada en obtener alturas de
+llenado más uniformes en las botellas que se fabrican en su proceso de manufactura.
+Teóricamente, una máquina llena cada botella a la altura objetivo correcta, pero en
+la práctica, existe variación en torno a este objetivo, y a la embotelladora le gustaría
+entender mejor las fuentes de esta variabilidad y, en última instancia, reducirla. El
+ingeniero del proceso puede controlar tres variables durante el proceso de llenado:
+
+• el porcentaje de carbonatación,
+• la presión de operación en el llenador y
+• las botellas producidas por minuto o rapidez de línea.
+
+Es sencillo controlar la presión y la rapidez, pero el porcentaje de carbonatación
+es más difícil de controlar durante la manufactura real debido a que varía con la
+temperatura. Sin embargo, para los fines de un experimento, el ingeniero puede
+controlar la carbonatación en tres niveles: 10, 12 y 14%. Elige dos niveles para la
+presión (25 y 30psi) y dos niveles para la rapidez de línea (200 y 250bpm).
+
+Interesa analizar qué tanto se desvía la altura real con respecto a la altura establecida
+como objetivo. Las desviaciones positivas son alturas de llenado arriba del objetivo,
+mientras que las negativas son alturas de llenado abajo del objetivo. Puesto que
+pueden existir desviaciones en ambas direcciones, el interés del estudio es analizar si
+las botellas se han llenado correctamente, por lo que se toma el valor absoluto de cada
+desviación. Debido a que las botellas se producen en corridas de cerca de 50 botellas,
+la unidad de observación es una corrida, y la variable respuesta es la desviación
+absoluta promedio en cada corrida de producción de botellas. Las mediciones se
+hacen en milímetros.
+El ingeniero decide correr dos réplicas de un diseño factorial con estos tres factores,
+por lo que realiza dos corridas de producción con cada conjunto de condiciones,
+haciendo las 24 corridas en un orden aleatorio.
+
+
+#4.2.2 Solución
+
+#1. Preparación:
+##(a) Lectura:
+```{r}
+load("Bases/refrescos.Rdata")
+str(base)
+
+```
+
+##(b) Promedios de todos los tratamientos:
+```{r}
+(m.cpr=tapply(base$desvabs, list(base$carbonatacion,base$presion,base$rapidez),mean))
+
+```
+
+##(c) Tratamiento que parece acercarse más al objetivo de la producción: El tratamiento que produce la menor desviación (0,5 mm) es con 10% de carbonatación, presión de 30 psi y rapidez de 200 bpm.
+
+#2. Interacciones dobles:
+##(a) Interacción entre pares de variables:
+```{r}
+library(ggplot2)
+ggplot(base, aes(x=carbonatacion, y=desvabs, group = presion)) +
+stat_summary(fun.y="mean", geom="line", aes(linetype = presion))
+
+```
+Parece no haber interacción entre carbonatación y presión, ya que para todos los
+niveles de carbonatación se aprecia un efecto de la presión, se nota un aumento
+de la media de la desviación cuando se usa mayor presión (Figura 4.2 superior
+izquierda). De forma similar, parece que no hay interacción entre carbonatación
+y rapidez, se observa una mayor media de la desviación para mayor rapidez, en
+todos los niveles de carbonatación (Figura 4.2 superior derecha). Entre presión
+y rapidez puede sospecharse de presencia de interacción (Figura 4.2 inferior),
+cuando la presión es baja el efecto de la rapidez es pequeño y cuando la presión
+es alta ese efecto se hace un poco más fuerte, siempre tendiendo a que a mayor
+rapidez hay mayor desviación promedio en el llenado (Figura 4.2 inferior).
+
+##(b) Promedios cruzando solo dos factores a la vez:
+```{r}
+(m.cp = tapply(base$desvabs, list(base$carbonatacion,base$presion),mean))
+(m.cr = tapply(base$desvabs, list(base$carbonatacion,base$rapidez),mean))
+(m.pr = tapply(base$desvabs, list(base$presion,base$rapidez),mean))
+
+```
+
+##(c) Promedios marginales:
+```{r}
+(m.c = tapply(base$desvabs,base$carbonatacion,mean))
+(m.p = tapply(base$desvabs,base$presion,mean))
+(m.r = tapply(base$desvabs,base$rapidez,mean))
+
+```
+
+##(d) Efectos simples:
+```{r}
+m = mean(base$desvabs)
+(ef.c= m.c-m)
+(ef.p= m.p-m)
+(ef.r= m.r-m)
+
+```
+##(e) Efectos de las interacciones entre pares de factores:
+```{r}
+int.cp = m.cp[1,1]-(m+ef.c[1]+ef.p[1])
+int.pr = m.pr[1,1]-(m+ef.p[1]+ef.r[1])
+int.cr = m.cr[1,1]-(m+ef.c[1]+ef.r[1])
+c(int.cp,int.pr,int.cr)
+
+```
+
+
+##(f) Efectos usando un modelo con interacciones dobles:
+
+```{r}
+mod1=aov(desvabs~carbonatacion*presion+carbonatacion*rapidez+presion*rapidez,data=base)
+model.tables(mod1)
+```
+
+#3. Interacción triple:
+##(a) Visualización de interacción triple:
+```{r}
+library(lattice)
+xyplot(desvabs~carbonatacion|rapidez,group=presion,type="a",data=base)
+```
+##(b) Comparación de interacciones dobles:
+En la Figura 4.3 se observa que la interacción entre carbonatación y presión es
+similar en ambas partes, puesto que, tanto en la parte que corresponde a rapidez
+200 como en la que corresponde a rapidez 250, parece no haber interacción entre
+carbonatación y presión. Por lo tanto, no parece haber evidencia de interacción
+triple.
+
+##(c) Modelos:
+Modelo con interacción triple:
+µCITijk = µ+αi +βj +γk + (αβ)i j + (αγ)ik + (βγ)jk + (αβγ)i jk
+
+Modelo sin interacción triple:
+µSITijk = µ+αi +βj +γk + (αβ)i j + (αγ)ik + (βγ)jk
+
+El subíndice i indica el nivel de carbonatación (i=1 para 10%, i=2 para 12%, i=3
+para 14%), j indica el nivel de presión (j=1 para 25psi, j=2 para 30psi) y k indica
+el nivel de rapidez (k=1 para 200bpi, k=2 para 250pbi).
+
+
+##(d) Derivación de estimación de los efectos dentro de la interacción triple:
+Puesto que la estimación de las medias bajo el modelo con interacción triple
+son los promedios observados, se tiene que: µCI^T_ijk = y¯_ijk, cada efecto dentro de la
+interacción triple se calcula como la diferencia entre los dos modelos, entonces:
+
+(αβγ)ijk=ybarra_ijk−(µˆ+αˆi + ˆβj +γˆk + (αβ)ˆij + (αγ)ˆik + (βγ)ˆjk)
+
+##(e) Cálculo de los efectos dentro de la interacción triple:
+```{r}
+(int.cpr=m.cpr[1,1,1]-(m+ef.c[1]+ef.p[1]+ef.r[1]+int.cp+int.cr+int.pr))
+```
+##(f) Suma de cuadrados de interacción triple:
+```{r}
+mod2=aov(desvabs~carbonatacion*presion*rapidez,data=base)
+model.tables(mod2)
+
+```
+```{r}
+int.triple=model.tables(mod2)$tables$"carbonatacion:presion:rapidez"
+(sctriple=sum(2*int.triple^2))
+```
+
+
+##(g) Grados de libertad:
+```{r}
+(gl=(3-1)*(2-1)*(2-1))
+
+```
+##(h) Cuadrado medio:
+```{r}
+(cmtriple=sctriple/gl)
+```
+Este es el cuadrado medio de interacción triple el cual mide la magnitud de los
+efectos de interacción triple. Si esta cantidad resulta ser muy grande en relación
+al CMRes, significa que hay una alta variabilidad en los efectos de interacción
+triple. Como estos efectos tienen media cero, entonces tener alta variabilidad es
+equivalente a tener efectos relativamente altos en valor absoluto.
+
+##(i) Análisis de variancia:
+```{r}
+anova(mod2)
+
+```
+
+##(j) Prueba de la hipótesis de no interacción triple:
+```{r}
+cmres=anova(mod2)[8,3]
+(f=cmtriple/cmres)
+```
+
+El valor F da 1, con lo que se pone de manifiesto lo pequeño que es el CMTriple.
+Asociado a esto se tiene un probabilidad muy alta (p = 0,40), con lo cual no
+se recomienda rechazar la hipótesis nula y, por lo tanto, se asume que no existe
+interacción conjunta entre los tres factores. Al no haber interacción triple se tiene
+que la interacción que existe entre carbonatación y presión no depende del nivel
+de rapidez que se tome. De la misma forma sucede con las otras interacciones.
+
+#4. Análisis sin interacción triple:
+
+##(a) Prueba de hipótesis de independencia entre pares de factores:
+Se puede continuar el análisis con el mod1 que no tenía interacción triple, sin
+embargo se va a estimar de nuevo usando el modelo de suma nula.
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod3=lm(desvabs~carbonatacion*presion+presion*rapidez+carbonatacion*rapidez,data=base)
+drop1(mod3,test="F")
+
+```
+La probabilidad asociada a la interacción entre carbonatación y rapidez es
+mayor a 0,05 y esta probabilidad es mayor que la de la interacción entre
+carbonatación y presión, que también es mayor a 0,05, por lo que se elimina
+esta interacción y se corre un nuevo modelo sin ella.
+
+```{r}
+mod4=lm(desvabs~carbonatacion*presion+presion*rapidez,data=base)
+mod4$coef
+drop1(mod4,test="F")
+
+```
+La probabilidad asociada a la interacción entre carbonatación y presión sigue
+siendo mayor a 0,05, por lo que se elimina esta interacción y se corre un nuevo
+modelo sin ella y con solo la interacción entre presión y rapidez. Note que esta
+probabilidad es un poco diferente a la que se obtuvo en el modelo anterior
+(mod3), ya que era 0.092 y ahora es 0.077. Esto se debe a que ahora el cuadrado
+medio residual ha cambiado un poco y la prueba F se construye al dividir el
+cuadrado medio de la interacción contra un nuevo cuadrado medio residual,
+y cambian también los grados de libertad residuales. La diferencia no debería
+ser muy grande, pero en algunos casos estos cambios provocan sorpresas, y un
+término que parecía significativo, podría resultar no serlo después de eliminar
+otros términos. Esta es la importancia de hacer la eliminación de términos de
+forma secuencial.
+
+```{r}
+mod5=lm(desvabs~carbonatacion+presion*rapidez,data=base)
+drop1(mod5,test="F")
+
+```
+Este último modelo solo tiene una interacción (entre presión y rapidez), la cual
+tiene una probabilidad asociada menor a 0,05, lo cual indica que si se elimina esa
+interacción, la suma de cuadrados residual aumentaría de forma significativa.
+En otras palabras, no todos los términos de interacción entre esos dos factores
+son cero y se debe analizar la interacción entre ellos.
+
+##(b) Modelo simplificado:
+
+```{r}
+contrasts(base$carbonatacion)
+contrasts(base$presion)
+contrasts(base$rapidez)
+(b=mod5$coef)
+
+
+```
+La media general es 4.13. El término carbonatacion1 se refiere al nivel 10 y su
+coeficiente es -2.50, lo que significa que la media marginal de carbonatación 10
+está 2.50 unidades debajo de la media general, entonces la media marginal de
+carbonatación 10 es 4.13-2.50=1.63. Por otro lado, carbonatacion2 corresponde
+al nivel 12, lo que indica que la media marginal de carbonatación 12 está 0.88
+unidades debajo de la media general (4.13-0.88=3.25). El coeficiente para el nivel
+14 debe obtenerse con el negativo de la suma de los otros 2 (2.50+0.88=3.38),
+entonces con carbonatación 14 la media marginal está 3.38 unidades sobre la
+media general (4.13+3.38=7.51).
+Similarmente, presion1 corresponde al nivel 25 y su coeficiente es -0.79, la media
+marginal es 4.13-0.79=3.34, mientras que la media marginal para una presión de
+30 es 4.13+0.79=4.92. Finalmente, rapidez1 corresponde al nivel 200 y su media
+marginal es 4.13-1.04=3.09, mientras que la media marginal para la rapidez de
+250 es 4.13+1.04=5.17.
+
+##(c) Comparación de estimaciones con las medias observadas:
+```{r}
+m.c
+```
+Se obtienen los mismos resultados.
+
+##(d) Contrastes:
+Los vectores de coeficientes para las medias de los niveles de carbonatación son
+los siguientes:
+Carbonatación 10: [1,1,0,0,0,0]T
+Carbonatación 12: [1,0,1,0,0,0]T
+Carbonatación 14: [1,−1,−1,0,0,0]T
+
+##(e) Estimaciones de las medias usando los contrastes:
+```{r}
+c10=c(1, 1, 0, 0,0,0)
+c12=c(1, 0, 1, 0,0,0)
+c14=c(1, -1, -1, 0,0,0)
+h=cbind(c10,c12,c14)
+(M.c = t(h)%*%b)
+
+```
+Se obtienen los mismos resultados.
+
+##(f) Comparación de promedios de carbonatación:
+```{r}
+c12.10=c12-c10
+c14.10=c14-c10
+c14.12=c14-c12
+h=cbind(c12.10,c14.10,c14.12)
+(L=t(h)%*%b)
+
+```
+##(g) Hipótesis y ortogonalidad:
+Los contrastes para comparar las medias marginales de carbonatación son:
+µ2∗∗ −µ1∗∗
+µ3∗∗ −µ1∗∗
+µ3∗∗ −µ2∗∗
+
+Tomando el vector de promedios
+(µ1∗∗,µ2∗∗,µ3∗∗)
+
+Los vectores para obtener los contrastes son:
+(−1,1,0)
+(−1,0,1)
+(0,1,−1)
+
+```{r}
+v1 = c(-1,1, 0)
+v2 = c(-1,0, 1)
+v3 = c( 0,1,-1)
+c(v1%*%v2, v1%*%v3, v2%*%v3)
+
+```
+
+Estos 3 vectores no son ortogonales, por lo que hay que hacer corrección.
+
+##(h) Pruebas de hipótesis de los contrastes:
+Puesto que se realizan 3 contrastes no ortogonales y se comparan todos los
+promedios marginales entre sí por pares, debe utilizarse Tukey.
+```{r}
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+(p=ptukey(t*sqrt(2),3,18,lower.tail = F))
+
+```
+
+Las probabilidades obtenidas deben compararse contra α = 0,05. Se encontraron
+diferencias entre todos los pares de promedios. Se ha observado que el nivel
+de carbonatación 10% presenta la media muestral más baja, por lo que se
+concluye que este nivel es el que baja más la desviación promedio de llenado y se
+considera que ese nivel es el más apropiado, independientemente del nivel que
+se escoja para los otros factores. Aún debe cuantificarse la diferencia esperada
+entre el promedio al nivel 10% y los otros dos niveles, con el fin de valorar si
+esta diferencia se puede considerar relevante al compararse con una diferencia
+previamente definida por el investigador.
+
+##(i) Verificación de los errores estándar.
+```{r}
+table(base$carbonatacion)
+r=8
+CMRes=anova(mod5)[5,3]
+sqrt(2*CMRes/r)
+ee
+```
+##(j) Comparación de promedios de presión para cada nivel de rapidez:
+Los contrastes para comparar las medias presión para cada nivel de rapidez son:
+µ∗21 −µ∗11
+µ∗22 −µ∗12
+
+Tomando el vector de promedios
+(µ∗11,µ∗21,µ∗12,µ∗22)
+
+Los vectores para obtener los contrastes son:
+(−1,1,0,0)
+(0,0,−1,1)
+
+```{r}
+v1 = c(-1,1, 0,0)
+v2 = c( 0,0,-1,1)
+v1%*%v2
+```
+
+Estos 2 vectores son ortogonales, por lo que no hay que hacer corrección.
+
+
+```{r}
+p25.r200=c(1,0,0,1,1,1)
+p30.r200=c(1,0,0,-1,1,-1)
+p25.r250=c(1,0,0,1,-1,-1)
+p30.r250=c(1,0,0,-1,-1,1)
+p30.25.r200=p30.r200-p25.r200
+p30.25.r250=p30.r250-p25.r250
+h=cbind(p30.25.r200,p30.25.r250)
+
+```
+```{r}
+(L=t(h)%*%b)
+```
+```{r}
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+(p=pt(t,18,lower.tail = F))
+```
+Puesto que se realizan 2 contrastes ortogonales, las probabilidades obtenidas
+deben compararse contra α = 0,05. Se encontraron diferencias entre los
+promedios de los dos niveles de presión solo cuando la rapidez es 250 bpm.
+Se ha observado que el nivel de presión 25 psi presenta la media muestral más
+baja cuando se tiene una rapidez de 250 bpm, por lo que si se escoge ese nivel
+de rapidez, vale la pena también escoger el nivel de presión de 25 psi, pero si
+se escoge el nivel de 200 bpm, no importa cuál de los dos niveles de presión se
+escoja.
+
+##(k) Comparación de promedios de rapidez para cada nivel de presión:
+Los contrastes para comparar las medias presión para cada nivel de rapidez son:
+µ∗12 −µ∗11
+µ∗22 −µ∗21
+
+Tomando el vector de promedios
+(µ∗11,µ∗21,µ∗12,µ∗22)
+
+Los vectores para obtener los contrastes son:
+(−1,0,1,0)
+(0,−1,0,1)
+
+```{r}
+v1 = c(-1, 0,1,0)
+v2 = c( 0,-1,0,1)
+v1%*%v2
+
+```
+Estos 2 vectores son ortogonales, por lo que no hay que hacer corrección.
+
+```{r}
+r250.200.p25=p25.r250-p25.r200
+r250.200.p30=p30.r250-p30.r200
+h=cbind(r250.200.p25,r250.200.p30)
+(L=t(h)%*%b)
+
+```
+
+```{r}
+mod5$coefficients
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+(p=pt(t,18,lower.tail = F))
+h
+```
+
+Se encontraron diferencias entre los promedios de los dos niveles de rapidez,
+tanto para presión de 25 psi como 30 psi. Se ha observado que el nivel de
+rapidez 200 bpm presenta la media muestral más baja en ambas presiones, por
+lo que se prefiere este nivel de rapidez. Anteriormente se había dicho que si se
+escogía 200 bpm no importaba mucho el nivel de presión, por lo que al final,
+la recomendación es usar 10% de carbonatación, 200 bpm y cualquiera de los
+niveles de presión.
+

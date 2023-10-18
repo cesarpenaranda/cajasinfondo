@@ -1,0 +1,365 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-15"
+---
+#3.2 Tortugas 1
+
+Se desea determinar si la falta de alimento afecta el nivel de proteínas en sangre en
+tortugas de la especie Chelonia midas (de agua salada) y si afecta de forma diferente
+a los machos que a las hembras. Se escogen 8 machos y 8 hembras. A cada uno se
+le asigna aleatoriamente una de las siguientes condiciones: 1) dieta regulada y 2)
+alimento en abundancia. Se registra el nivel de proteína en gramos por decilitro.
+
+#(a) Lectura:
+```{r}
+base=read.csv("Bases/tortugas1.csv")
+str(base)
+```
+
+Definicion del factor
+```{r}
+base$genero=as.factor(base$genero)
+levels(base$genero)=c("macho","hembra")
+base$cond=factor(base$cond)
+```
+
+#(b) Factores:
+Hay dos factores: el que se está investigando es la condición de alimento y el
+otro es el género.
+
+#(c) Características de los factores:
+El factor de diseño es la condición de alimento pues el interés del estudio
+es analizar el efecto que tiene cada una de las condiciones sobre la proteína
+promedio en sangre que tienen las tortugas que se alimentan de cada forma.
+A cada tortuga se le puede asignar aleatoriamente una condición, con lo cual las
+diferencias que se observen se pueden ligar a la condición viendo una relación
+de causa y efecto. Por otra parte, se incluye el género porque posiblemente el
+comportamiento no es el mismo entre ambos. Es importante incluir este factor
+puesto que el estudio también tiene como objetivo analizar si el efecto de la
+condición es el mismo en cada género (interacción).
+
+#(d) Enfoque del análisis:
+Interesa ver primero si el efecto que tiene la condición de alimento es el mismo
+en ambos géneros. De ser así, puede darse una conclusión general sobre el efecto
+que tiene cada condición en la proteína promedio en sangre, sin diferenciar
+por género, de lo contrario, debe cuantificarse ese efecto por separado en cada
+género.
+
+#(e) Número de tratamientos:
+Hay en total 4 tratamientos que se obtienen de combinar las dos condiciones
+para los dos géneros.
+
+
+#(f) Número de repeticiones:
+```{r}
+table(base$cond,base$genero)
+```
+#2. Efectos:
+(a) Media general:
+```{r}
+(medgen=mean(base$proteina))
+
+```
+#(b) Efectos simples de condición:
+```{r}
+(alfa=tapply(base$proteina,base$cond,mean)-medgen)
+
+```
+
+#(c) Efectos simples de género:
+```{r}
+(beta=tapply(base$proteina,base$genero,mean)-medgen)
+
+```
+
+#(d) Promedios observados:
+
+```{r}
+(med=tapply(base$proteina,list(base$cond,base$genero),mean))
+```
+
+#(e) Promedios estimados bajo el modelo sin interacción:
+```{r}
+m11=medgen+alfa[1]+beta[1]
+m21=medgen+alfa[2]+beta[1]
+m12=medgen+alfa[1]+beta[2]
+m22=medgen+alfa[2]+beta[2]
+(mest=c(m11,m21,m12,m22))
+
+```
+
+#(f) Comparación:
+```{r}
+M=cbind(as.vector(med),mest)
+colnames(M)=c("Observados","Estimados")
+M
+```
+Los promedios estimados son muy parecidos a los observados, lo cual indica
+que hay muy poca interacción.
+
+#(g) Gráfico de interacción entre condición y género:
+```{r}
+library(ggplot2)
+ggplot(base, aes(x=genero, y=proteina, group = cond)) +
+stat_summary(fun="mean", geom="line", aes(linetype = cond))
+```
+
+#(h) Distancia entre medias para cada género:
+En la Figura 3.3 se observa que, en esta muestra, la distancia entre la media
+de proteína cuando se proporciona alimento con respecto a la media cuando
+se tiene dieta para los machos es muy similar a la distancia en el caso de las
+hembras. Esto es una indicación de que no existe interacción entre condición y
+género.
+
+#(i) Efectos simples:
+```{r}
+mod1=aov(proteina~cond+genero,data=base)
+model.tables(mod1)
+```
+
+#3. Efectos de interacción en el modelo:
+
+#(a) Modelo con interacción con modelo de suma nula:
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod2=lm(proteina~cond*genero,data=base)
+```
+
+#(b) Matriz de estructura:
+
+```{r}
+contrasts(base$cond)
+```
+```{r}
+contrasts(base$genero)
+```
+
+```{r}
+model.matrix(mod2)
+```
+
+La matriz de estructura tiene una columna para condición con códigos 1 y -1.
+Similarmente una columna para género con códigos 1 y -1. El -1 corresponde
+siempre al nivel que no aparece que es dieta o hembra. La columna de
+interacción es el producto de las otras dos columnas
+
+#(c) Efectos de interacción:
+```{r}
+round(mod2$coef,2)
+```
+
+Los efectos de interacción son todos iguales en valor absoluto (0,11). Esto sucede
+por tratarse de un diseño 2^2. Esta cantidad representa cuánto se debe restar o
+sumar a la media observada en cada tratamiento para obtener promedios en
+condición de no interacción.
+
+#4. Variancia del error:
+
+#(a) Variancias por tratamiento:
+```{r}
+(v=tapply(base$proteina,list(base$cond,base$genero),var))
+```
+
+#(b) Supuesto de homocedasticidad:
+
+```{r}
+bartlett.test(base$proteina~interaction(base$cond,base$genero))
+
+```
+
+Ante la hipótesis de homocedasticidad se obtiene una probabilidad asociada
+de 0,96, por lo que se decide no rechazarla, con lo cual no se tiene evidencia
+de heterocedasticidad. Se continúa suponiendo que los datos provienen de
+poblaciones cuyas variancias son iguales.
+
+
+#(c) Variabilidad del error:
+```{r}
+(v1=mean(v))
+
+```
+#5. Prueba de hipótesis para la interacción:
+
+#(a) Tabla de análisis de variancia:
+```{r}
+anova(mod2)
+pf(0.0240,1,12, lower.tail = F) #1 grados de libertad del numerador y 12 de denominador
+```
+
+
+#(b) Hipótesis:
+Sólo interesa probar en esta etapa si existe interacción entre condición y género.
+No interesa probar los efectos simples si no se ha eliminado la interacción. La
+hipótesis es
+
+H0: (αβ)ij = 0
+
+Esta hipótesis dice que el efecto de la condición de alimento sobre la proteína
+promedio en sangre es independiente del género, es decir, es el mismo en
+cualquiera de los dos géneros.
+
+#(c) Cuadrado medio residual:
+```{r}
+anova(mod2)[4,3]
+
+```
+Este valor coincide con la media de las variancias obtenida anteriormente y es
+una medida de la variabilidad de la respuesta dentro de cada tratamiento.
+
+#(d) Cuadrado medio de interacción:
+El cuadrado medio de interacción es 0,18 y mide la magnitud general de los
+efectos de interacción. Si esta magnitud tiende a ser pequeña se tiene un caso con
+poca interacción, lo que sería una evidencia débil de interacción entre condición
+y género. En caso contrario, si esta magnitud tiende a ser grande, hay más
+evidencia de presencia de interacción.
+
+#(e) Conclusión:
+```{r}
+(f=0.18/7.54)
+```
+La variabilidad de los efectos de interacción es sumamente baja con respecto a
+la variabilidad residual y la probabilidad asociada es altísima (p = 0,88), con lo
+cual no se rechaza la hipótesis de independencia. Se asume que el efecto de la
+condición de alimento es igual para machos y hembras.
+
+#6. Estimaciones bajo el modelo sin interacción:
+#(a) Modelo sin interacción:
+
+```{r}
+mod3=lm(proteina~cond+genero,data=base)
+```
+#(b) Efectos simples:
+```{r}
+round(mod3$coef,2)
+```
+El efecto de la condición 1 (alimento en abundancia) es 1,56, lo que indica que
+con alimento el nivel de proteína en sangre sube 1,56 gr/ml con respecto al
+promedio general. Similarmente el efecto de la condición 2 (dieta regulada) es
+que baja el nivel promedio de proteína 1,56 gr/ml.
+Los machos (género 1) presentan un nivel de proteína que está 1,92 gr/ml sobre
+la media general, mientras que las hembras tienen una media de proteína 1,92
+gr/ml por debajo de la media general.
+
+#(c) Hipótesis:
+
+Puesto que no hay interacción se desea simplemente verificar si hay un efecto
+de la condición sobre la respuesta promedio sin tomar en cuenta el género.
+Entonces la hipótesis nula es:
+H0 : αi = 0
+Esta hipótesis dice que la condición de alimento no tiene efecto sobre la
+proteína promedio, es decir, ambas condiciones producen el mismo promedio
+de proteína en sangre. Lo anterior sucede en ambos géneros.
+
+#(d) Cuadrado medio de condición y cuadrado medio de género:
+
+```{r}
+anova(mod3)[1,3]
+anova(mod3)[2,3]
+
+```
+
+El cuadrado medio de condición es 38,75 y es una medida de la distancia entre
+las medias de las dos condiciones. Similarmente el cuadrado medio de género
+es 58,91 y es una medida de la distancia entre las medias de los dos géneros.
+
+#(e) Cálculo de cuadrados medios:
+```{r}
+table(base$cond)
+table(base$genero)
+c(sum(8*alfa^2)/1, sum(8*beta^2)/1)
+```
+
+#(f) Cuadrado medio residual:
+```{r}
+v2=anova(mod3)[3,3]
+c(v1,v2)
+```
+
+La variancia que se obtiene a partir de la media de las variancias (7,54) asume un
+modelo con interacción, donde los residuales se calculan con respecto a la media
+observada. En cambio el CMRes en este caso (6,97) se obtiene con los residuales
+calculados con respecto a las medias estimadas en el modelo sin interacción.
+Debido a que la interacción es muy pequeña, las medias se movieron muy poco
+y las dos cantidades obtenidas son muy similares.
+
+
+#(g) Aumento en la suma de cuadrados residual:
+
+```{r}
+anova(mod2)[4,2]
+anova(mod3)[3,2]
+anova(mod3)[3,2]-anova(mod2)[4,2]
+
+```
+
+La diferencia entre las sumas de cuadrados residual de los dos modelos
+es 0,18, la cual coincide con la suma de cuadrados de interacción en el
+anova del punto 5(a). Tiene sentido que el modelo que no tiene interacción
+tenga una mayor suma de cuadrados residual porque ahora los residuales se
+calculan con respecto a un promedio estimado con el modelo sin interacción.
+En general estos residuales serán un poco más grandes que los calculados
+con respecto a los promedios observados. Puesto que la suma de cuadrados
+total es fija y se mantiene la misma suma de cuadrados de tratamiento en
+ambos modelos, la parte correspondiente a la suma de cuadrados residual
+en el modelo sin interacción absorbe la parte que correspondía a la suma de
+cuadrados de interacción. Todas las sumas de cuadrados deben sumar la misma
+cantidad independientemente del modelo utilizado, esa cantidad es la suma de
+cuadrados total.
+
+#(h) Conclusión:
+```{r}
+round(anova(mod3),3)
+
+```
+La variabilidad asociada a las medias de condición es 5,56 veces la variabilidad
+residual, lo cual indica que las medias están bastante distantes entre sí; esto
+se confirma con una probabilidad asociada baja (p = 0,035). Puesto que esta
+probabilidad está debajo del límite establecido de 0,05, se rechaza la hipótesis
+de que no hay efecto de la condición. Se concluye, con un nivel de significancia
+de 0,05, que las dos condiciones producen medias de proteína diferentes
+(independientemente del género).
+
+#(i) Cálculo de cota inferior:
+```{r}
+mod3$coef
+contrasts(base$cond)
+```
+
+Para construir los contrastes se toma en cuenta que el factor condición toma
+valores 1 y -1 según sea alimento o dieta, respectivamente, mientras que para el
+factor género se pone 0 para que el modelo calcule la media marginal de cada
+condición. Esto se puede hacer solamente cuando se usa el modelo de suma
+nula, ya que cuando se usa el modelo de tratamiento referencia, si se pone
+un 0 se estaría indicando que se use el nivel de referencia. Entonces el vector
+para el primer contraste es v1 = c(1,1,0) que produce la estimación de la media
+marginal de alimento, mientras que v2 = c(1,−1,0) produce la media marginal
+de dieta. Puesto que el coeficiente de condición es 1.56, el cual corresponde al
+efecto simple de alimento, se deduce que el efecto simple de dieta es -1.56. De
+aquí se concluye que la media marginal de alimento es mayor que la de dieta y
+la diferencia entre ellas se podría calcular simplemente como 2∗1,56 = 3,12. Otra
+forma de obtener este mismo valor es restando los dos vectores de contrastes y
+multiplicando por el vector de coeficientes.
+
+```{r}
+v1=c(1,1,0); v2=c(1,-1,0); c=v1-v2
+(L=t(c)%*%mod3$coef)
+
+```
+
+```{r}
+ee=sqrt(t(c)%*%vcov(mod3)%*%c)
+t=qt(0.95,13)#13 son los grados de libertad reciduales 
+(LIM=L-t*ee)
+
+```
+
+De forma puntual se obtiene en las muestras que el promedio de proteína en
+sangre cuando se provee de alimento en abundancia es 3,11 gr/ml mayor que
+con dieta. Sin embargo, este resultado está basado solo en una muestras de 16
+individuos (8 de cada género). A partir de estos resultados se puede esperar
+con 95% de confianza, que con alimento en abundancia el promedio de proteína
+en sangre sea al menos 0,77 gr/ml mayor que con dieta. Esto sucede tanto en
+machos como en hembras por el hecho de que se asume que no hay interacción
+entre condición de alimentación y género.
+

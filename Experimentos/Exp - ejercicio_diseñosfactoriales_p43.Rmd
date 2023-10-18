@@ -1,0 +1,26 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-20"
+---
+Modelo con interaccion
+
+$$E[Y|Trat] = \mu+\alpha_1A_1+\alpha_2A_2+\beta_1B_1+(\alpha\beta)_{11}*A_1B_1 +
+
+(\alpha\beta)_{21}*A_2B_1$$
+ 
+Con A1 = Estricta ; A2= Balanceada ; B1 = Kinosternum
+
+Vectores:
+
+Est-Kinos (1,1,0,1,1,0)
+
+Est-Chel (1,1,0,-1,-1,0) 
+
+Balan-Kinos (1,0,1,1,0,1) 
+
+Balan-Chel (1,0,1,-1,0,-1) 
+
+Abun-Kinos (1,-1,-1,1,-1,-1) 
+
+Abun-Chel (1,-1,-1,-1,1,1)

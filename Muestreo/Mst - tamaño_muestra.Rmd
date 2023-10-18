@@ -1,0 +1,138 @@
+library(PracTools)
+```{r}
+N =5000+(5000*0.05)
+s2=3000
+```
+
+El equipo se encuentra en negociaciones con la institución que proveerá los fondos para la realización del
+trabajo de campo, por lo que le piden que calcule el tamaño de muestra para los siguientes tres escenarios:
+a) Un margen de error de la diferencia entre el antes y después de la intervención de 4 minutos, con un riesgo
+de no alcanzar la precisión deseada del 5%.
+```{r}
+n0=nContMoe(moe.sw = 1,e=4,alpha = 0.05,S2=s2);n0/N
+n=nContMoe(moe.sw = 1,e=4,alpha = 0.05,S2=s2,N=N);ceiling(n)
+```
+
+b) Un margen de error de la diferencia entre el antes y después de la intervención de 4 minutos, con un riesgo
+de no alcanzar la precisión deseada del 10%.
+```{r}
+n0=nContMoe(moe.sw = 1,e=4,alpha = 0.10,S2=s2);n0/N
+n=nContMoe(moe.sw = 1,e=4,alpha = 0.10,S2=s2,N=N);ceiling(n)
+```
+
+c) Un margen de error de la diferencia entre el antes y después de la intervención de 8 minutos, con un riesgo
+de no alcanzar la precisión deseada del 5%.
+```{r}
+n0=nContMoe(moe.sw = 1,e=8,alpha = 0.05,S2=s2);n0/N
+n=nContMoe(moe.sw = 1,e=8,alpha = 0.05,S2=s2,N=N);ceiling(n)
+```
+
+Para calcular el tamaño de muestra, el equipo le comenta que estudios pasados demuestran que este tipo de
+capacitación tiende a generar un incremento del sueño de los seres humanos adultos que tiene una varianza
+de aproximadamente 3000 minutos**2.
+
+
+Para el estudio a realizarse en el vecindario la muestra se seleccionará
+utilizando muestreo estratificado. La variable de interés es la deuda
+por hogar en tarjetas de crédito y se sabe que está asociada al tipo de
+vivienda (vivienda independiente, en edificio pequeños y en edificio
+grande). En un estudio realizado en el vecindario hace tres años se
+obtuvo una media de 235,000 colones y una desv. estándar de la deuda de
+200,000 colones. La muestra de este estudio comprendió 100 hogares. Se
+espera que la ganancia en precisión al estratificar sea de 6% (ed=
+0.94). ¿Qué tamaño de muestra se requiere para obtener un CV de la media
+de 0.1? Tome en cuenta que en el vecindario hay un total de 500 hogares.
+
+```{r}
+ed=0.94
+cv=0.1
+N=500
+media=235000
+sd=200000
+s2=sd**2
+
+n0=nCont(CV0 = cv,S2=s2,ybarU = media);n0/N
+n=nCont(CV0 = cv,S2=s2,ybarU = media,N=N);ceiling(n*ed)
+```
+desea obtenerse una muestra estratificada proporcional de una población grande. Las variables de estudio son proporciones que están alrededor de 0,45. Se espera que la estratificación proporcional reduzca un 15% la variancia de elementos. De acuerdo con esta información, responda lo siguiente.
+¿Qué tamaño de muestra se requiere para obtener un error estándar del 2%?
+```{r}
+p=0.45
+ed=1-0.15
+ee=0.02
+
+n=nProp(V0=ee**2,pU=p)
+ceiling(n*ed)
+```
+Se diseña una encuesta dirigida a hogares para estimar la proporción que posee ciertos atributos. Para las principales características de interés, el valor de la proporción se espera que oscile entre 0.3 y 0.7. 
+
+a)	¿De qué tamaño debe ser la muestra para obtener estimaciones con un error estándar que no exceda el 3%? Además, se estratificará el marco muestral para la selección en zona urbana y rural. Se sabe que el efecto del diseño en diseños similares con afijación proporcional produce una ganancia en la precisión de un 10%.
+```{r}
+p=0.5
+ee=0.03
+ed=1-0.10
+n=nProp(V0=ee**2,pU=p)
+ceiling(n*ed)
+```
+
+Lea el archivo “naranjo.Rdata”. El archivo corresponde a una lista de fincas que cosechaban naranjas en el estado de Florida en 1987. La cámara de productores de naranja de dicho estado desea realizar un estudio para actualizar sus registros sobre el número de fincas y el área sembrada, además si han cambiado de cultivo desde 1987. 
+La lista incluye: 1) el número de identificación de la finca (ID_unit), 2) la región del estado dónde está la finca (region) y el número de acres sembradas en 1987 (acres87). 
+
+```{r}
+load("Bases/naranjo.Rdata")
+#View(m1)
+```
+
+a)	Calcule el tamaño de muestra necesario para estimar el número promedio de acres sembrado por finca para que el error estándar no supere un 10% de la media. Además, considere que se estima que un 8% de las fincas han cerrado desde el levantamiento de la lista en 1987. También se espera que estratificar produzca una ganancia en la estimación de la variancia del promedio de acres sembradas de un 15%.
+```{r}
+ee=0.10
+N1=nrow(m1);N=N1-(N1*0.8)
+ed=1-0.15
+var=var(m1$acres87)
+n=nCont(V0=ee**2,S2=var,N=N);ceiling(n*ed)
+
+```
+
+
+Una investigadora en biología quiere realizar una encuesta para estudiar personas con una cierta característica que se cree rara. Aunque no hay mucha información al respecto, la investigadora supone que la prevalencia de la característica es de aproximadamente 10%.
+
+1. ¿Qué tamaño de muestra se necesita para estimar la prevalencia de la característica
+con un margen de error de 0,02? Suponga que se asume como razonable que el riesgo
+de superar ese margen de error sea de 10%.
+
+```{r}
+p=0.10
+moe=0.02
+r=0.10
+
+n=nPropMoe(moe.sw = 1,e=moe,alpha = r,pU=p);ceiling(n)
+```
+
+3. Si se deseara realizar un estudio en la Gran Área Metropolitana (GAM) exclusivamente para las personas que presentan la característica de interés, con los mismos parámetros de precisión del punto 1, ¿cuántas personas deben seleccionarse del marco muestral para cumplir el objetivo?. Tome en cuenta que se estima que en la GAM residen 2.2 millones de personas.
+
+```{r}
+p=0.10
+moe=0.02
+r=0.10
+n=nPropMoe(moe.sw = 1,e=moe,alpha = r,pU=p,N=2200000);ceiling(n)
+ceiling(n/p)
+```
+Tres meses después de la recolección de datos original se quiere 
+realizar un segundo estudio para evaluar si la proporción de libros 
+dañados bajó después de darle mantenimiento a la máquina. El 
+diseño muestral se mantendrá, pero se desea que la variancia de la 
+proporción (asumiendo un mia) sea de 0.0005. ¿Cuántos lotes se 
+deben seleccionar?
+```{r}
+s2=0.0005
+p=0.5
+n.mia=nProp(V0=s2,pU=p);n.mia
+B=20
+rho=0.019
+#n=(1+(B-1)rho)*n.mia
+n=(1+(B-1)*rho)*n.mia;ceiling(n)
+
+lotes=n/20;ceiling(lotes)
+```
+
+

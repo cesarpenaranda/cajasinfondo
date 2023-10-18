@@ -1,0 +1,77 @@
+---
+title: "EJER.datacamp"
+author: "CESAR"
+date: '2022-05-28'
+output: html_document
+---
+
+
+```{r}
+dias=c("lunes","martes","miercoles","jueves","viernes","sabado","domingo")
+ventas=c(20,10,65,48,62,15,25)
+sum(ventas)
+names(ventas)=dias
+print(ventas)
+```
+
+```{r}
+# Poker and roulette winnings from Monday to Friday:
+poker_vector <- c(140, -50, 20, -120, 240)
+roulette_vector <- c(-24, -50, 100, -350, 10)
+days_vector <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+names(poker_vector) <- days_vector
+names(roulette_vector) <- days_vector
+```
+
+```{r}
+# Which days did you make money on poker?
+selection_vector <- poker_vector>0
+
+# Print out selection_vector
+print(selection_vector)
+
+```
+
+
+```{r}
+# Box office Star Wars (in millions!)
+new_hope <- c(460.998, 314.4)
+empire_strikes <- c(290.475, 247.900)
+return_jedi <- c(309.306, 165.8)
+
+# Construct matrix
+star_wars_matrix <- matrix(c(new_hope, empire_strikes, return_jedi), nrow = 3, byrow = TRUE)
+
+# Vectors region and titles, used for naming
+region <- c("US", "non-US")
+titles <- c("A New Hope", "The Empire Strikes Back", "Return of the Jedi")
+
+# Name the columns with region
+colnames(star_wars_matrix)<-region
+
+# Name the rows with titles
+rownames(star_wars_matrix)<-titles
+
+# Print out star_wars_matrix
+print(star_wars_matrix)
+```
+
+```{r}
+# Construct star_wars_matrix
+box_office <- c(460.998, 314.4, 290.475, 247.900, 309.306, 165.8)
+region <- c("US", "non-US")
+titles <- c("A New Hope", 
+            "The Empire Strikes Back", 
+            "Return of the Jedi")
+
+star_wars_matrix <- matrix(box_office, 
+                           nrow = 3, byrow = TRUE,
+                           dimnames = list(titles, region))
+
+# Calculate worldwide box office figures
+worldwide_vector <- rowSums(star_wars_matrix)
+worldwide_vector
+```
+
+
+

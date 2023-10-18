@@ -1,0 +1,117 @@
+# 8.3 Tortugas
+Se desea determinar si la falta de alimento afecta el nivel de proteínas en sangre en
+tortugas. En el primer caso se tienen tortugas de la especie Chelonia midas de ambos
+géneros (machos y hembras), con dos condiciones: 1) dieta regulada y 2) alimento
+en abundancia, mientras que en el segundo caso se tiene tortugas de dos especies:
+Kinosternum scorpioides y Chelonia midas, con tres condiciones: 1) dieta estricta,
+2) dieta balanceada y 3) alimento en abundancia. Se registra el nivel de proteína en
+gramos por decilitro (gr/dl).
+
+# 1. Dos factores sin interacción:
+## (a) Número de réplicas por condición de alimento:
+```{r}
+base=read.csv("Bases/tortugas1.csv")
+base$genero=as.factor(base$genero)
+levels(base$genero)=c("macho","hembra")
+table(base$cond)
+
+```
+
+Se tienen 8 tortugas en cada condición.
+
+
+## (b) Estimación de la variancia del error:
+```{r}
+mod1=lm(proteina~genero+cond,data=base)
+(cmres=anova(mod1)[3,3])
+```
+La variancia del error se puede estimar con el cuadrado medio residual, y se
+obtiene como resultado 6,97.
+
+
+## (c) Potencia:
+```{r}
+mu=c(30,32)
+power.anova.test(n=8,groups=2,between.var=var(mu),within.var=cmres)
+```
+Hay una probabilidad de 0,29 de llegar a la conclusión de que hay diferencias
+cuando en realidad las medias difieren al menos 2 gr/dl. Es un experimento
+que difícilmente va a lograr detectar que hay un efecto real de la condición de
+alimento aún cuando sí se esté dando ese efecto.
+
+## (d) Número de réplicas recomendado:
+```{r}
+power.anova.test(groups=2,between.var=var(mu),within.var=cmres,power=0.9)
+
+```
+Se necesitan 38 tortugas por condición para asegurar esa potencia
+
+## (e) Límite inferior para la diferencia de medias:
+
+```{r}
+(med=tapply(base$proteina,base$cond,mean))
+```
+
+```{r}
+d=med[1]-med[2]
+ee=sqrt(2*cmres/8)
+t=qt(0.95,13)
+(LIM=d-t*ee)
+```
+
+Con 95% de confianza se espera que la media de proteína cuando se da alimento
+en abundancia supere en al menos 0,77 gr/dl la que se obtiene con dieta. Este
+resultado no es satisfactorio para demostrar que es una mejor condición ya que
+no se obtiene un valor mayor que aquel que es relevante para el investigador
+
+## (f) Conclusión:
+
+Al aumentar el número de tortugas lo que se va a lograr es una mejor estimación
+de los promedios en ambos tratamientos y una reducción del error estándar, sin
+embargo, esto no quiere decir que el límite inferior para la diferencia tenga que
+subir necesariamente. Si en realidad la diferencia entre los promedios es mayor
+a 2 gr/dl, ahora se verá más claro y posiblemente el límite sí supere ese valor,
+pero si la diferencia no llega a 2 muy posiblemente el límite siga bajo.
+
+# 2. Dos factores con interacción:
+## (a) Número de réplicas por condición de alimento:
+```{r}
+base=read.csv("Bases/tortugas2.csv")
+base$cond=as.factor(base$cond)
+levels(base$cond)=c("estricta","balanceada","abundancia")
+table(base$cond,base$especie)
+```
+Se cuenta con 4 réplicas por condición de alimento dentro de cada especie.
+
+## (b) Estimación de la variancia del error:
+```{r}
+mod2=lm(proteina~cond*especie,data=base)
+(cmres=anova(mod2)[4,3])
+```
+La variancia del error se puede estimar con el cuadrado medio residual, y se
+obtiene como resultado 2,56.
+
+## (c) Potencia:
+```{r}
+mu=c(30,31,32)
+power.anova.test(n=4,groups=3,between.var=var(mu),within.var=cmres)
+```
+Hay una probabilidad de 0,25 de llegar a la conclusión de que hay diferencias
+cuando en realidad las medias difieren al menos 2 gr/dl. Es un experimento
+que difícilmente va a lograr detectar que hay un efecto real de la condición de
+alimento aún cuando sí se esté dando ese efecto.
+
+## (d) Justificación:
+Cuando las diferencias son mucho mayores que el nivel de resolución que se
+ha establecido, es muy fácil concluir que las medias tienen diferencias de una
+magnitud que está más allá de ese nivel de resolución, aún con pocos datos.
+
+## (e) Nuevo tamaño de muestra:
+```{r}
+mu1=c(30,33.5,37)
+power.anova.test(groups=3,between.var=var(mu1),within.var=cmres,power=0.95)
+```
+Con 3 datos por tratamiento ya es muy factible que se detecten diferencias tan
+grandes (de al menos 7 gr/dl).
+
+

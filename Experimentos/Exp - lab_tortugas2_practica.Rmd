@@ -1,0 +1,358 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-21"
+---
+#3.3 Tortugas 2
+Se desea determinar si la falta de alimento afecta el nivel de proteínas en sangre en
+tortugas de las especies Kinosternum scorpioides (de agua dulce) y Chelonia midas
+(de agua salada), y si el efecto es diferente de una especie a otra.
+Se escogen 12 ejemplares de cada especie y se les asigna aleatoriamente a cada tortuga
+una de las siguientes condiciones: 1) dieta estricta, 2) dieta balanceada y 3) alimento
+en abundancia. Se registra el nivel de proteína en gramos por decilitro.
+
+#3.3.1 Ejercicios
+#1. Preparación:
+##(a) Cargue el archivo tortugas2.csv. Verifique que la variable condición sea un factor con los niveles adecuados.
+```{r}
+base=read.csv("Bases/tortugas2.csv")
+str(base)
+base$cond=as.factor(base$cond)
+class(base$cond)
+levels(base$cond)=c("estricta","balanceada","abundancia")
+View(base)
+```
+
+##(b) ¿Cuáles son los factores que se incluyen en el experimento?
+Son el factor tipo de alimentacion(estricta,balaceada,abundacia) y el factor especie(kilosternum,chelonia)
+
+##(c) ¿En qué aspectos debe concentrarse el análisis?
+En verificar si existe interaccion entre los factores para decidir con que modelo trabajar en las concluciones de las proteinas en sangre segun especie, tipo de alimentacion.
+#2. Efectos:
+##(a) Obtenga la media general de la respuesta.
+```{r}
+m=mean(base$proteina)
+```
+
+##(b) Obtenga los efectos simples de cada condición, es decir, las diferencias entre cada media de condición y la media general (α1, α2 y α3).
+```{r}
+alfa=tapply(base$proteina,base$cond,mean)-m
+alfa
+```
+
+##(c) Obtenga los efectos simples de cada especie (β1 y β2).
+```{r}
+beta=tapply(base$proteina,base$especie,mean)-m
+beta
+```
+
+##(d) Obtenga los promedios observados de los 6 tratamientos.
+```{r}
+v1=tapply(base$proteina,list(base$cond,base$especie),mean)
+v1
+```
+
+##(e) Obtenga manualmente los promedios estimados bajo el modelo sin interacción.
+```{r}
+m11=m+alfa[1]+beta[1]
+m12=m+alfa[1]+beta[2]
+m21=m+alfa[2]+beta[1]
+m22=m+alfa[2]+beta[2]
+m31=m+alfa[3]+beta[1]
+m32=m+alfa[3]+beta[2]
+
+v2=matrix(c(m11,m12,m21,m22,m31,m32),nrow=3,byrow = T)
+colnames(v2)=c("chelonia","kynosternon")
+rownames(v2)=c("estricta","balanceada","abundancia")
+v2
+```
+
+##(f) Obtenga un gráfico de los valores de proteína para interpretar gráficamente si existe interacción entre condición y especie.
+```{r}
+library(ggplot2)
+ggplot(base, aes(x = especie, y = proteina,group=cond)) +
+  stat_summary(fun="mean", geom="line",aes(linetype = cond))
+```
+
+##(g) Visualice en el gráfico las medias estimadas. Compare los promediosobservados con los promedios estimados y a partir de ahí obtenga la cantidad que debe sumarse o restarse a cada promedio observado para obtener una estimación que cumpla con el supuesto de independencia.
+```{r}
+ef=v2-v1
+ef
+```
+
+
+##(h) Obtenga los efectos simples y de interacción usando la función model.tables (use el modelo con interacción con la función aov).
+```{r}
+mod=aov(proteina~especie*cond,data = base)
+model.tables(mod)
+```
+
+##(i) Compare estos resultados con los obtenidos anteriormente.
+Podemos notar que el faltante o sobrante numerico para las estimaciones de los promedios es debido a los efectos de interaccion entre los factores
+
+#3. Variancia del error:
+##(a) Visualice los 6 tratamientos con un gráfico de cajas donde se incluyan los dos factores separados por un +. Use este gráfico para ver si se puede esperar que los datos de los 6 tratamientos provengan de distribuciones con la misma varianza. Además, confirme si se puede esperar interacción entre condición y especie.
+```{r}
+boxplot(base$proteina~base$cond+base$especie)
+plot(mod$residuals)
+```
+vemos que las variazas entre los 6 tratamientos son similares, ademas se puede sospechar que hay interaccion entre especie y condicion principalmente por la diferencia entre la alimentacion balanceada(chelonia,kinos)
+
+##(b) Obtenga las variancias de los seis tratamientos.
+```{r}
+var=tapply(base$proteina,list(base$cond,base$especie),var)
+var
+var(base$proteina[base$cond=="estricta"&base$especie=="chelonia"])
+```
+
+##(c) Verifique si se cumple el supuesto de homocedasticidad.
+```{r}
+bartlett.test(base$proteina~interaction(base$cond,base$especie))
+```
+
+##(d) Obtenga una medida de la variabilidad del error asumiendo homocedasticidad.
+```{r}
+mean(var)
+```
+#4. Estimaciones bajo el modelo con interacción:
+##(a) Cambie al modelo de suma nula. Escriba el modelo con lm (llámelo mod2).
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod2=lm(proteina~cond*especie,data=base)
+```
+
+##(b) Observe la matriz de estructura usando model.matrix(mod2). Vea a qué corresponde cada columna. Ponga atención a los códigos y relaciónelos con los niveles de cada factor.
+```{r}
+contrasts(base$cond)
+contrasts(base$especie)
+model.matrix(mod2)
+```
+
+##(c) Extraiga los coeficientes y obtenga efectos simples y de interacción que no aparecen debido a la restricción de suma nula.
+```{r}
+mod2$coefficients
+```
+El efecto de cond1(estricta)=-3.375 el de cond2(balanceada)=2.375 y el de cont3(abundancia)=-(2.375-3.375)=1
+el efecto de especie1(chelonia)=1 y el de especie2(kinos)=-(1)=-1
+el efecto de interacion cond1:especie1(estricta,chelonia)=-0.875 el de cond2:especie1(balanceado,chelonia)=2.625 por lo tanto el de con3:especi1(abundancia,chelonia)=-(2.625-0.875)= -1.75 por ultimo para especie dos serian los mismos valores pero con sus signos contrarios
+
+
+##(d) Use los coeficientes y un vector de contrastes para calcular manualmente el promedio de chelonia-estricta y compárelo con el promedio observado de ese tratamiento.
+```{r}
+coef=mod2$coefficients
+v3=c(1,1,0,1,1,0)
+v4=v3%*%coef
+v4
+v1
+
+```
+##(e) Obtenga el promedio para los otros tratamientos.
+```{r}
+est_kinos=c(1,1,0,-1,-1,0)
+est_chel=c(1,1,0,1,1,0)
+bal_kinos=c(1,0,1,-1,0,-1)
+bal_chel=c(1,0,1,1,0,1)
+abun_kino=c(1,-1,-1,-1,1,1)
+abun_chel=c(1,-1,-1,1,-1,-1)
+v1
+x1=c(est_kinos%*%coef,est_chel%*%coef,bal_kinos%*%coef,bal_chel%*%coef,abun_kino%*%coef,abun_chel%*%coef)
+names(x1)=c("est_kinos","est_chel","bal_kinos","bal_chel","abun_kino","abun_chel")
+x1
+```
+
+#5. Hipótesis de independencia:
+##(a) Obtenga la tabla de análisis de variancia para probar la hipótesis de independencia entre condición y especie.
+```{r}
+anova(mod2)
+```
+
+##(b) Escriba la hipótesis nula con símbolos y con palabras.
+H0: (aB)_ij=0 
+la hipotesis nula es que el efecto de interaccion sea = 0, lo que nos indicaria la ausencia de interaccion entre el factor especie y el facto cond
+##(c) Observe el cuadrado medio residual y compárelo con la estimación de la variancia del error obtenida más arriba. Interprete qué significa el cuadrado medio residual.
+```{r}
+anova(mod2)[4,3]
+mean(v)
+```
+Esta es la variabilidad presente dentro de cada tratamiento, es una medida de variabilidad de los residuales en conjunto
+##(d) Obtenga los grados de libertad de cada fuente de variación y justifíquelos.
+```{r}
+gl_especie=(2-1)
+gl_cond=(3-1)
+gl_cond_especie=(2-1)*(3-1)
+residual=(nrow(base)-6)
+c6=c(gl_especie,gl_cond,gl_cond_especie,residual)
+names(c6)=c("gl_especie","gl_cond","gl_cond_especie","residual")
+anova(mod2)
+c6
+
+```
+
+##(e) Interprete qué se está midiendo con el cuadrado medio de condición y el cuadrado medio de especie.
+es la variacion entre los promedios de los niveles de cada facto, en conjunto es la variabilidad de la respuesta.
+##(f) Asegúrese que puede obtener estas cantidades a partir de los efectos simples.
+```{r}
+table(base$cond,base$especie)
+```
+```{r}
+CMcond=8*sum(alfa^2)/2
+CMespecie=12*sum(beta^2)/1
+x22=c(CMcond,CMespecie)
+names(x22)=c("CMcond","CMcond")
+x22
+```
+
+##(g) A partir de las estimaciones de los efectos de la interacción verifique la suma de cuadrados de interacción.
+```{r}
+table(base$especie,base$cond)
+8*sum(ef^2)/2*1
+```
+
+##(h) Interprete qué se está midiendo con el cuadrado medio de interacción.
+es la viariacion debida a la interaccion
+##(i) Observe el valor F asociado a la hipótesis establecida y concluya.
+```{r}
+anova(mod2)
+```
+con un alfa de 0,05 hay suficiente evidencia estadistica para rechazar la H0:  (aB)_ij=0 por ello se decide trabajar con un modelo CI 
+#6. Comparaciones bajo el modelo con interacción:
+##(a) Puesto que se ha encontrado que sí hay una interacción importante entre la condición y la especie, ahora hay que investigar cómo actúan las condiciones en cada especie. Escriba el modelo con interacción y escriba los contrastes para comparar las condiciones dentro de cada especie.
+
+El modelo es
+µi j = µ+αi +βj + (αβ)i j
+El primer subíndice indica la condición y el segundo la especie. Como el
+factor de interés es la condición, debe fijarse la especie y comparar para
+diferentes condiciones dada cada especie. Para tener estimaciones positivas de
+las diferencias de promedios, se crean los contrastes de tal forma que el contraste
+estimado sea positivo, es decir, se pone primero aquella media cuya estimación
+sea mayor.
+
+para chelonia
+mu11=mu21
+mu11=mu31
+mu21=mu31
+
+para kinos 
+mu12=mu22
+mu12=mu32
+mu22=mu32
+
+##(b) Verifique que los 3 contrastes dentro de cada especie no son ortogonales, pero que cada bloque de 3 contrastes es ortogonal al otro bloque.
+Se tienen los contrastes para chelonia:
+µ21 −µ11
+µ21 −µ31
+µ31 −µ11
+
+Los contrastes para kynosternon son:
+µ22 −µ12
+µ32 −µ22
+µ32 −µ12
+
+##(b) Ortogonalidad:
+Tomando el vector de promedios
+(µ11,µ21,µ31,µ12,µ22,µ32)
+
+Los vectores para obtener el primer grupo de hipótesis (chelonia) son:
+(−1,1,0,0,0,0)
+(0,1,−1,0,0,0)
+(1,0,−1,0,0,0)
+```{r}
+v1 = c(-1,1, 0,0,0,0)
+v2 = c( 0,1,-1,0,0,0)
+v3 = c( 1,0,-1,0,0,0)
+c(v1%*%v2, v1%*%v3, v2%*%v3)
+```
+Estos 3 vectores no son ortogonales, por lo que hay que hacer corrección.
+De forma similar sucede para el segundo grupo de hipótesis (kynosternon):
+
+(0,0,0,−1,1,0)
+(0,0,0,0,−1,1)
+(0,0,0,−1,0,1)
+
+```{r}
+v4 = c(0,0,0,-1, 1,0)
+v5 = c(0,0,0, 0,-1,1)
+v6 = c(0,0,0,-1, 0,1)
+c(v4%*%v5, v4%*%v6, v5%*%v6)
+```
+Estos 3 vectores tampoco son ortogonales.
+##Ahora comparamos los dos bloques entre sí:
+```{r}
+c(v1%*%v4, v1%*%v5, v1%*%v6, v2%*%v4, v2%*%v5, v2%*%v6, v3%*%v4, v3%*%v5, v3%*%v6)
+```
+##(c) Escriba una matriz que permita el cálculo de los contrastes.
+Se tienen los contrastes para chelonia:
+µ21 −µ11
+µ21 −µ31
+µ31 −µ11
+
+Los contrastes para kynosternon son:
+µ22 −µ12
+µ32 −µ22
+µ32 −µ12
+```{r}
+table(base$cond)
+est_kinos=c(1,1,0,-1,-1,0)
+est_chel=c(1,1,0,1,1,0)
+bal_kinos=c(1,0,1,-1,0,-1)
+bal_chel=c(1,0,1,1,0,1)
+abun_kino=c(1,-1,-1,-1,1,1)
+abun_chel=c(1,-1,-1,1,-1,-1)
+
+bac.estc=bal_chel-est_chel
+
+bac.abunc=bal_chel-abun_chel
+
+abunc.estc=abun_chel-est_chel
+
+
+
+balk.estk=bal_kinos-est_kinos
+
+abunk.balk=abun_kino-bal_kinos
+
+abunk.estk=abun_kino-est_kinos
+
+h=cbind(bac.estc,bac.abunc,abunc.estc,balk.estk,abunk.balk,abunk.estk)
+h
+
+```
+
+##(d) Estime cada contraste y su variancia.
+```{r}
+(L=t(h)%*%coef)
+(var=diag(t(h)%*%vcov(mod2)%*%h))
+```
+
+##(e) Pruebe de forma simultánea las hipótesis que establecen que cada contraste es igual a cero. Puesto que los contrastes no son ortogonales debe usarse la corrección de Bonferroni, es decir, dividir el nivel de significancia por el número de comparaciones.
+```{r}
+ee=sqrt(var)
+t=L/ee
+row.names(t)=row.names(L)
+p=pt(t,18,lower.tail = F)
+row.names(p)=row.names(L)
+p
+```
+
+##(f) Obtenga las cotas inferiores que permitan cuantificar las diferencias que son significativas.
+```{r}
+tc1=qt(1-0.05/3,18)
+tc2=qt(1-0.05/2,18)
+lim1=L[1:3]-tc1*ee[1:3]
+lim2=L[5:6]-tc2*ee[5:6]
+names(lim1)=row.names(L)[1:3]
+names(lim2)=row.names(L)[5:6]
+lim1
+lim2
+
+```
+
+##(g) ¿Qué se concluye?
+Se concluye, con 95% de confianza, que el nivel promedio de proteína en sangre
+para chelonia es al menos 6,88 gr/ml mayor con dieta balanceada que con dieta
+estricta y al menos 3,38 gr/ml mayor con dieta balanceada que con abundancia.
+Para kynosternon, el alimento en abundancia aventaja a la dieta estricta en
+al menos 2,65 gr/ml. Las otras dos diferencias son pequeñas, por lo que es
+importante contrastar sus magnitudes con la diferencia mínima que establezca
+un investigador para determinar si son relevantes.
+

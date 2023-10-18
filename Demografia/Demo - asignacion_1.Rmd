@@ -1,0 +1,313 @@
+---
+title: "Demo. asignacion-1"
+output:
+  word_document: default
+  html_document: default
+date: "2023-05-04"
+---
+
+```{r}
+load("~/Bases/pregunta1.a.Rdata")
+```
+
+grafico
+```{r}
+library(ggplot2)
+ggplot(base, aes(base$Edad,base$total)) + geom_point() + geom_smooth(span=0.3, se=FALSE)+ggtitle("grafico 1")
+```
+
+```{r}
+
+ggplot(base, aes(base$Edad,base$total)) + geom_line()+ggtitle("grafico 2")
+```
+
+```{r}
+ggplot(base,aes(base$Edad,base$total)) + geom_point() + geom_smooth(span=0.9, se=FALSE) + ggtitle("grafico 3")
+```
+
+```{r}
+x=loess(base$total~base$Edad,span = 0.25)
+nueva=predict(x)
+cbind(nueva)
+```
+
+```{r}
+nueva=cbind(nueva)
+base$edad_corregida=nueva[,1]
+colnames(base)=c("Hombre","mujer","total","Edad","total.corregida")
+View(base)
+```
+
+```{r}
+ggplot(base, aes(base$Edad,base$total.corregida)) + geom_line()+ggtitle("grafico 3 total edad corregida")
+```
+```{r}
+save(base,file = "base.corregida.Rdata")
+```
+
+nueva base con las poblaciones corregidas
+```{r}
+load("~/Bases/base.corregida.Rdata")
+View(base)
+```
+
+
+```{r}
+base$Edad.corregida= ceiling(base$Edad.corregida)
+```
+
+
+library(openxlsx); write.xlsx(base, "basecorregida.xlsx", sheetName = "basecorregida")
+
+
+#piramides
+##costa rica
+
+base=subset(Costa_Rica,Costa_Rica$Year=="2021")
+base=subset(base,base$Area=="Total")
+base=subset(base,base$Sex=="Male"|base$Sex=="Female")
+View(base)
+
+save(base,file="CR.Rdata")
+
+
+
+load("CR.Rdata")
+base=cbind(base$Age,base$Sex,base$Value)
+colnames(base)=c("edad","sexo","total")
+base=as.data.frame(base)
+baseh=subset(base,base$sexo=="Male") ;basem=subset(base,base$sexo=="Female")
+base=c(baseh,basem)
+View(base)
+base=base[,-c(2,4,5)]
+colnames(base)=c("edad","ph","pm")
+save(base,file = "piramideCR.Rdata")
+
+
+```{r}
+load("piramideCR.Rdata")
+library(pyramid)
+base$ph=as.numeric(base$ph)
+base$pm=as.numeric(base$pm)
+n=sum(base$ph)+sum(base$pm)
+base$php=(base$ph/n)*100
+base$pmp=(base$pm/n)*100
+
+pyramids(base$php,base$pmp,Center=base$edad,
+       Llab="Hombres",Rlab="Mujeres",
+       main="Piramide poblacional Costa Rica 2022",Clab="edad",
+       Laxis=c(0,0.25,0.5,0.85,1),Cstep=5,Cgap=0.2)
+```
+
+##Afghanistan
+
+base=subset(Afghanistan,Afghanistan$Year=="1979")
+base=subset(base,base$Area=="Total")
+base=subset(base,base$Sex=="Male"|base$Sex=="Female")
+View(base)
+
+
+
+save(base,file="Afghanistan.Rdata")
+
+
+
+load("Afghanistan.Rdata")
+base=cbind(base$Age,base$Sex,base$Value)
+colnames(base)=c("edad","sexo","total")
+base=as.data.frame(base)
+baseh=subset(base,base$sexo=="Male") ;basem=subset(base,base$sexo=="Female")
+base=c(baseh,basem)
+base=as.data.frame(base)
+View(base)
+base=base[,c(1,3,6)]
+colnames(base)=c("edad","ph","pm")
+save(base,file = "piramideaAFGHA.Rdata")
+
+
+```{r}
+load("piramideaAFGHA.Rdata")
+library(pyramid)
+base$ph=as.numeric(base$ph)
+base$pm=as.numeric(base$pm)
+n=sum(base$ph)+sum(base$pm)
+base$php=(base$ph/n)*100
+base$pmp=(base$pm/n)*100
+
+pyramids(base$php,base$pmp,Center=base$edad,
+         Llab="Hombres",Rlab="Mujeres",
+         main="Piramide poblacional Afghanistan 1979",Clab="edad",
+         Laxis=c(0,1,2,3,4,5.5,7,8),Cstep=2,Cgap=0.3)
+```
+
+##Japon
+
+base=subset(Japan,Japan$Year=="2021")
+base=subset(base,base$Area=="Total")
+base=subset(base,base$Sex=="Male"|base$Sex=="Female")
+View(base)
+
+
+
+save(base,file="Japan.Rdata")
+
+
+
+
+load("Japan.Rdata")
+base=cbind(base$Age,base$Sex,base$Value)
+colnames(base)=c("edad","sexo","total")
+base=as.data.frame(base)
+baseh=subset(base,base$sexo=="Male") ;basem=subset(base,base$sexo=="Female")
+base=c(baseh,basem)
+base=as.data.frame(base)
+View(base)
+base=base[,c(1,3,6)]
+colnames(base)=c("edad","ph","pm")
+#basequinquenal=base[c(1,3,9,15,21,27,33,39,45,51,57,63,69,75,81,87,93,99,105,111,117,123),]
+base=base[-c(1,3,9,15,21,27,33,39,45,51,57,63,69,75,81,87,93,99,105,111,117,123),]
+save(base,file = "piramideJapan.Rdata")
+
+
+piramide japan
+```{r}
+load("piramideJapan.Rdata")
+library(pyramid)
+base$ph=as.numeric(base$ph)
+base$pm=as.numeric(base$pm)
+n=sum(base$ph)+sum(base$pm)
+base$php=(base$ph/n)*100
+base$pmp=(base$pm/n)*100
+
+pyramids(base$php,base$pmp,Center=base$edad,
+         Llab="Hombres",Rlab="Mujeres",
+         main="Piramide poblacional japan 2021",Clab="edad",
+         Laxis=c(0,0.3,0.5,0.6,0.75,0.9),Cstep=8,Cgap=0.1)
+```
+
+##bulgaria
+
+base=subset(Bulgaria,Bulgaria$Year=="2021")
+base=subset(base,base$Area=="Total")
+base=subset(base,base$Sex=="Male"|base$Sex=="Female")
+View(base)
+
+
+
+save(base,file="Bulgaria.Rdata")
+
+
+
+
+load("Bulgaria.Rdata")
+base=cbind(base$Age,base$Sex,base$Value)
+colnames(base)=c("edad","sexo","total")
+base=as.data.frame(base)
+baseh=subset(base,base$sexo=="Male") ;basem=subset(base,base$sexo=="Female")
+base=c(baseh,basem)
+base=as.data.frame(base)
+View(base)
+base=base[,c(1,3,6)]
+colnames(base)=c("edad","ph","pm")
+#basequinquenal=base[c(1,3,5,10,16,22,28,34,40,46,52,58,64,70,76,82,88,94,100,106,112,118,124,125,131),]
+base=base[-c(1,3,5,10,16,22,28,34,40,46,52,58,64,70,76,82,88,94,100,106,112,118,124,125,131),]
+save(base,file = "piramideBulgaria.Rdata")
+
+
+piramide bulgaria
+```{r}
+load("piramideBulgaria.Rdata")
+library(pyramid)
+base$ph=as.numeric(base$ph)
+base$pm=as.numeric(base$pm)
+n=sum(base$ph)+sum(base$pm)
+base$php=(base$ph/n)*100
+base$pmp=(base$pm/n)*100
+
+pyramids(base$php,base$pmp,Center=base$edad,
+         Llab="Hombres",Rlab="Mujeres",
+         main="Piramide poblacional Bulgaria 2021",Clab="edad",
+         Laxis=c(0,0.25,0.5,0.6,0.75,0.9),Cstep=8,Cgap=0.1)
+```
+
+##Guatemala
+
+base=subset(Guatemala,Guatemala$Year=="2020")
+base=subset(base,base$Area=="Total")
+base=subset(base,base$Sex=="Male"|base$Sex=="Female")
+View(base)
+
+
+
+save(base,file="Guatemala.Rdata")
+
+
+
+load("Guatemala.Rdata")
+base=cbind(base$Age,base$Sex,base$Value)
+colnames(base)=c("edad","sexo","total")
+base=as.data.frame(base)
+baseh=subset(base,base$sexo=="Male") ;basem=subset(base,base$sexo=="Female")
+base=c(baseh,basem)
+base=as.data.frame(base)
+View(base)
+base=base[,c(1,3,6)]
+colnames(base)=c("edad","ph","pm")
+basequinquenal=base[c(1,3,9,15,21,27,33,39,45,51,57,63,69,75,81,87,93,99,105,111,117,122),]
+base=base[-c(1,3,9,15,21,27,33,39,45,51,57,63,69,75,81,87,93,99,105,111,117,122),]
+save(base,file = "piramideGuatemala.Rdata")
+
+
+piramide Guatemala
+```{r}
+load( "piramideGuatemala.Rdata")
+library(pyramid)
+base$ph=as.numeric(base$ph)
+base$pm=as.numeric(base$pm)
+n=sum(base$ph)+sum(base$pm)
+base$php=(base$ph/n)*100
+base$pmp=(base$pm/n)*100
+
+pyramids(base$php,base$pmp,Center=base$edad,
+         Llab="Hombres",Rlab="Mujeres",
+         main="Piramide poblacional Guatemala 2020",Clab="edad",
+         Laxis=c(0,0.3,0.4,0.6,0.8,1,1.2),Cstep=5,Cgap=0.1)
+```
+##costarica 1963
+
+
+base=costa.rica.93
+colnames(base)=c("edad","hombre","mujer","total")
+base=base[-1,]
+
+
+
+save(base,file="costa.rica.93.Rdata")
+
+
+
+load("costa.rica.93.Rdata")
+base=as.data.frame(base)
+base=base[,c(1,2,3)]
+colnames(base)=c("edad","ph","pm")
+base=base[-100,]
+save(base,file = "costa.rica.93.Rdata")
+
+
+```{r}
+load("costa.rica.93.Rdata")
+library(pyramid)
+base$ph=as.numeric(base$ph)
+base$pm=as.numeric(base$pm)
+n=sum(base$ph)+sum(base$pm)
+base$php=(base$ph/n)*100
+base$pmp=(base$pm/n)*100
+
+pyramids(base$php,base$pmp,Center=base$edad,
+         Llab="Hombres",Rlab="Mujeres",
+         main="Piramide poblacional Costa Rica 1993",Clab="edad",
+         Laxis=c(0.001,0.5,0.7,1,2),Cstep=5,Cgap=0.2)
+```
+
+
+

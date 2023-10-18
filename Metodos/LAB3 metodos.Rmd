@@ -1,0 +1,207 @@
+---
+title: "Lab3_2022"
+author: "Gilbert Brenes Camacho"
+date: "3/15/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#Laboratorio 3.  Pruebas de hipótesis para la media de una población
+
+#El objetivo del laboratorio es probar hipótesis para una población utilizando las siguientes pruebas en R:
+#-Kolmogorov Smirnov
+#-Shapiro Wilks
+#-Jarque Bera
+#-Prueba t
+#-Prueba binomial exacta
+#-Prueba para una proporción
+#-Prueba de mediana
+
+
+#Se utilizará la base de datos antropomexicano
+
+```{r}
+install.packages("tseries")
+
+rm(list=ls())
+setwd("C:/Users/cesar/Desktop/CARPETAS/UNIVERSIDAD COMPU/METODOS/PRIMER/LB3")
+library(haven)
+library(readr)
+antropomexicano <- read_sav("antropomexicano.sav")
+
+
+names(antropomexicano)
+
+attach(antropomexicano)
+```
+
+#Descriptivos de edad
+```{r}
+mean(edad)
+sd(edad)
+```
+
+#Prueba Kolmogorov Smirnov   H0: Edad proviene de una poblacion normal con Mu=60.3 y sigma=10.6,  alfa=0.05
+#alfa=0.05
+```{r}
+ks.test(edad,"pnorm",mean(edad),sd(edad))
+```
+
+#Recordar: 
+#_Es teóricamente incorrecto estimar la prueba KS con información muestral.
+#_Además, se da la advertencia por los empates
+```{r}
+table(edad)
+
+summary(edad)
+
+sd(edad)
+```
+
+
+#Nuevamente la hipótesis nula y alternativa:
+#Prueba Kolmogorov Smirnov   H0: Edad proviene de una poblacion normal con Mu=60.3 y sigma=10.6,  alfa=0.05
+#alfa=0.05
+```{r}
+ks.test(edad,"pnorm",60.3,10.6)
+
+```
+
+
+#Para analizar bondad de ajuste a una distribución normal, sin
+#presuponer los valores de los parámetros, se puede usar la 
+#prueba de Shapiro-Wilks.
+
+#Prueba Shapiro Wilks  H0: Edad proviene de una poblacion normal
+
+```{r}
+shapiro.test(edad)
+```
+
+#Sin embargo, una de las ventajas de la prueba KS es que se puede analizar la bondad de ajuste a otras distribuciones
+
+#Prueba kolmogoro smirnov - distribución exponencial
+#H0: Edad proviene de una poblacion con distribucion exponencial con tasa=1/60.3
+```{r}
+ks.test(edad,"pexp",rate=1/mean(edad))
+```
+
+#Los histogramas pueden servir para analizar la forma distribucional de la variable.
+```{r}
+hist(edad)
+```
+
+#Nota el tamaño de muestra
+```{r}
+length(edad)
+```
+
+#También se puede utilizar el qqPlot.
+```{r}
+library(car)
+qqPlot(edad)
+```
+
+#También está la Prueba Jarque Bera para normalidad
+```{r}
+library(tseries)
+jarque.bera.test(edad)  ###H0: Edad proviene de una dist normal
+```
+
+#La prueba de Kolmogorov Smirnov es una prueba no paramétrica.
+
+#Vamos ahora con pruebas paramétricas para una media.
+
+#Prueba t
+
+#H0: Mu=60.5
+#H1: Mu<>60.5
+
+```{r}
+t.test(edad)  #Está malo porque hace falta mu
+```
+
+#Correcta
+```{r}
+t.test(edad ,  mu=60.5)
+```
+
+#La alternativa no paramétrica a la prueba t es la prueba de la mediana.  
+#Hay que suponer que, por la falta de normalidad, la distribución de la variable
+#es asimétrica, por lo que se prefiere a la mediana sobre la media.
+
+#Test Wilcoxon es la prueba de la mediana, una alternativa no paramétrica a la prueba t
+
+#H0:Mu_ed=60.5
+
+```{r}
+median(edad)
+mean(edad)
+
+wilcox.test(edad, mu=60.5)
+
+
+
+```
+#Con este planteamiento es que es correcto estimar la prueba de Kolmogorov-Smirnov como alternativa
+
+#H0: Variable edad proviene de una pob con dist normal con mu=60.5 y sigma=11
+
+#H0: Mu=60.5
+
+```{r}
+ks.test(edad,"pnorm",60.5,11)
+```
+
+#Pruebas de una cola
+
+
+#Prueba t de una cola
+
+#H0: Mu=55.5
+#H1: Mu<55.5   (Si Mu>, alternative=greater)
+
+```{r}
+t.test(edad,mu=55.5, alternative="less")
+```
+
+
+#Prueba Kolmogorov smirnov de una cola
+
+```{r}
+ks.test(edad,"pnorm",55.5,11, alternative="less")
+```
+
+
+
+#Pruebas para una proporción
+
+#Se analizará la proporción de población urbana
+
+```{r}
+mean(urbano)
+```
+
+#Hipótesis nula: P=0.65
+
+
+#Prueba no paramétrica para una proporción
+
+```{r}
+binom.test(sum(urbano),length(urbano), p=0.65)  #No parametrica  
+```
+
+#Prueba paramétrica para una proporción
+```{r}
+prop.test(sum(urbano),length(urbano), p=0.65)   
+```
+
+#Comparen los p-values: Qué notan?
+
+
+
+
+
+
+

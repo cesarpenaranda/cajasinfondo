@@ -1,0 +1,255 @@
+librerias
+```{r}
+library(car)
+library(ggplot2)
+library(tseries)
+library(lmtest)
+```
+
+redondeo y base
+```{r}
+load("Bases/basecoffe.Rdata");base=basecoffe
+options("scipen" = 100,"digits" = 6)
+
+```
+
+```{r}
+h=tapply(base$pH,list(base$Leche,base$Metodo),mean);h
+```
+
+
+*variabilidad*
+```{r}
+boxplot(base$pH~base$Metodo+base$Leche)
+```
+```{r}
+ggplot(base, aes(x = Metodo, y = pH, group = Leche,color=Leche)) +
+  geom_point() +
+  labs(x = "Tratamientos", y = "ph", title = "Grafico 1. Análisis de variabilidad de tratamientos")+ geom_jitter()+stat_summary(fun = "mean", geom = "point", shape = 8, size = 1, color = "black") 
+```
+*Modelo con interacción*
+
+Esta es la hipotesis nula: $H_{0}:(\alpha\beta)_{ij}=0$  y dice que el efecto de un tipo de metodo de preparacion sobre el nivel del pH promedio del cafe no depende del uso de la leche, es decir es el mismo si se usa o no la leche.                
+
+```{r}
+
+options(contrasts = c("contr.sum","contr.poly"))
+mod = lm(pH ~ Metodo*Leche, data = base)
+
+anova(mod) 
+summary(mod)
+
+```
+Se tiene una probabilidad asociada p(<0.0000971), con lo cual se rechaza la hipotesis de no interaccion. Se concluye que el efecto del metodo de preparacion no es el mismo cuando se usa leche que en el caso de no usar leche 
+
+*Graficamente la interacción*
+```{r}
+ggplot(base, aes(x = Leche, y = pH, group = Metodo)) +
+   labs(x = "Uso de leche", y = "PH", title = "Gráfico 2. Análisis de interacción entre el uso de leche y el método")+
+  stat_summary(fun.y="mean", geom="line", aes(linetype = Metodo,color=Metodo))
+
+```
+
+*EVALUACION DE SUPUESTOS*
+*Normalidad*
+
+Las hipotesis son:
+
+$H_{0}:$ La distribución condicional de la respuesta tiene distribución normal para todos los valores de X
+
+$H_{a}:$ La distribución condicional de la respuesta NO tiene distribución normal para todos los valores de X
+
+```{r}
+shapiro.test(mod$res)
+#Prueba no parametrica
+jarque.bera.test(mod$residuals)
+qqPlot(mod$residuals)
+```
+
+*Homoscedasticidad*
+
+```{r}
+bartlett.test(base$pH~interaction(base$Metodo,base$Leche))
+bptest(mod)
+plot(mod$residuals~mod$fitted.values)
+```
+Ante la hipótesis de homocedasticidad se obtiene una probabilidad asociada de 0,14, por lo que se decide no rechazarla, con lo cual no se tiene evidencia de heteroscedasticidad 
+
+*Comparaciones bajo el modelo con interaccion*
+```{r}
+coef = mod$coeff 
+#Matriz de estructura:
+model.matrix(mod)
+contrasts(base$Metodo)
+contrasts(base$Leche) 
+```
+
+*Vectores de contrastes para calcular promedio de los tratamientos*
+
+*Para no leche*
+No-expr = (1,1,0,1,1,0) $\mu_{11}$            
+No-pod = (1,0,1,1,0,1) $\mu_{21}$              
+No-prensa = (1,-1,-1,1,-1,-1) $\mu_{31}$  
+
+*Para sí leche*
+Si-exp = (1,1,0,-1,-1,0) $\mu_{12}$        
+Si-pod = (1,0,1,-1,0,-1) $\mu_{22}$            
+Si-prensa = (1,-1,-1,-1,1,1) $\mu_{32}$              
+
+```{r}
+coef
+#Para no leche (1)
+miu_11 = c(1,1,0,1,1,0)
+miu_21 = c(1,0,1,1,0,1)
+miu_31 = c(1,-1,-1,1,-1,-1)
+
+#Para sí leche (2)
+miu_12 = c(1,1,0,-1,-1,0)
+miu_22 = c(1,0,1,-1,0,-1) 
+miu_32 = c(1,-1,-1,-1,1,1)
+
+h = cbind(miu_11,miu_21,miu_31,miu_12,miu_22,miu_32)
+(L = t(h)%*%coef) 
+#Promedios estimados de los tratamientos asumiendo interacción, que es lo mismo que los promedios observados:
+```
+
+*Modelo final*
+
+$$\mu_{ij}=\mu+\alpha_{i}+\beta_{j}+(\alpha\beta)_{ij}$$       
+
+El primer subindice se trata del metodo de preparacion (expresso, pod, prensa) y el segundo el uso de la leche (no y sí)  
+
+*Contrastes para no leche*
+
+```{r}
+#miu_11 - miu_21
+#miu_31 - miu_11
+#miu_31 - miu_21 
+```
+
+*Contrastes para sí leche*
+
+```{r}
+
+#miu_22 - miu_12 
+#miu_32 - miu_12
+#miu_32 - miu_22
+
+```
+
+*Ortogonalidad*
+Vector de promedios:(miu_11, miu_21, miu_31, miu_12, miu_22, miu_32)
+Los vectores para obtener el primer grupo de hipotesis (no leche):
+```{r}
+v1 = c(1,-1,0,0,0,0)
+v2 = c(-1,0,1,0,0,0)
+v3 = c(0,-1,1,0,0,0)
+
+c(v1%*%v2, v1%*%v3, v2%*%v3) 
+```
+NO son ortogonales
+
+Los vectores para obtener el segundo grupo de hipotesis (sí leche):
+```{r}
+v4 = c(0,0,0,-1,1,0)
+v5 = c(0,0,0,-1,0,1)
+v6 = c(0,0,0,0,-1,1)
+
+c(v4%*%v5, v4%*%v6, v5%*%v6) 
+```
+NO son ortogonales
+
+*Comparación bloques entre sí*
+
+```{r}
+c(v1%*%v4, v1%*%v5, v1%*%v6, v2%*%v4, v2%*%v5, v2%*%v6, v3%*%v4, v3%*%v5, v3%*%v6 )
+```
+El primer grupo de vectores sí es ortogonal con respecto al segundo grupo de vectores. Hay que hacer correción de Bonferroni dentro de cada grupo de hipotesis (tomando en cuenta que en cada caso son 3 hipotesis)
+
+
+*Matriz de contrastes*
+
+```{r}
+no.exp_pod = miu_11-miu_21
+no.exp_pren = miu_31-miu_11
+no.pod_pren = miu_31-miu_21
+  
+si.exp_pod = miu_22-miu_12        
+si.exp_pren = miu_32-miu_12
+si.pod_pren = miu_32-miu_22
+
+h1 = cbind(no.exp_pod,no.exp_pren,no.pod_pren,si.exp_pod,si.exp_pren,si.pod_pren)
+
+(L1 = t(h1)%*%coef)
+
+(var = diag(t(h1)%*%vcov(mod)%*%h1))
+```
+expreso, pod, prensa
+
+*Prueba simultanea de hipotesis*
+```{r}
+
+ee = sqrt(var)
+t = L1/ee
+row.names(t) = row.names(L1)
+p = pt(t,18,lower.tail = F)
+row.names(p) = row.names(L1)
+p
+```
+
+Probabilidades se comparan con alfa/3 = 0.017
+La unica que NO se rechaza es si.pod_pren = 0.0912 > 0.017
+
+*Cálculo de cotas inferiores*
+
+```{r}
+
+tc1 = qt(1-0.05/3,18)
+tc2 = qt(1-0.05/2,18)
+
+lim1 = L1[1:3]-tc1*ee[1:3]
+lim2 = L1[4:5]-tc2*ee[4:5]
+
+names(lim1) = row.names(L1)[1:3]
+names(lim2) = row.names(L1)[4:5]
+
+lim1
+lim2
+```
+
+*potencia*
+```{r}
+power.anova.test(groups = 3,n=4,between.var = var(c(5.10,5.15,5.30)),within.var =0.0005)
+#si porque la variabilidad es muy baja, y con la cantidad de datos y la diferencia relativa es suficiente
+anova(mod)
+```
+
+
+```{r}
+power.anova.test(groups = 3,power=0.90,between.var = var(c(5.20,5.21,5.3)),within.var =0.001)
+```
+
+```{r}
+mu=tapply(base$pH,basecoffe$Metodo,mean);mu
+```
+
+Función:
+```{r}
+med = function (r, mu, v = 0.0005) {
+k = length(mu)
+n = r * k
+y = rnorm(n, rep(mu,each=r), sqrt(v))
+x = factor(rep(1:k, each=r))
+mod = aov(y ~ x)
+p = anova(mod)[1, 5]
+return(p)
+}
+```
+Simulación:
+```{r}
+M=1000
+prob=c()
+mu1=c(5.10,5.15,5.30)
+for(j in 1:M) prob[j]=med(4,mu1)
+mean(prob<0.05)
+```

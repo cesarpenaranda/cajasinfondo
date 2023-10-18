@@ -1,0 +1,75 @@
+---
+title: "TAREA2"
+author: "CESAR"
+date: '2022-07-04'
+output: html_document
+---
+
+```{r}
+#library(svDialogs) es necesario
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(primer)
+library(readr)
+library(visreg)
+library(PerformanceAnalytics)
+library(svDialogs)
+
+#dialogos 
+winDialog(type = "ok","Modelo matematico para observar el desarrollo del viros COVID-19")
+ ("Este es un modelo matemAtico para ver el desarrollo del virus Covid 19. Presione enter.")
+winDialog(type = "ok","* Se le preguntara un pais al usuario.
+
+* El pograma creara con los datos del pais selecionado un modelo de regrecion.
+
+* Por favor ingresar correctamente el nombre del programa para que este funcione de manera adecuada mayusculas, etc.")
+
+#ubicacion 
+setwd ("C:/Users/cesar/Documents/") 
+datos = read.csv("covid_19_data.csv")
+winDialog(type = "ok" , "Espere un momento miestras se ejecuta el codigo")
+
+
+datos$ObservationDate <- as.Date(parse_date_time(datos$ObservationDate, "%m/%d/%y"))
+va.1 = aggregate(Confirmed ~ ObservationDate + Country.Region, data = datos, FUN = sum)
+va.2 = aggregate(Deaths ~ ObservationDate + Country.Region, data = datos, FUN = sum)
+va.3 = aggregate(Recovered ~ ObservationDate + Country.Region, data = datos, FUN = sum)
+correccion = merge.data.frame(va.1, merge.data.frame(va.2, va.3))
+attach(correccion)
+
+names(correccion) =  c("Fecha", "Pais", "Confirmados", "Muertes", "Recuperados")
+x = as.factor(dlg_input("Escriba el nombre del pais:")$res)
+data.pais =  correccion[correccion$Pais == x,]
+
+data.corre =  data.frame(data.pais$Confirmados, data.pais$Recuperados)
+names(data.corre) =  c("Confirmados", "Recuperados")
+
+#Tabla de Correlaciones
+chart.Correlation(data.corre)
+
+#Comprobar normalidad
+shapiro.test(data.pais$Confirmados)
+shapiro.test(data.pais$Recuperados)
+#Analicis de correlaciones tipo matriz.
+cor(data.pais$Confirmados, data.pais$Recuperados) 
+#Analicis de significancia de la correlacion.
+cor.test(data.pais$Confirmados, data.pais$Recuperados, method = "spearman")  
+
+#Regresion lineal.
+regre =  lm(Recuperados ~  Confirmados, data = data.pais) 
+summary(regre)
+#Sigificancia
+anova(regre) 
+
+
+#seccion de graficos
+plot(regre)
+#visreg(regre, "Confirmados")
+ggplot(regre, aes(x=Confirmados, y=Recuperados)) +
+geom_point(shape=1) +
+#con 95% de confianza
+geom_smooth(method=lm)
+winDialog("ok","Los resultados graficos se encuentran abajo")
+```
+

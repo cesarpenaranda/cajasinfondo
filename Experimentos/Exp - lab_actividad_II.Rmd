@@ -1,0 +1,117 @@
+---
+title: "Reporte actividad 2"
+author: "Cesar Peñaranda - B85922"
+date: "2023-03-22"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+```{r}
+setwd("C:/Users/cesar/OneDrive/Documentos/R EXPERIMENTOS")
+source("funciones.R",encoding = "UTF-8")
+```
+
+Vamos a pensar en alguna situación real, por ejemplo el peso de las personas adultas que siguen dos sistemas de alimentación diferente.
+La primera función ilustra la distribución de los pesos de ambas poblaciones asumiendo que ambas distribuciones son normales.
+Indica donde se ubica la media de cada distribución y cuánto es la diferencia entre esas dos medias.
+Se deben indicar los parámetros siguientes: mreal contiene las medias verdaderas de las dos poblaciones y var contiene las variancias de cada población.
+También se pueden controlar los limites del eje X con lim1 y lim2, pero si no se indican, la función tiene su propia forma de mostrarlos.
+Estos limites son útiles cuando se quieren hacer varios graficos y se van cambiando las variancias, pero no se quiere que se alteren los limites.
+Para familiarizarse con la función suponga que las medias verdaderas son 68 y 80, y que ambas distribuciones tienen la misma variancia igual a 5.
+
+observacion de como queda la funcion
+
+```{r}
+plot.dist (mreal=c (68,80), var=c (5,5))
+```
+
+La instruccion queda de la siguiente forma:
+
+1.  Cambie los valores de las medias reales para apreciar como se van acercando las distribuciones. No cambie los valores de las variancias
+
+```{r}
+par(mfrow=c(2,3))
+plot.dist(mreal = c(75,80),var = c(5,5))
+plot.dist(mreal = c(76,80),var = c(5,5))
+plot.dist(mreal = c(77,80),var = c(5,5))
+plot.dist(mreal = c(78,80),var = c(5,5))
+plot.dist(mreal = c(79,80),var = c(5,5))
+plot.dist(mreal = c(79.9,80.1),var = c(5,5))
+```
+
+2.  Determine un punto en que las distribuciones están tan cerca que realmente no importa tanto la separacion. Mantenga los limites fijos.
+
+```{r}
+par(mfrow=c(1,2))
+plot.dist(mreal = c(79,50),var = c(5,5))
+plot.dist(mreal = c(79.5,80),var = c(5,5))
+```
+
+***Aqui observamos una diferencia en las medias de 0.5 lo cual enrealidad, podriamos interpretarlo como una diferencia que no hace relevante en si su separacion***
+
+3.  Repita el ejercicio anterior pero mantenga ahora la separación constante y cambie la variancia.
+
+```{r, echo=FALSE}
+par(mfrow=c(2,3))
+plot.dist(mreal = c(75,80),var = c(8,8))
+plot.dist(mreal = c(75,80),var = c(7,9))
+plot.dist(mreal = c(75,80),var = c(6,10))
+plot.dist(mreal = c(75,80),var = c(5,11))
+plot.dist(mreal = c(75,80),var = c(4,12))
+plot.dist(mreal = c(75,80),var = c(3,13))
+```
+
+4.  Busque un caso real y determine un punto de corte a partir del cual las distribuciones se separan una distancia que tenga sentido práctico.
+
+```{r}
+plot.dist(mreal = c(60,80),var = c(8,9),)
+```
+
+***caso hipotetico en el que se mide los latidos por minuto de dos grupos de personas segun condicion de obesidad (tiene o no tiene), en este caso una diferencia de 3 puntos, en los promedios de las distribuciones (de latidos por minuto), de personas segun condicion de obesidad, no tendria un sentido practico ya que no representa un gran cambio, mientras en el caso hipotetico presentado en el grafico (d=20) si observamos una diferencia importante en un grupo en contraste con el otro.***
+
+## Distribuciones condicionales
+
+Ahora vamos a extraer datos de dos distribuciones y vamos a representarlos con la segunda funcion.
+Se deben indicar los parámetros siguientes mreal contiene las medias verdaderas de las dos poblaciones y var contiene las variancias de cada población.
+Además se deben indicar r1 y r2 que son los tamaños de las dos muestras seleccionadas.
+Esta función extrae aleatoriamente dos muestras de las poblaciones establecidas y dibuja una densidad para cada muestra, así como una densidad conjunta de los datos combinados.
+Para familiarizarse con la función suponga que las medias verdaderas son 68 y 70, y que ambas distribuciones tienen la misma variancia igual a 5.
+Se extraen 10 datos de cada distribución.
+La instrucción queda de la siguiente forma:
+
+```{r}
+plot.muestra(mreal = c(68,70),var = c(5,5),r1=10,r2=10)
+```
+
+Observe la forma de las densidades condicionales y la densidad total.
+Ahora separe las medias hasta que observe cambios en la densidad total.
+
+```{r, echo=FALSE}
+plot.muestra(mreal = c(68,70),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(70,70),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(69,71),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(68,72),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(67,73),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(60,80),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(55,85),var = c(5,5),r1=10,r2=10)
+plot.muestra(mreal = c(40,100),var = c(5,5),r1=10,r2=10)
+```
+
+Comente sobre lo siguiente:
+
+1.  ¿A que nos referimos cuando hablamos de distribución condicional?
+
+***Cuando hablamos de distribución condicional, nos referimos a la distribución de una variable aleatoria en funcion de cierta condición o informacion. En otras palabras, es la distribución de una variable aleatoria Y condicionada por los valores de otra variable aleatoria o tratamiento en este caso.***
+
+2.  ¿Es tan importante la distribución total como las condicionales?
+
+***Depende del caso pero en general si, tanto la distribución total como las distribuciones condicionales son importantes, La distribución total proporciona información sobre la probabilidad conjunta de dos o mas variables, lo que nos ayuda a comprender las relaciones entre ellas. Por otro lado, las distribuciones condicionales son útiles para entender cómo una variable aleatoria afecta a otra segun la informacion o condicion.***
+
+3.  ¿ Qué implicaciones tiene esto cuando se trata de verificar la distribución de los datos?
+
+***tanto la distribución total como las distribuciones condicionales son relevantes para verificar el comportamiento de los datos y entender las relaciones entre los mismos. la observacion de las distintas distribuciónes debe intentar considerar todos los posibles aspectos para obtener una comprensión completa de la forma y comportamiento de los datos y su impacto en el análisis de los mismo.***

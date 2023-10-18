@@ -1,0 +1,88 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-22"
+---
+Se quiere predecir la señal de la nicotina, la cual utiliza una máquina especial para separar dicha sustancia 
+de un patrón de concentración controlando la temperatura, la presión y la cantidad en el estándar interno 
+(SI), para así obtener dicha señal.
+Por medio de un método de cromatografía se separa la nicotina del etanol, esto se hace con una máquina 
+que indica por medio de señales cuando se separó la nicotina del etanol. Primero se separa la nicotina pura 
+combinada con otro compuesto para asegurarse que la máquina esté correctamente calibrada. Luego de 
+esto se toman muestras de cigarro, y se compara si el valor indicado en el paquete corresponde con el valor 
+obtenido en el laboratorio. Se sabe que la señal de nicotina sale después de la señal de etanol, la máquina 
+lo que arroja es un gráfico que va dibujando picos, donde ya se conoce el comportamiento de los 
+compuestos, por ejemplo, en esta mezcla el primer pico siempre va a ser del etanol y el segundo pico 
+siempre va a ser el de nicotina.
+
+Para el experimento se preparan 3 mezclas de nicotina y etanol con diferentes concentraciones. A estas 
+mezclas se les llama madres y se dice que cada una tiene un patrón de concentración. Todas las madres 
+contienen la misma cantidad de etanol, pero una mezcla tiene 200 mg/L de nicotina, la otra madre lleva 
+600 mg/L y la tercera 1000 mg/L. De cada madre se extraen 6 muestras de sustancia que se inyectan en la 
+máquina para que haga la separación y dé la señal de nicotina.
+
+Se configura la máquina con 3 parámetros importantes: temperatura (en grados centígrados), presión (en 
+kPa) y cantidad en el estándar interno (SI). Se inyecta una muestra de sustancia con la máquina en la 
+configuración establecida y se deja un tiempo en reposo antes de hacer la medición (horas). El tiempo 0 
+significa que se hace la medición de inmediato, mientras que un uno significa que se deja una hora en reposo 
+y luego se mide.
+
+#Ejercicios
+```{r}
+load("Bases/nicotina.Rdata")
+str(base)
+View(base)
+```
+
+#1. Use los datos del archivo “nicotina.Rdata”. Lleve a cabo un análisis para determinar si existe un efecto de la temperatura en la señal promedio.
+```{r}
+(mu=mean(base$señal))
+
+(m=tapply(base$señal,base$temperatura,mean))
+
+(ef=m-mu)
+
+
+plot(base$temperatura,base$señal,xlab="temperatura",ylab="señal")
+```
+
+#2. Haga lo mismo usando como factor de diseño la presión.
+```{r}
+(m2=tapply(base$señal,base$presion,mean))
+(ef2=m2-mu)
+plot(base$presion,base$señal,xlab="presion",ylab="señal")
+```
+#3. Repita el ejercicio usando el SI.
+```{r}
+(m3=tapply(base$señal,base$SI,mean))
+(ef3=m3-mu)
+plot(base$SI,base$señal,xlab="SI",ylab="señal")
+```
+
+#4. Compare los resultados de los 3 análisis.
+Los tres resultados son iguales uno de los tratamientos dismiluye la media 53.7 mientras que el otro la aumenta el mismo valor
+#5. Haga un modelo con los 3 factores sin interacción. Obtenga los coeficientes del modelo y observe lo que sucede.
+```{r}
+mod=lm(señal~temperatura+presion+SI,data=base)
+mod_avo=aov(mod)
+mod_avo$coefficients
+mod$coefficients
+```
+
+#6. Haga tablas cruzadas entre temperatura y presión, así como entre temperatura y SI. ¿Qué  problema logra detectar al hacer estas tablas?
+```{r}
+table(base$temperatura,base$presion)
+table(base$temperatura,base$SI)
+```
+hay valores n.a en cada tabla, en la interseccion de (temperatura,190) con (presion,80) y (temperatura,230) con (presion,120)
+ademas en la otra tabla en la interseccion (temperatura,190) con (SI,100) y (temperatura,230) con (SI,500)
+#7. Como ud pudo comprobar, los 3 factores resultaron significativos en los análisis separados. ¿Cuál de esos factores realmente está causando que la señal promedio cambie?
+```{r}
+mod1=lm(base$señal~base$temperatura)
+anova(mod1)
+mod2=lm(base$señal~base$presion)
+anova(mod2)
+mod3=lm(base$seña~base$SI)
+anova(mod3)
+```
+

@@ -1,0 +1,204 @@
+#Papel 
+Un fabricante de papel está interesado en tres métodos para preparar la pulpa y cuatro temperaturas de
+cocción de la pulpa. Aunque la temperatura es una variable continua, solo se van a estudiar 4 temperaturas,
+por lo que se toma como un factor fijo.
+El fabricante desea estudiar el efecto del método y de la temperatura sobre la resistencia a la tensión del papel,
+que es el esfuerzo máximo a tensión obtenido durante una prueba hasta la ruptura bajo unas condiciones
+prescritas. El esfuerzo es expresado como la fuerza por unidad del ancho de la muestra puesta a prueba,
+medido en kg/cm.
+Cada réplica de un factorial requiere 12 observaciones y el investigador ha decidido correr tres réplicas. El
+experimento se lleva a cabo de la siguiente forma:
+• Produce 3 lotes de pulpa con cada uno de los 3 métodos que está estudiando en un orden aleatorio. En
+total produce 9 lotes de pulpa.
+• Cada vez que produce un lote lo divide en cuatro partes o muestras y realiza la cocción de cada muestra
+con una temperatura diferente asignada aleatoriamente.
+
+##1. Utilice los datos que se encuentran en el archivo papel.Rdata. Asegúrese que están bien definidos los
+factores método y temperatura.
+```{r}
+load("Bases/papel.Rdata")
+str(base)
+```
+
+```{r}
+base$metodo = factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$temp = factor(base$temp)
+base$lote=factor(base$lote)
+str(base)
+
+```
+• La variable lote indica los lotes de pulpa, y se enumeran de 1 a 9 para diferenciar todos los lotes.
+Ponga juntas las variables metodo y lote para observar la correspondencia de los lotes con los métodos.
+
+```{r}
+base[,c(2,4)]
+
+```
+Los lotes 1, 4 y 6 fueron producidos con el método 1. En la variable lote se denominan 1, 2
+y 3. Los lotes 2, 3 y 8 fueron producidos con el método 2 y también se denominan 1, 2 y 3 en
+la variable lote. Finalmente, los lotes 5, 7, 9 fueron producidos con el método 3 y también se
+denominan 1, 2 y 3 en la variable lote.
+
+• Haga una representación gráfica de los datos para ver el comportamiento de la respuesta según método
+y temperatura. Analice primero la interacción entre método y temperatura. Use type="a" en la función
+xyplot. En los diseños de parcela divididas se pone más énfasis al factor que está en la subparcela, por
+lo que ese factor debe colocarse en groups, mientras que el factor de parcela se coloca en el eje X.
+
+```{r}
+library(lattice)
+xyplot(res ~ metodo, groups = temp,type="a",auto.key=list(columns=4),
+xlab="método",ylab="resistencia",data=base)
+```
+En el gráfico parece haber interacción entre temperatura y método ya que la distancia en el
+M3 entre los promedios de las temperaturas 200 y 225 son nulas, mientras que con el M1 son
+más diferentes. Sin embargo, esto puede causar dudas, pues en el resto de las comparaciones
+las diferencias se ven muy parecidas en todos los métodos. Más bien podría pensarse que en
+general no hay interacción
+
+• Basado en lo que ve en el gráfico, se espararía un efecto de la temperatura?
+Los promedios para la temperatura 275 siempre son más altos que para la temperatura 200,
+las distancias son bastante grandes, por lo que sí se podría esperar un efecto. Sin embargo, es
+importante ver la variabilidad que hay en cada tratamiento.
+
+2. ¿Qué implicaciones tendría una interacción entre método y temperatura?
+Si hubiera interacción entre método y temperatura se esperaría que el efecto que tiene la
+temperatura fuera diferente para cada método.
+
+• Haga el análisis usando la función lmer de la librería lme4. La parte aleatoria son los bloques que se
+separan con un + del resto del modelo y se pone entre paréntesis (1|bloque). La instrucción completa
+debe quedar de la siguiente forma: lmer(Y~FP*FSP+(1|bloque)).
+
+```{r}
+library(lme4)
+mod1=lmer(res~metodo*temp+ (1|lote),data=base)
+
+```
+• El anova que da esta librería no tiene las probabilidades asociadas, pero se pueden calcular con los
+valores de F que da el anova, siempre que se sepa cómo calcular los grados de libertad. Los grados
+de libertad para el error de parcela se obtienen sabiendo que los lotes están anidados dentro de cada
+método. Entonces se tienen a(r-1) grados de libertad, donde a es el número de métodos y r el número
+de lotes por cada método. En este caso 3*(3-1)=6. El error de subparcela se calcula con n-p-gl.parcela,
+donde p es el número de coeficientes (1 de intercepto, 2 de métodos, 3 de temperaturas, 6 de interacción,
+son 12 coeficientes), por lo que el error de parcela tiene 36-12-6=18 grados de libertad. La probabilidad
+para la interacción se calcula con el error de subparcela.
+
+```{r}
+anova(mod1)
+
+```
+```{r}
+1-pf(2.2967,6,18)
+```
+
+La probabilidad asociada a esta prueba es mayor que el nivel de significancia (p=0.08), por
+lo que no se rechaza la hipótesis de no interacción. De esta forma se asume que el efecto de la
+temperatura es el mismo para cada método.
+
+3. Asumiendo que no hay interacción entre metodo y temp, se pueden probar dos hipóteis, una sobre el
+efecto del método usando los grados de libertad de parcela y otra sobre el efecto de la temperatura
+usando los grados de libertad de subparcela.
+
+• Use un modelo sin interacción y haga la prueba sobre el efecto de la temperatura comparando los
+promedios de forma marginal. Debe ajustar los grados de libertad, pues ahora los 6 grados de libertad
+de la interacción se suman al error de subparcela. De esta forma quedan 24 grados de libertad en la
+subparcela.
+
+```{r}
+mod2=lmer(res~metodo+temp+ (1|lote),data=base)
+anova(mod2)
+```
+
+```{r}
+1-pf(24.6241,3,24)
+```
+Hay efecto de la temperatura.
+
+• Haga la prueba sobre el efecto del método comparando los promedios de forma marginal. Use los grados
+de libertad de parcela que son 6. Estos grados de libertad no cambian haya o no interacción.
+
+```{r}
+anova(mod2)
+
+```
+```{r}
+1-pf(3.9724,2,6)
+```
+No hay efecto del método.
+
+4. Puesto que se supone que no hay interacción entre método y temperatura, para hacer comparaciones
+múltiples entre los promedios de las 4 temperaturas, se pueden hacer comparaciones de Tukey.
+• Compare los promedios y obtenga límites inferiores para los casos en que tenga sentido. Se usan
+solo los coeficientes fijos, los cuales se extraen mediante summary(mod)$coef. Se pueden usar solo los
+coeficientes de temperatura, lo que es equivalente a poner los de método en cero, es decir, para hacer
+las comparaciones marginales. Debe usar los grados de libertad de supbparcela que son 24.
+```{r}
+contrasts(base$temp)
+```
+
+```{r}
+summary(mod2)$coef
+
+```
+
+```{r}
+b=summary(mod2)$coef[4:6,1]
+b
+```
+```{r}
+vcov=vcov(mod2)[4:6,4:6]
+vcov
+```
+
+```{r}
+c200=c(0,0,0)
+c225=c(1,0,0)
+c250=c(0,1,0)
+c275=c(0,0,1)
+c275.200=c275-c200
+c275.225=c275-c225
+c275.250=c275-c250
+c250.200=c250-c200
+c250.225=c250-c225
+c225.200=c225-c200
+cont=cbind(c225.200,c250.200,c275.200,c250.225,c275.225,c275.250)
+L=t(cont)%*%b
+L
+```
+
+```{r}
+ee=sqrt(diag(t(cont)%*%vcov%*%cont))
+ee
+```
+
+```{r}
+q=L/ee
+p=ptukey(q*sqrt(2),4,24,lower.tail = F)
+round(p,5)
+```
+
+```{r}
+q = qt(1-0.05/5,24)
+ic = L[-4]-q*ee[-4]
+names(ic)=names(data.frame(cont))[-4]
+round(ic,2)
+
+```
+
+No se observan diferencias entre las medias de las temperaturas 250 y 225, pero sí las hay
+entre todos los demás pares. Las que más se diferencian son 200 con 275 pues la resistencia
+promedio para 275 es al menos 6.45kg/cm mayor que la de 200.
+
+• Se pueden obtener las probabilidades de las comparaciones de Tukey usando la función lsmeans de la
+librería lsmeans con la siguiente instrucción lsmeans(mod2, pairwise~"temp", adjust="tukey").
+Note que esto solo es útil para obtener las probabilidades pero no los intervalos o límites de confianza.
+
+```{r}
+library(lsmeans)
+
+```
+```{r}
+lsmeans(mod2, pairwise~"temp", adjust="tukey")
+
+```
+

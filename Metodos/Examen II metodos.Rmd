@@ -1,0 +1,69 @@
+---
+title: "Examen II"
+author: "CESAR"
+date: '2022-06-02'
+output: html_document
+---
+
+```{r}
+attach(restaurant)
+```
+
+```{r}
+names(restaurant)
+```
+
+
+```{r}
+library(BSDA)
+library(car)
+library(ggplot2)
+```
+
+```{r}
+qqPlot(cambio.emp)
+```
+```{r}
+hist(cambio.emp)
+```
+
+```{r}
+qqPlot(calific.serv)
+```
+
+```{r}
+hist(calific.serv)
+```
+
+```{r}
+diferencia1=cambio.emp-calific.serv
+qqplot(diferencia1)
+```
+Para analizar la correlacion de las variables en un grafico
+```{r}
+plot(cambio.emp~calific.serv)
+```
+```{r}
+cor(cambio.emp,calific.serv, use="pairwise.complete.obs", method="pearson")
+```
+
+
+```{r}
+cor(cambio.emp,calific.serv, use="pairwise.complete.obs", method="kendall")
+```
+```{r}
+table(restaurant)
+```
+
+```{r}
+summary(cambio.emp)
+```
+```{r}
+table(calific.serv)
+summary(calific.serv)
+```
+
+```{r}
+data.frame(restaurant)
+```
+

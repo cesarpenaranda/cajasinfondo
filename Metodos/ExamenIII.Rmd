@@ -1,0 +1,188 @@
+---
+title: "EXAMEN III"
+author: "Génesis Villalobos"
+date: '2022-07-16'
+output: html_document
+---
+
+# Librerias
+
+```{r}
+library(car)
+library(carData)
+```
+
+# Datos
+
+Con datas:
+
+```{r}
+#rm(list=ls())
+#setwd("C:/Users/Gilbert BC/Documents/Teletrabajo/Metodos 2022/Laboratorios/Labo 7/")
+#load(file="mhasbasico.Rdata")
+#attach(mhasbasico)
+
+#names(mhasbasico)
+```
+
+Con vectores dados:
+
+```{r}
+maquina<- c(1,	1,	1,1,	1,	0,0,	0,	0,	0,	0)
+produccion <- c(8.26,	8.13,	8.385,	8.07,	8.34,	7.95,	7.89,	7.9,	8.14,	7.92,	7.84)
+length(maquina)
+length(produccion)
+
+```
+
+Si ocupo recodificar para quitar los NA
+
+```{r}
+#dim(dataframe)
+
+#mhasbasico2=subset(dataframe, is.na(varible a estudiar)==F)
+#mhasbasico3=na.omit(dataframe)
+#dim(mhasbasico2)
+#dim(mhasbasico3)
+
+#detach(mhasbasico)
+
+#attach(mhasbasico2)
+```
+
+# Normalidad condicional
+
+```{r}
+
+par(mfrow = c(1,1))
+
+qqPlot(modelo42$residuals)
+ 
+shapiro.test(modelo42$residuals)#para lm
+
+#shapiro.test(income.i[migracion==0]) para datas
+
+#shapiro.test(income.i[migracion==1])para datas
+```
+
+# Homoscedasticidad
+
+Si la variable independiente es cualitativa:
+
+```{r}
+leveneTest(produccion~ as.factor(maquina))
+# o si son 2 variables cuantitativas
+# leveneTest(income.i,migracion)
+```
+
+Si se supone normalidad condicional:
+
+```{r}
+#bartlett.test(jacaranda, grupofactor)
+```
+
+```{r}
+par(mfrow = c(1,2))
+
+plot(modelo42$residuals~modelo42$fitted.values) #Residuos para los lm
+boxplot(Felicidad~as.factor(Sexo), names= c("Hombres", "Mujeres"))
+
+```
+
+# Prueba T test
+
+Varianzas diferentes con normalidad
+
+```{r}
+#t.test(income.i[migracion==0],income.i[migracion==1], alternative= "two.sided", mu=0, var.equal=F)
+
+```
+
+Varianzas iguales homocedasticidad con normalidad
+
+```{r}
+#t.test(income.i[migracion==0],income.i[migracion==1], alternative= "two.sided", mu=0, var.equal=T) 
+##Tambien se puede Comparar con ANOVA: Ver pvalue
+
+#anova.ingreso=(lm(income.i~migracion))
+#anova(anova.ingreso)
+```
+
+# Prueba Wilcoxon/ Kruskal Wallis
+
+Varianzas diferentes no parametrico
+
+```{r}
+#wilcox.test(income.i[migracion==0],income.i[migracion==1], alternative= "two.sided", mu=0, paired=F)
+
+#Kruskal - Wallis
+
+#kruskal.test(income.i~migracion)
+
+```
+
+# Prueba U Mann Whitney
+
+Para verificar diferencias entre dos variables con un modelo lineal
+
+```{r}
+m.mann.whitney <- lm(produccion~maquina)
+summary(m.mann.whitney)
+```
+
+# Prueba Paramétrica U-W 
+
+```{r}t.test(Felicidad[Sexo==0],Felicidad[Sexo==1], paired = FALSE)}
+
+
+
+```
+
+# Prueba no Parametrica U-W
+
+```{r}
+wilcox.test(Felicidad[Sexo==0], Felicidad[Sexo==1], paired = FALSE)
+
+```
+
+# Hipótesis para proporciones
+
+Recodificacion de variable por proporciones
+
+```{r}
+#median(income.i, na.rm=TRUE)
+
+###ingreso.median=recode(income.i, "-2000000:1252.083=0; 1252.083:100000000=1")
+#Recodificamos bajo la mediana
+#t(t(table(ingreso.median)))
+
+#ingreso.por.migracion=table(ingreso.median,migracion)
+
+#ingreso.por.migracion
+#tapply(ingreso.median,migracion,mean)
+
+```
+
+con la prueba Chi-Cuadrado
+
+```{r}
+#chisq.test(ingreso.por.migracion)
+
+```
+
+Con la prueba de proporciones
+
+```{r}
+prop.test(c(1327,136),c(2664,263)) #Segun los resultados que me den en la tabla
+```
+
+Con la prueba Fisher (Si las muestras son menores de 100
+
+```{r}
+fisher.test(ingreso.median,migracion)
+
+fisher.test(ingreso.por.migracion)
+
+table(migracion)
+ingreso.por.migracion
+```

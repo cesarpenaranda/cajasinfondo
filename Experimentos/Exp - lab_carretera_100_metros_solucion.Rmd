@@ -1,0 +1,318 @@
+## 6.2 Carrera 100 metros
+
+Se hizo un estudio para examinar el efecto que tiene la posición de salida y el tipo
+de calentamiento en el tiempo de recorrido de 100 metros planos. Se trabajó con la
+población entre 17 a 24 años en la sede Rodrigo Facio de la Universidad Costa Rica.
+Se usaron tres tipos de calentamiento: (A) solo estirando, (B) calentamiento normal
+para hacer ejercicio regular y (C) calentamiento para correr. Además se usaron dos
+tipos de salida: (+) salida baja con 4 apoyos y (-) salida normal de pie.
+Para tomar en cuenta la variabilidad que introduce el hecho de que hay unos
+estudiantes más grandes que otros y que además tienen pesos diferentes, se tomó
+el peso y la estatura para calcular el índice de masa corporal de cada uno de ellos,
+el cual se calcula dividiendo el peso entre la estatura al cuadrado (IMC = P/E**2).
+La variable respuesta es el tiempo al recorrer 100 metros planos (en segundos). Los
+investigadores consideran que una diferencia de 2 segundos entre dos promedios es
+relevante.
+
+
+*Factor = posicion de salida 
+_+ salida baja
+_- salida normal
+  
+*Factor = tipo de calentamiento 
+_A solo estirando 
+_B calientamiento normal
+_C calentamiento para correr 
+
+*Covariable = imc
+
+*Respuesta = tiempo de recorrido de 100metros planos en segundos 
+
+*Diferencia relevante = 2 segundos
+
+
+
+```{r}
+options(digits = 6)
+```
+
+
+```{r}
+library(car)
+library(dplyr)
+```
+
+6.2.2 Solución
+#1. Preparación:
+##(a) Lectura:
+```{r}
+load("Bases/100metros.Rdata")
+str(base)
+```
+## (b) Creación de imc:
+```{r}
+base$imc=base$peso/base$estatura^2
+```
+## (c) Tratamientos:
+Hay 6 tratamientos en el diseño pues son dos factores de diseño: tipo de
+calentamiento (3 niveles) y tipo de salida (2 niveles).
+## (d) Repeticiones:
+```{r}
+table(base$calent,base$salida)
+```
+Hay 11 observaciones por tratamiento.
+#2. Linealidad:
+## (a) Correlación entre respuesta y covariable:
+```{r}
+cor(base$tiempo,base$imc)
+```
+## (b) Correlación dentro de cada tratamiento:
+```{r}
+summarise(group_by(base,calent,salida),cor(imc,tiempo))
+```
+como hacerlo sin summarise
+```{r}
+h=cbind(
+cor(base$imc[base$calent=="A"&base$salida=="-"],base$tiempo[base$calent=="A"&base$salida=="-"]),
+cor(base$imc[base$calent=="A"&base$salida=="+"],base$tiempo[base$calent=="A"&base$salida=="+"]),
+cor(base$imc[base$calent=="B"&base$salida=="+"],base$tiempo[base$calent=="B"&base$salida=="+"]),
+cor(base$imc[base$calent=="B"&base$salida=="-"],base$tiempo[base$calent=="B"&base$salida=="-"]),
+cor(base$imc[base$calent=="C"&base$salida=="+"],base$tiempo[base$calent=="C"&base$salida=="+"]),
+cor(base$imc[base$calent=="C"&base$salida=="-"],base$tiempo[base$calent=="C"&base$salida=="-"]))
+colnames(h)=c("A-","A+","B+","B-","C+","C-");h
+```
+
+La correlación entre tiempo e imc no es muy alta cuando se toma en general,
+pero cuando se considera dentro de los tratamientos, en algunos casos resulta
+ser más alta.
+
+## (c) Relación lineal:
+```{r}
+scatterplot(tiempo~imc,cex.lab=1.5,data=base[base$calent=="A"&base$salida=="-",])
+scatterplot(tiempo~imc,cex.lab=1.5,data=base[base$calent=="A"&base$salida=="+",])
+scatterplot(tiempo~imc,cex.lab=1.5,data=base[base$calent=="B"&base$salida=="-",])
+scatterplot(tiempo~imc,cex.lab=1.5,data=base[base$calent=="B"&base$salida=="+",])
+scatterplot(tiempo~imc,cex.lab=1.5,data=base[base$calent=="C"&base$salida=="-",])
+scatterplot(tiempo~imc,cex.lab=1.5,data=base[base$calent=="C"&base$salida=="+",])
+```
+En la Figura 6.3 se observa que en algunos casos la relación es bastante lineal
+como el B+, mientras que en otros hay una cierta curvatura como el C+ o el A+.
+No todas las líneas se comportan de una forma similar, por lo que se asumirá un
+comportamiento lineal para todas.
+
+# 3. Variabilidad de la respuesta:
+## (a) Variancia de la respuesta observada dentro de cada tratamiento:
+```{r}
+(v=tapply(base$tiempo,list(base$calent,base$salida),var))
+round(v,3)
+```
+con summarise
+```{r}
+h1=as.matrix(summarise(group_by(base,calent,salida),var(tiempo))[,3])
+mean(h1)
+```
+
+## (b) Estimación de la variancia única dentro de los tratamientos:
+```{r}
+mod0=lm(base$tiempo~base$salida*base$calent)
+anova(mod0)
+anova(mod0)[4,3]
+mean(v)#CMres de un modelo con salida y calentamiento sin la covariable
+```
+## (c) Visualización de la variabilidad:
+```{r}
+boxplot(tiempo~calent+salida,data=base)
+plot(mod0$residuals~mod0$fitted.values)#
+bartlett.test(mod0$residuals~mod0$fitted.values)#
+```
+
+##(d) Líneas de regresión por tratamiento:
+```{r}
+library(lattice)
+xyplot(tiempo~imc|calent+salida,type=c("r","p"),data=base)
+```
+
+## (e) Variabilidad alrededor de la línea:
+Cuando se observan todos los puntos en un solo tratamiento se ve una gran
+variabilidad global, en cambio si se ven los puntos en un intervalo de imc muy
+corto, esa variabilidad se reduce.
+# 4. Inclusión de covariable:
+## (a) Residuales del modelo con interacción:
+```{r}
+mod1=lm(tiempo~calent*salida+imc,data=base)
+#r1=mod1$res;r1
+anova(mod1)
+#anova(mod0)
+```
+## (b) Significado de los residuales:
+Cada residual representa la distancia del valor observado a la recta
+correspondiente. No hay una única recta sino una recta para cada tratamiento.
+Entonces es la distancia del valor observado a la recta del tratamiento al que
+pertenece, el cual es el promedio estimado para ese tratamiento.
+
+$CMRes=\sum(y_{ij}-\hat{y}_{ij})^2/gl $
+## (c) Cuadrado medio residual:
+```{r}
+## como obtener los gl para cmres
+nrow(base)-length(mod1$coefficients)
+
+(CMRes=sum(r1^2)/59)
+
+```
+
+## (d) Comparación:
+```{r}
+CMRes #modelo con la covariable
+mean(v) #modelo sin la covariable 
+```
+En el modelo se obtiene variancia residual de 3,75 mientras que al principio se
+tenía 10,41. Al incluir el imc se reduce la variabilidad residual.
+
+# 5. Prueba formal:
+## (a) Anova con dos factores:
+```{r}
+mod2a=lm(tiempo~calent*salida,data=base)
+mod2b=lm(tiempo~salida*calent,data=base)
+anova(mod2a)
+```
+```{r}
+anova(mod2b)
+
+```
+El resultado del anova es el mismo independientemente del orden de los
+factores.
+
+## (b) Prueba para el efecto del calentamiento:
+Como no hay interacción se usa un modelo sin interacción.
+```{r}
+mod3=lm(tiempo~calent+salida,data=base)
+anova(mod3)
+```
+Se rechaza la hipótesis de igualdad de medias por lo que hay evidencia de que
+alguno de los tipos de calentamiento produce una media menor que las otras.
+La probabilidad asociada es 0,02.
+
+## (c) Modelo con la covariable:
+```{r}
+mod4a=lm(tiempo~calent+salida+imc,data=base)
+mod4b=lm(tiempo~imc+calent+salida,data=base)
+anova(mod4a)
+```
+```{r}
+anova(mod4b)
+```
+
+Los resultados no se mantienen al intercambiar el orden. Esto es lo que sucede en
+un modelo de regresión ya que el anova va tomando lo que explica una variable
+después de que han entrado otras variables, entonces el orden en que entra es
+importante.
+
+## (d) Modelo con la covariable y eliminando calentamiento:
+```{r}
+mod4=lm(tiempo~calent+salida+imc,data=base)
+mod5=lm(tiempo~salida+imc,data=base)
+anova(mod4)
+anova(mod5)
+```
+
+## (e) Suma de cuadrados de regresión marginal:
+
+```{r}
+SCRes1=anova(mod4)[4,2];SCRes1
+SCRes2=anova(mod5)[3,2];SCRes2
+SCRegMar=SCRes2-SCRes1;SCRegMar
+
+```
+## (f) Estadístico F:
+```{r}
+CMRes=anova(mod4)[4,3];CMRes
+(f=(SCRegMar/2)/CMRes) 
+#gl de la suma de recmarginal= numero del numero de parametros que quite del modelo = a diferencia de gl residuales de ambos modelos 
+#tambien se pude ver como los grados de libertad del factor en este caso calentamiento, en este caso df=2
+```
+
+## (g) Prueba de la hipótesis:
+```{r}
+pf(f,2,61,lower.tail = F) # gl del numerador= gl de screg; denominador = gl residuales del modelo grande
+```
+
+La hipótesis nula es que los dos modelos explican lo mismo, la cual es totalmente
+equivalente a decir que los coeficientes de calentamiento son todos cero. Esto se
+puede traducir en que las medias del tiempo son iguales para todos los tipos
+de calentamiento. Se rechaza la hipótesis nula de igualdad de medias para los
+diferentes tipos de calentamiento.
+## (h) Prueba de forma automática:
+```{r}
+drop1(mod4a, test="F")
+```
+```{r}
+drop1(mod4b, test="F")
+
+```
+En cualquier orden que se pogan los factores en el modelo se obtiene la misma
+probabilidad asociada a la prueba que interesa.
+
+## (i) Probabilidad obtenida:
+Ahora la probabilidad asociada es de 0,00005 que es mucho menor que la
+obtenida anteriormente (0,015).
+
+# 6. Prueba de interacción:
+```{r}
+drop1(mod1,test="F")
+```
+
+La probabilidad asociada es muy alta por lo que se asume que no hay interacción
+entre calentamiento y salida. Esto lleva a suponer que el efecto que tiene el tipo
+de calentamiento sobre el tiempo promedio es independiente del tipo de salida.
+Es correcto el análisis que se hizo de verificar el efecto del calentamiento en
+general.
+
+# 7. Comparaciones finales:
+## (a) Modelo resultante:
+µi j,X = β0 +αi +βj +γX
+## (b) Comparación por tipo de calentamiento:
+Primero se obtienen los coeficientes y se observa que la referencia es el tipo A,
+además el coeficiente más alto es para B y luego C. Entonces se comparan B-C,
+B-A y C-A.
+```{r}
+tapply(base$tiempo,base$calent,mean)
+```
+
+```{r}
+mod4a=lm(tiempo~calent+salida+imc,data=base)
+(b=mod4a$coef)#
+```
+
+```{r}
+cBC=c(0,1,-1,0,0)
+cBA=c(0,1,0,0,0)
+cCA=c(0,0,1,0,0)
+cont=cbind(cBC,cBA,cCA)
+(L=t(cont)%*%b)
+```
+
+```{r}
+ee=sqrt(diag(t(cont)%*%vcov(mod4a)%*%cont))
+qt=L/ee
+(p=pt(qt,61,lower.tail = F)) #!!! gl residuales del mod grande
+
+```
+
+```{r}
+p<0.05/3
+```
+Se encuentran diferencias entre B-C y B-A. Ahora se construye un límite inferior
+para esas diferencias.
+```{r}
+qt=qt(1-0.05/2,61)
+(lim=L[1:2]-qt*ee[1:2])
+```
+
+Estadísticamente se ha encontrado que C produce un tiempo promedio inferior
+a B, y de igual forma A produce un tiempo promedio inferior a B pero que
+entre A y C no se han detectado diferencias. Sin embargo, puesto que el
+investigador había establecido que para que una diferencia entre dos promedios
+se considerara importante debería ser de al menos 2 segundos, la diferencia
+entre esos tipos de calentamiento no es claramente relevante pues su límite
+inferior llega a 1,03 segundos en el caso B-C y a 1,45 segundos en el caso B-A.
+

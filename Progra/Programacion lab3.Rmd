@@ -1,0 +1,72 @@
+---
+title: "LAB3B85922"
+author: "CESAR"
+date: '2022-05-09'
+output: html_document
+---
+
+```{r}
+#Recordar que estos paquetes son necesarias library(svDialogs) library(utils)
+library(svDialogs)
+library(utils)
+winDialog(type="ok", message=
+"Precione: 1 para calcular el numero mayor en un conjunto de numeros.
+Precione: 2 para  calcular el n-esimo termino en la sucesion expuesta
+Precione: 3 para el ejercicio de la sucesion de menor a mayor")
+menu=as.numeric(dlg_input(message ="Digite el numero de ejercicio que desea 1,2 o 3" )$res)
+#codigo para ejercicio 1 para calcular el numero mayor en un conjunto de numeros.
+if (menu==1){
+winDialog(type="ok",message="Ejercicio 1: calcular el numero mayor en un conjunto de numeros." )
+p1 = as.numeric ( dlg_input(message = "Digite cantidad de numeros que desea comparar: ")$res )
+numeros = as.numeric(p1)
+  
+  for (x in 1:p1) {
+numeros[x] = as.numeric ( dlg_input(message = "Digite el numero: ")$res )
+  } 
+winDialog(message = paste("El mayor numero en la secuencia es: ", max(numeros)))
+
+#codigo para ejercicio 2 para  calcular el n-esimo termino en la sucesion expuesta
+} else if (menu==2){
+  winDialog(type="ok",message="Ejercicio 2: calcular el n-esimo termino en la sucesion expuesta" )
+  n = as.numeric (dlg_input(message ="Digite el numero para la sucesion: ")$res)
+  x1 = 0
+  x2 = 1
+  contador = 1
+  
+  while (contador <= n) {
+    conta = x2 - 1
+    x2 = x1
+    x1 = x1 + conta
+    contador = contador + 1
+  }
+  
+  x1= x1*-1+1
+  winDialog(type = "ok",message = paste("El valor es:", (x1)))
+  
+#codigo para ejercicio 3  ejercicio de la sucesion de menor a mayor
+} else if (menu==3){
+  winDialog(type="ok",message="Ejercicio 3: sucesion de menor a mayor" )
+  a = as.numeric ( dlg_input(message = "Digite el valor de a: ")$res )
+  b = as.numeric ( dlg_input(message = "Digite elvalor de b: ")$res )
+  c = b
+  
+  if(b < a){
+    a1 = a
+    a =  b
+    b = a1
+    c = b
+  }
+  
+  while (a <= b) {
+    while (b >= a) {
+    winDialog(type="ok",message= paste(a,b))
+    b = b - 1
+    }
+    a = a + 1
+    b = c
+  }
+}else {
+  winDialog(type="ok",message="Digite un valor adecuado")
+}
+```
+

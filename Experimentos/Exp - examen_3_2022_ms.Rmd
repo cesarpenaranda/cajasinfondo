@@ -1,0 +1,236 @@
+Teoricas 1 
+a) un experimentos tiene una potencia de 0.3 de detectar diferencias de 2 unidades, ¿ es posible que se llegue a la conclusion de que el factor de diseño si tenga un efecto sobre la respuesta promedio? justifique porque se puede dar esto. 
+**Si, es posible llegar a la conclusion de que el factor de diseño tenga un efecto sobre la respuesta promedio, esto porque aunque la probabilidad es baja, sigue siendo probable el encontrar diferencias de 2 unidades en el caso de que realmente existen**
+
+b) suponga que se tiene un experimento con una potencia de 0.9 cuando la diferencia relevante es de 5 unidades, altener 3 niveles del factor de diseño con 10 replicas y con una cierta varianza condicional
+* Que sucede con la potencia en un experimento similar en el que se pierden 5 replicas en uno de los tratamientos? justifique
+**Es de esperar que la potencia disminuya, ya que como supuesto por lo general a mayor replicas mayor sera la potencia, si disminuimos las replicas esto va afecta la potencia en un sentido negativo**
+
+* que sucede con la potencia en un experimento similar donde la vrinaza condicional es mayor? 
+
+**Si la varianza condicional es mayor, esperamos que la potencia disminuya esto porque a mayor varianza es mas dificil captar diferencias en casos en los que efectivamente existen**
+
+ 
+2. Se realizó un experimento para encontrar el punto de equilibrio para la extracción de los pigmentos del azul de mata. El punto de equilibrio se alcanza cuando la concentración de pigmento extraído no tiene un cambio significativo con respecto a la cantidad de tiempo adicional que se expone la solución al calor.
+Interesa analizar el efecto que tiene el tipo de disolución (agua con jabón y alcohol para fricciones 70%) sobre la concentración promedio de pigmento (moles/litro) extraído y se incluyen 5 tiempos de exposición (5, 10, 15, 20 y 25 minutos) y 3 masas (0.125, 0.25 y 0.5 gramos). Se considera el tiempo expuesto a una temperatura constante de 70 grados centígrados.
+Para cada masa se seleccionan 30 muestras de plantas que se subdividen en dos conjuntos de 15 plantas; cada grupo se expone a una disolución (agua con jabón o alcohol). Posteriormente, cada conjunto se subdivide aleatoriamente en subgrupos de 3 plantas que serán asignados a los tiempos de exposición establecidos. Se pesa cada planta antes de exponerlas a la disolución.
+
+use los datos de baseazul dentro del archivo datos5.Rdata
+
+*factor de diseño -> tipo de disolucion
+-agua con jabon
+-alcohol para fricciones 
+
+*respuesta -> concentracion pormedio de pigmento
+-se mide en moles/litro
+
+*factor-> tiempo de exposicion(minutos)
+-5
+-10
+-15
+-20
+-25
+
+*factor -> masas(gramos)
+-0.125
+-0.25 
+-0.5 
+
+cantidad de replicas -> 30 para cada masa 
+
+esto se repite para cada una de las masas(0.125 , 0.25 , 0.5)
+
+*15(agua con jabon)-disolucion
+-3(5)
+-3(10)
+-3(15)
+-3(20)
+-3(25)
+
+*15(alcohol)-disolucion
+-3(5)
+-3(10)
+-3(15)
+-3(20)
+-3(25)
+
+cov -> peso de la planta
+
+diff relevante -> 2 moles/litro
+
+a) Realice los cálculos adecuados para determinar la potencia que tiene este
+experimento si se considera que dos medias son diferentes si distan al menos en 2 moles/litro. Considere el modelo adecuado con los 3 factores, pero no use la covariable. (10 puntos)
+
+*crecion del modelo*
+```{r}
+load("Bases/datos5.Rdata")
+head(baseazul)
+str(baseazul)
+mod1=lm(concentracion~disolvente+masa+tiempo+disolvente*masa+masa*tiempo,data = baseazul);anova(mod1)
+drop1(mod1,test = "F")
+```
+**hay interaccion**
+
+*funcion power*
+```{r}
+#library(pwr)
+cmres=anova(mod1)[6,3];cmres
+power.anova.test(groups =2,n = 15,between.var = var(c(4,6)),within.var = cmres)
+```
+
+b) ¿Cuántas plantas se necesitan para asegurar una potencia de 0.90 de detectar diferencias de 2 moles/litro? (4 puntos)
+```{r}
+power.anova.test(groups =2,power=0.90,between.var = var(c(4,6)),within.var = cmres)
+```
+se nesesitan 32 plantas por tratamiento es decir 32*6= 192 en total
+
+c) Basado en el modelo que escogió en el punto anterior, justifique si al incluir la covariable hay una reducción importante en la variabilidad que lleve a aumentar la potencia. Diga en cuánto se reduce la variabilidad y por qué considera que esa cantidad es mucha o poca (5 puntos), y compruebe si la potencia aumenta (4 puntos). (5+4=9 puntos)
+```{r}
+mod1=lm(concentracion~disolvente+masa+tiempo+disolvente*masa+masa*tiempo,data = baseazul)
+#drop1(mod1,test = "F")
+anova(mod1)
+mod2=lm(concentracion~disolvente+masa+tiempo+peso+disolvente*masa+masa*tiempo,data = baseazul)
+#drop1(mod2,test="F")
+anova(mod2)
+anova(mod1,mod2)
+
+#cuanto se reduce 
+anova(mod1)[6,2]
+anova(mod2)[7,2]
+#la SCRes pasa de 351.8928 al no incluir la cov a 258.2245 en el caso que si se incluye la cov esto es una reduccion en tomar encuenta de  93.6683, efectivamente reduce la variabilidad el incluir la cov 
+
+power.anova.test(groups = 2,n = 15 ,between.var = var(c(4,6)),within.var = 3.64)
+```
+3.	Para medir el *efecto del detergente sobre el pH del agua* se realizó un diseño factorial. La variable respuesta fue la diferencia en valor absoluto entre el pH del agua antes de aplicarle cualquier detergente y el pH luego de haber aplicado el detergente. Esto debido a que un cambio en la acidez o pH del agua después de haber aplicado el detergente puede considerarse una medida de contaminación. Se considera que una *diferencia de 0.3* unidades entre los cambios de acidez o pH promedio de dos detergentes ya indican que uno de los detergentes es más contaminante que el otro.
+
+Los *tipos de detergente* utilizados fueron los siguientes: *biodegradable marca Bluetech, ecológico marca Meyer y no biodegradable doméstico en barra marca San Luis*. Los investigadores pensaban que sus resultados podrían variar si se utilizaban distintos tiempos de exposición del agua al detergente, sin embargo, no podrían controlar este tiempo de exposición, sino que registraban el tiempo que el asistente les decía que había transcurrido desde que se aplicó el detergente a la muestra hasta que fue analizada.
+
+La unidad experimental fue una muestra de 40 ml de agua recolectada. Se recolectaron *12 muestras* de 40 ml de manera individual en la Zona Protectora Río Tiribí, en San Ramón de La Unión. El instrumento de medición empleado fue el pH-metro, el cual regresa valores entre 0 y 14.
+
+El *objetivo es investigar si hay diferencias relevantes entre los tipos de detergente*, cuál de ellos produce menor contaminación y cuantificar esas diferencias con 95% de confianza.  Para esto se usa un modelo que también tome en cuenta el tiempo de exposición y la interacción entre el factor de diseño y la covariable.
+
+Los datos del experimento se encuentran en la base llamada “basedet1” dentro de ”datos5.Rdata”
+```{r}
+load("Bases/datos5.Rdata")
+str(basedet1)
+basedet1$det=as.factor(basedet1$det)
+```
+
+a)	Escriba la ecuación del modelo asociado al experimento en la forma larga (con variables auxiliares) y usando la restricción de tratamiento de referencia.  Diga cuál es esta restricción. (5 puntos)
+
+b)	Justifique gráficamente si la inclusión de la covariable tiene algún beneficio en el análisis (5 puntos).
+library(lattice)
+```{r}
+mod1=lm(ph~det,data=basedet1);anova(mod1)
+mod2=lm(ph~det*tiempo,data =basedet1);anova(mod2)
+boxplot(ph~det,data = basedet1)
+xyplot(ph~tiempo|det,type=c("r","p"),data=basedet1)
+```
+
+c)	Justifique gráficamente si se espera interacción entre la covariable y el factor de diseño. (5 puntos)
+```{r}
+xyplot(ph~tiempo,groups=det,type=c("r","p"),data = basedet1)
+```
+
+d)	Realice el análisis adecuado para responder al objetivo planteado.  (15 puntos)
+```{r}
+mod2$coefficients
+tapply(basedet1$ph,basedet1$det,mean)
+summary(basedet1$tiempo)
+
+x1=3
+x2=45
+x3=85
+```
+Por la interacion entre la cov y el factor, debemos hacerlo condicionalmente
+```{r}
+x=3
+v1=c(1,0,0,x,0,0)
+v2=c(1,1,0,x,x,0)
+v3=c(1,0,1,x,0,x)
+
+c1=v2-v1
+c2=v3-v1
+c3=v3-v2
+
+cont=cbind(c1,c2,c3)
+
+L=t(cont)%*%mod2$coefficients;L
+
+#error 
+ee=sqrt(diag(t(cont)%*%vcov(mod2)%*%cont))
+
+#tprueba 
+t=L/ee
+
+#prueba
+gl=nrow(basedet1)-length(mod2$coefficients)
+
+p=pt(t,gl,lower.tail = F)
+p>0.05/3
+```
+```{r}
+x=45
+v1=c(1,0,0,x,0,0)
+v2=c(1,1,0,x,x,0)
+v3=c(1,0,1,x,0,x)
+
+c1=v2-v1
+c2=v3-v1
+c3=v3-v2
+
+cont=cbind(c1,c2,c3)
+
+L=t(cont)%*%mod2$coefficients;L
+
+#error 
+ee=sqrt(diag(t(cont)%*%vcov(mod2)%*%cont))
+
+#tprueba 
+t=L/ee
+
+#prueba
+gl=nrow(basedet1)-length(mod2$coefficients)
+
+p=pt(t,gl,lower.tail = F)
+p>0.05/3
+
+#cotas 
+qt=qt(1-0.05/3,gl)
+lim=L[1:3]-qt*ee[1:3];lim
+```
+**solo v3-v1 es una diferencia significativa relevante**
+
+```{r}
+x=85
+v1=c(1,0,0,x,0,0)
+v2=c(1,1,0,x,x,0)
+v3=c(1,0,1,x,0,x)
+
+c1=v2-v1
+c2=v3-v1
+c3=v3-v2
+
+cont=cbind(c1,c2,c3)
+
+L=t(cont)%*%mod2$coefficients;L
+
+#error 
+ee=sqrt(diag(t(cont)%*%vcov(mod2)%*%cont))
+
+#tprueba 
+t=L/ee
+
+#prueba
+gl=nrow(basedet1)-length(mod2$coefficients)
+
+p=pt(t,gl,lower.tail = F)
+p>0.05/3
+
+#cotas 
+qt=qt(1-0.05/3,gl)
+lim=L[1:3]-qt*ee[1:3];lim
+```
+
+
+**en el caso de x=85 todas las diferencias son significativas y relevantes**

@@ -1,0 +1,110 @@
+---
+title: "Simulacion"
+output: html_document
+date: "2023-06-28"
+---
+
+```{r librerias y paquetes}
+library(nortest)
+library(carData)
+library(car)
+set.seed(123)
+```
+
+# Sensibilidad de las pruebas, ante supuestos de homocedasticidad y normalidad según variabilidad de datos normales además de la cantidad de repeticiones
+
+para evaluar la normalidad de una muestra
+Prueba de Shapiro-Wilk: Esta prueba se utiliza para evaluar si una muestra proviene de una población normalmente distribuida. La hipótesis nula de la prueba es que la muestra proviene de una población normal. Si el valor p es menor que el nivel de significancia (por ejemplo, 0.05), se rechaza la hipótesis nula y se concluye que la muestra no proviene de una población normal.
+
+Prueba de Anderson-Darling: Al igual que la prueba de Shapiro-Wilk, esta prueba se utiliza para evaluar si una muestra proviene de una población normalmente distribuida. La hipótesis nula y el procedimiento para tomar una decisión son los mismos que para la prueba de Shapiro-Wilk.
+
+
+para evaluar si varias muestras provienen de poblaciones con la misma varianza.
+Prueba de Bartlett: Esta prueba se utiliza para evaluar si k muestras provienen de poblaciones con la misma varianza. La hipótesis nula de la prueba es que todas las poblaciones tienen la misma varianza. Si el valor p es menor que el nivel de significancia, se rechaza la hipótesis nula y se concluye que al menos una de las poblaciones tiene una varianza diferente a las demás.
+
+Prueba de Levene: Al igual que la prueba de Bartlett, esta prueba se utiliza para evaluar si k muestras provienen de poblaciones con la misma varianza. La hipótesis nula y el procedimiento para tomar una decisión son los mismos que para la prueba de Bartlett.
+
+"Sensibilidad de las pruebas de supuestos ante diferentes varianzas de datos normales y diferente cantidad de repeticiones(muestras) 
+Se pondrá a prueba la sensibilidad de las diferentes pruebas de supuestos en esencia las de normalidad y homocedasticidad ante diferentes poblaciones normales con distintas varianzas, además si estas son más sensibles o sus resultados cambian según el número de repeticiones utilizado"
+
+**Funcion generadora de pvals segun varianza, replicas, simulaciones**
+
+```{r}
+
+norm <- function(r,s) {
+  prom <- c(5.1, 17.3, 4.2, 13.4, 6.3,16.5)
+          #mu11,mu22,mu31,mu12,mu21,mu32
+  k <- length(prom)
+  n <- k * r
+  mu1 <- rep(prom, each = r)
+  p_values <- matrix(0, nrow = 10000, ncol = 4)
+  p_int=NULL
+  for (i in seq_len(10000)) {
+    y1 <- rnorm(n, mean = mu1, sd = s)
+    factorA <- as.factor(c(rep(1, r),rep(2,r),rep(3,r)))
+    factorB <- as.factor(c(rep(1, r),rep(2,r)))
+    datos1 <- data.frame(y1, factorA, factorB)
+    options(contrasts = c("contr.sum", "contr.poly"))
+    mod1 <- lm(y1 ~ factorA * factorB, datos1)
+    res1 <- mod1$res
+    # Test de Shapiro
+    i1 = shapiro.test(res1)$p.value
+    
+    # Test de Anderson-Darling
+    i2 = ad.test(res1)$p.value
+    
+    # Test de Bartlet
+    j1 = bartlett.test(datos1$y1 ~ interaction(datos1$factorA, datos1$factorB))$p.value
+    
+    # Test de Levene
+    j2 = leveneTest(y1 ~ interaction(factorA, factorB), data = datos1)$'Pr(>F)'[1]
+    p_values[i, ] <- c(i1, i2,j1, j2)
+  }
+  
+  colnames(p_values) <- c("Shapiro_1","AD_1","Bartlett_1", "Levene_1")
+  
+   return(p_values)
+}
+#norm <- function(replicas,desviaciones,simulaciones)
+vbaj.rbaja=norm(3,0.01)
+vbaj.ralta=norm(30,0.01)
+valt.rbaja=norm(3,5)
+valt.ralta=norm(30,5)
+x1=colMeans(vbaj.rbaja<0.05)
+x2=colMeans(vbaj.ralta<0.05)
+x3=colMeans(valt.rbaja<0.05)
+x4=colMeans(valt.ralta<0.05)
+
+res=rbind(x1,x2,x3,x4);rownames(res)=c("var_baja.replicas_bajas","var_baja.replicas_altas","var_alta.replicas_bajas","var_alta.replicas_altas");res*100
+```   
+
+**como esperamos se comporte cada valor**
+```{r}
+prueba= function(r,s){
+prom <- c(5.1, 17.3, 4.2, 13.4, 6.3,16.5)
+k <- length(prom)
+n <- k * r
+mu1 <- rep(prom, each = r)
+y1 <- rnorm(n, mean = mu1, sd = s)
+factorA <- as.factor(c(rep(1, r),rep(2,r),rep(3,r)))
+factorB <- as.factor(c(rep(1, r),rep(2,r)))
+datos1 <- data.frame(y1, factorA, factorB)
+mod1 <- lm(y1 ~ factorA * factorB, datos1)
+res1 <- mod1$res
+table(datos1$factorA,datos1$factorB)
+r1=qqPlot(mod1$residuals)
+r2=plot(mod1$residuals~mod1$fitted.values)
+
+return(list(r1,r2))
+}
+vbaj.rbaja=prueba(3,0.01);vbaj.rbaja
+vbaj.ralta=prueba(30,0.01);vbaj.ralta
+valt.rbaja=prueba(3,5);valt.rbaja
+valt.ralta=prueba(30,5);valt.ralta
+```
+
+
+
+
+
+

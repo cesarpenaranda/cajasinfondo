@@ -1,0 +1,712 @@
+```{r}
+library(survey)
+library(sampling)
+```
+
+# 1 Marco muestral, muestra y estimadores en el muestreo de conglomerados. 
+En el muestreo de conglomerados (iguales o desiguales) se requiere un marco muestral de 
+conglomerados o Unidades Primarias de Muestreo (UPM) para seleccionarlas al azar y, 
+después de aplicar una o varias etapas de selección, tener una muestra de elementos o 
+unidades de estudio. Se seleccionan UPM (conglomerados), pero la información se 
+recolecta de las unidades de estudio del conglomerado seleccionado. Una vez recolectada la 
+información, los datos se promedian o se suman dentro de cada conglomerado, por lo que 
+para calcular los estadísticos y su precisión la información se analiza a nivel de 
+conglomerados, no de unidades de estudio. Promediar o sumar los datos dentro de cada 
+conglomerado obedece a la existencia de dos enfoques: concebir los conglomerados como 
+una muestra de a promedios, proveniente de una población de A promedios, o como una 
+muestra de a totales, proveniente de una población de A totales (suma). Ambos enfoques 
+permitirán calcular los estadísticos de interés y sus desviaciones estándar para realizar 
+inferencias. Para comprender estos procesos siga las siguientes instrucciones.
+
+## a. Suponga que en una ciudad funciona una compañía de taxis
+en el aeropuerto y para entrevistar a los ocupantes se selecciona una muestra al azar de cuatro taxis (𝐴 = 4
+conglomerados), cada uno con cinco turistas adentro (𝐵 = 5 unidades de estudio por 
+conglomerado). A cada turista (unidad de estudio) se le preguntó cuántas veces ha venido a 
+la ciudad (Total de visitas, variable de conteo) y si ha estado más de una vez (Ha estado en 
+TK, variable dicotómica). La información para cada persona entrevistada (unidad de estudio 
+del conglomerado) se presenta en la siguiente tabla:
+
+Guarde la información de la tabla anterior en un archivo llamado base, con formato 
+data.frame(). Revise en la pantalla de su computador que no haya errores.
+
+```{r}
+taxi=c(1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4)
+pasajero=c("Juan", "Arodys", "Fernando", "Adrián", "Ércika","Yorlene", "Alejandra", "Fernanda", "Ricardo", "Gilbert", "Oscar", "Patricia", "Irma", "Diego", "Guaner", "Andrea", "Elena", "Chu", "Andrey", "MIsabel")
+visitas<-c(1,1,3,1,1,7,4,5,7,5,1,1,3,1,1,3,4,1,1,1)
+mas1vez<- c(0,0,1,0,0,1,1,1,1,1,0,0,1,0,0,1,1,0,0,0)
+
+base=cbind(taxi,pasajero,visitas,mas1vez)
+base= as.data.frame(base);base
+str(base)
+base$visitas=as.numeric(base$visitas)
+base$mas1vez=as.numeric(base$mas1vez)
+```
+
+## b. Construya una tabla de resumen por taxi (conglomerado) usando la función summarise()
+y anote en la primera columna el número del taxi, en la segunda el número de ocupantes por 
+taxi y luego haga lo siguiente:
+• en la tercera y cuarta columna promedie las respuestas de las personas entrevistadas 
+por taxi (conglomerados) para cada pregunta realizada.
+• en la quinta y sexta columna sume las respuestas de las personas entrevistadas por taxi 
+(conglomerados) para cada pregunta realizada.
+Interprete la información obtenida en cada columna.
+
+table(base$taxi)
+tapply(base$visitas,base$taxi,mean)
+tapply(base$mas1vez,base$taxi,mean)
+tapply(base$visitas,base$taxi,sum)
+tapply(base$mas1vez,base$taxi,sum)
+
+```{r}
+
+taxis=c(1,2,3,4)
+pasajeros=c(5,5,5,5)
+visitaspro=c(1.4,5.6,1.4,2.0)
+mas1vezpro=c(0.2,1,0.2,0.4)
+visitas=c(7,28,7,10)
+mas1vez=c(1,5,1,2)
+
+tabla=cbind(taxis,pasajeros,visitaspro,mas1vezpro,visitas,mas1vez);tabla=as.data.frame(tabla);tabla
+```
+# 2. Cálculo del promedio en una muestra mia de conglomerados iguales.
+Calcule el número promedio de veces que han venido los turistas a la ciudad, asumiendo un mia de conglomerados iguales y aplicando los enfoques de promedios y totales.
+
+## a. Bajo el enfoque de una muestra de a promedios o de a totales 
+¿cuál fórmula debe aplicarse para calcular el promedio de veces que han venido los turistas a la ciudad (visitaspro)?
+```{r}
+diseno= svydesign(ids=~taxi,data=base,fpc=rep(4,20))
+```
+## b. Calcule el promedio de veces que han venido los turistas a la ciudad (visitas) 
+concibiendo una muestra mia de a promedios, tomados de una población de A promedios. 
+Interprete el resultado.
+```{r}
+promp=sum(tabla$visitaspro)/nrow(tabla);promp
+
+media=svymean(base$visitas,diseno);media
+```
+cada uno de los ocupantes de los taxis a venido en promedio 2.6 veces a la ciudad
+
+## c. Realice el cálculo anterior concibiendo una muestra mia de a totales
+proveniente de una población de A totales. Interprete el resultado.
+
+```{r}
+prom=sum(tabla$visitas)/sum(tabla$pasajeros);prom
+```
+El resultado del promedio de veces es igual al anterior (2.6 veces), pues el enfoque de 
+promedios o de totales no altera el resultado. Observe que se aplica la penúltima parte de la 
+fórmula anterior.
+
+# 3. Cálculo del error estándar de la media en una muestra mia de conglomerados iguales 
+aplicando los enfoques de promedios y totales.
+## a. Bajo el enfoque de una muestra mia de a promedios, proveniente de una población de A
+promedios, ¿cuál fórmula debe utilizarse para calcular el error estándar de la media?
+
+
+## b. Calcule el error estándar de la media concibiendo una muestra mia de a promedios, tomados 
+de una población de A promedios. Interprete.
+```{r}
+var=var(tabla$visitaspro)
+n=nrow(tabla)
+
+var_bar=var/n
+ee=sqrt(var_bar);ee
+
+```
+la desviacion estandar del promedio de visitas es 1 
+
+## c. Bajo el enfoque de una muestra mia de a totales, proveniente de una población de A totales, 
+¿cuál fórmula debe utilizarse para calcular el error estándar de la media?
+
+## d. Calcule el error estándar de la media concibiendo una muestra mia de a totales, proveniente 
+de una población de A totales. Interprete y compare resultados.
+
+```{r}
+var.visita=var(tabla$visitas)
+n.taxis.a=nrow(tabla)
+B2=5**2
+
+var_bar2= var.visita/(B2*n.taxis.a)
+ee=sqrt(var_bar2);ee
+
+#En el manual
+eet=sqrt(var(tabla$visitas)/(nrow(tabla)*mean(tabla$pasajeros)^2));eet
+
+
+```
+
+## e. Anote los resultados relacionados con el promedio de veces (enfoques del promedio y total) 
+en una sola tabla y comente.
+
+```{r}
+h=matrix(c(promp,promt,ee,eet),nrow = 2)
+rownames(h)=c("PROMEDIOS", "TOTALES")
+colnames(h)=c("Proporción", "ee(p)");h
+
+
+```
+
+# 4. Cálculo de una proporción en conglomerados iguales. Calcule la proporción de turistas que 
+ha estado más de una vez en la ciudad, asumiendo un mia de conglomerados iguales y aplicando 
+los enfoques de promedios y totales.
+
+
+## a. Bajo el enfoque de una muestra de a promedios o de a totales ¿cuál fórmula debe aplicarse 
+para calcular la proporción de turistas que ha estado más de una vez en la ciudad 
+(mas1vezpro)?
+## b. Calcule la proporción de turistas que ha estado más de una vez en la ciudad. Use la idea de 
+promedios e interprete.
+
+```{r}
+propm= mean(tabla$mas1vezpro);propm
+```
+el .45 de los turistas ha estado mas de una vez en la ciudad
+
+## c. Calcule la proporción de turistas que ha estado más de una vez en la ciudad usando el 
+enfoque de totales e interprete.
+```{r}
+propt=sum(tabla$mas1vez)/sum(tabla$pasajeros)
+propt
+```
+
+
+
+# 5. Cálculo del error estándar de una proporción en una muestra mia de conglomerados 
+iguales aplicando los enfoques de promedios y totales.
+## a. Bajo el enfoque de una muestra mia de a promedios, proveniente de una población de A
+promedios, ¿cuál fórmula debe utilizarse para calcular el error estándar de la proporción?
+```{r}
+eepm= sqrt(var(tabla$mas1vezpro)/nrow(tabla));eepm
+```
+El error estándar de la proporción es 0.189.
+## b. Calcule el error estándar de la proporción bajo el enfoque de promedios. Interprete.
+```{r}
+var.mas1vez=var(tabla$mas1vez)
+n.taxis.a=nrow(tabla)
+B2=mean(tabla$pasajeros)**2
+
+var_bar= (var.mas1vez)/(B2*n.taxis.a)
+eept=sqrt(var_bar);eept
+```
+
+## c. Bajo el enfoque de una muestra mia de a totales, proveniente de una población de A totales, 
+¿cuál fórmula debe utilizarse para calcular el error estándar de la proporción?
+## d. Calcule el error estándar de la proporción bajo el enfoque de totales. Interprete.
+```{r}
+var.mas1vez=var(tabla$mas1vez)
+a=nrow(tabla)
+B2=mean(tabla$pasajeros)**2
+var_bar=var.mas1vez/(a*B2)
+sqrt(var_bar)
+```
+El resultado es el mismo (0.189), pues es independiente del enfoque.
+## e. Ponga los resultados relacionados con la proporción en una sola tabla y comente.
+
+# 6. Estimación de estadísticos para hacer inferencias asumiendo un mia de conglomerados 
+iguales con la función survey(). Realice los cálculos anteriores con la función survey(), tanto 
+para el promedio como para la proporción y sus errores estándar, usando los dos enfoques.
+## a. A partir del objeto tabla, construido en la pregunta 1.b, haga un data.frame() con el 
+nombre ciudad y defina el diseño con la función survey().
+```{r}
+ciudad=tabla
+diseno= svydesign(ids=~taxis,data=ciudad)
+```
+## b. Calcule el promedio de veces que han venido los turistas a la ciudad y su error estándar, 
+usando los conceptos de una muestra mia, proveniente de una población de a promedios y 
+de totales. Compare los resultados y también con los obtenidos anteriormente.z
+```{r}
+#Enfoque de "promedios".
+prom_pro=svymean(~visitaspro, diseno)
+prom_pro
+#Enfoque de "totales".
+prom_tot=svyratio(~visitas, ~pasajeros, diseno)
+prom_tot
+
+```
+
+## c. Calcule la proporción de turistas que ha venido a la ciudad más de una vez y su error 
+estándar, usando los conceptos de una muestra mia, proveniente de una población de a
+promedios o de totales. Compare los resultados y con los obtenidos anteriormente.
+
+```{r}
+#Enfoque de "promedios"
+prop.mas1.p=svymean(~ciudad$mas1vezpro,diseno);prop.mas1.p
+#Enfoque de "totales".
+prop.mas1.t=svyratio(~ciudad$mas1vez, ~pasajeros, diseno);prop.mas1.t
+```
+
+# 7. Descripción del marco muestral para seleccionar viviendas en el muestreo de 
+conglomerados (iguales o desiguales). El muestreo de conglomerados de igual tamaño no es 
+frecuente en las ciencias económicas, políticas y sociales. No obstante, la comprensión de los 
+procedimientos para realizar las inferencias es valiosa para entender el caso de los 
+conglomerados desiguales. Por este motivo, en este ejercicio se utilizará un archivo que contiene 
+información de las viviendas y sus ocupantes, ordenadas en conglomerados de igual tamaño.
+Se advierte que en la práctica no es usual disponer de un solo marco muestral (archivo) que 
+contenga las UPM (conglomerados de igual tamaño) y la información de las unidades de estudio 
+(viviendas y ocupantes). Por el contrario, en la práctica se requiere un marco muestral para cada 
+etapa de selección, pero ese marco se requiere solamente para las unidades seleccionadas. Por 
+ejemplo, si va a ejecutarse una encuesta a estudiantes de la Universidad de Costa Rica y las UPM
+son las Escuelas, entonces en la primera etapa de selección se requiere un marco muestral que 
+contenga todas las Escuelas de la Universidad. Una vez que se escojan las Escuelas de la muestra 
+se pasa a la segunda etapa de selección, donde se requiere otro marco muestral, que contendrá, 
+para todas las Escuelas seleccionadas en la primera etapa, todos los grupos de estudiantes de los 
+cursos activos. Una vez que se disponga de ese marco, se selecciona la muestra de estudiantes 
+(grupos).
+Esto es importante entenderlo, pues el marco muestral utilizado para este y los restantes 
+ejercicios de este capítulo contiene las UPM y las unidades de estudio en un solo archivo de 
+datos, lo que no es usual en la práctica. Se optó por usar este enfoque debido a que así vienen 
+concebidas las funciones disponibles en R para este tipo de muestreo y porque esta forma de 
+abordar la selección de la muestra y realizar las estimaciones facilitará el aprendizaje del trabajo 
+con los conglomerados desiguales.
+## a. Lea el archivo marco6a y revise su contenido en pantalla.
+```{r}
+load("Bases/marco6a.Rdata")
+#str(marco6a)
+#View(marco6a)
+```
+
+## b. En marco6a, la variable pcds identifica las UPM o los conglomerados de viviendas en la 
+primera etapa. Determine el número de viviendas que contiene el marco (𝑁), el número de 
+UPM (𝐴) y su tamaño (𝐵).
+```{r}
+table(marco6a$vivienda)
+#N -> total de elementos 
+N=nrow(marco6a)
+#A -> total de conglomerados en la poblacion
+A=nrow(marco6a)/6
+#B -> total de elementos en cada conglomerado 
+B=6
+cbind(A,B,N)
+
+### manual
+N=nrow(marco6a)
+A=length(unique(marco6a$pcds))
+B1=min(table(marco6a$pcds)); B2=max(table(marco6a$pcds))
+B=B1=B2
+datos<-c(A,B,N)
+names(datos)<-c("A","B","N")
+datos
+```
+
+## c. La variable de estratificación del marco es la zona de residencia (1=Urbano, 2=Periferia 
+urbana, 3=Rural concentrado y 4=Rural disperso). Obtenga el número de viviendas por 
+zona y elabore un gráfico que muestre la distribución porcentual de las viviendas por zona.
+
+```{r}
+#marco6a$i=rep(1,22158)
+n.zona=tapply(marco6a$i,marco6a$zona,sum);n.zona
+porcent=(n.zona/22158)*100;names(porcent)=c("Urbano", "Periferi aurbana", "Rural concentrado" ,"Rural disperso");porcent
+pie(porcent)
+```
+
+Mientras que la zona urbana abarca el 54.4% de las viviendas del país, esa cifra es de 14.9% 
+en la periferia urbana, de 6.9% en la zona rural concentrada y de 23.8% en la rural dispersa.
+
+## d. A partir del marco calcule, para todo el país y para cada zona, lo siguiente (consta entre 
+paréntesis y con itálica el nombre de la variable en el marco):
+• proporción que tiene ducha de agua caliente en la vivinda (duchahot),
+```{r}
+duchahot=sum(marco6a$duchahot)/N;duchahot
+ducha.zona=tapply(marco6a$duchahot,marco6a$zona,sum)/tapply(marco6a$i,marco6a$zona,sum);ducha.zona
+```
+
+• proporción que tiene micromputadora en la vivienda (micro),
+```{r}
+micro=sum(marco6a$microonda)/N;micro
+micro.zona=tapply(marco6a$microonda,marco6a$zona,sum)/tapply(marco6a$i,marco6a$zona,sum);micro.zona
+```
+
+• promedio de aposentos por vivienda (aposentos),
+```{r}
+aposentos=mean(marco6a$aposentos);aposentos
+aposentos.zona=tapply(marco6a$aposentos,marco6a$zona,sum)/tapply(marco6a$i,marco6a$zona,sum);aposentos.zona
+```
+
+• promedio de hombres por vivienda (hombres),
+```{r}
+hombres=mean(marco6a$hombres);hombres
+hombres.zona=tapply(marco6a$hombres,marco6a$zona,sum)/tapply(marco6a$i,marco6a$zona,sum);hombres.zona
+```
+
+• promedio de mujeres por vivienda (mujeres) y
+```{r}
+mujeres=mean(marco6a$mujeres);mujeres
+mujeres.zona=tapply(marco6a$mujeres,marco6a$zona,sum)/tapply(marco6a$i,marco6a$zona,sum);mujeres.zona
+```
+
+• tamaño promedio del hogar (total).
+```{r}
+total=mean(marco6a$total);total
+total.zona=tapply(marco6a$total,marco6a$zona,sum)/tapply(marco6a$i,marco6a$zona,sum);total.zona
+```
+```{r}
+t.pais=c(duchahot,micro,aposentos,hombres,mujeres,total);t.pais
+```
+```{r}
+h=cbind(ducha.zona,micro.zona,aposentos.zona,hombres.zona,mujeres.zona,total.zona)
+h=rbind(t.pais,h);rownames(h)=c("t.pais","Urbano", "Periferi aurbana", "Rural concentrado" ,"Rural disperso");round(h,3)
+```
+
+
+# 8. Procedimiento de selección y estimación en un muestreo de conglomerados iguales, 
+completos, en una etapa, con mia . Se requiere seleccionar una muestra de 𝑛 = 1200
+viviendas, dadas las especificaciones anteriores.
+a. Realice los siguientes cálculos:
+• Calcule la fracción de muestreo total (f =?).
+
+• Calcule cuántas UPM debe seleccionar con este diseño (a_1 =?).
+
+• La fracción de muestreo de este diseño (f_1 =?).
+
+```{r}
+#fraccion de muestreo total 
+n=1200
+f=n/N;f
+#numero de UPM a seleccionar del marco
+a1=n/B;a1
+#feaccion de muestreo de este diseño
+f1=a1/A;f1
+
+#Resultados.
+datos1=c(A,B,N,n,a1,f,f1)
+names(datos1)<-c("A","B","N","n","a1","f","f1")
+t(datos1)
+```
+
+## b. Seleccione la muestra con mia usando la librería sampling y la función cluster. Verifique 
+que el número de UPM y el tamaño de la muestra sean los solicitados (use las funciones 
+dim() y summarise()).
+```{r}
+set.seed(123)
+seleccion1<-sampling::cluster(marco6a, clustername=c("pcds"), size=200, 
+method="srswor", description=TRUE)
+muestra6_1<-getdata(marco6a, seleccion1)
+
+muestra6_1
+```
+
+## c. Defina el Diseño 1, es decir, en el que fueron seleccionados 𝑎 = 200 conglomerados 
+completos con mia (𝐵 = 6 viviendas en cada conglomerado seleccionado). Verifique el 
+diseño definido con la función summary().
+
+```{r}
+diseno1=svydesign(ids=~pcds,data=muestra6_1,fpc=rep(1200/22158,1200)) #rep(A,n)
+```
+
+## d. Con base en el Diseño 1 elabore una tabla que contenga la proporción de viviendas que 
+posee ducha de agua caliente y microcomputador. Incluya el error estándar y el intervalo de 
+confiaza para ambas estimaciones y el respectivo valor poblacional.
+```{r}
+prop.agua=svymean(~muestra6_1$duchahot,diseno1);prop.agua
+prop.micro=svymean(~muestra6_1$micro,diseno1);prop.micro
+confint(prop.agua,df=n-1)
+confint(prop.micro,df=n-1)
+mean(marco6a$duchahot)
+mean(marco6a$micro)
+```
+
+# 9. Procedimiento de selección y estimación en un muestreo de conglomerados iguales, en 
+dos etapas (con submuestreo) y con mas. Se requiere seleccionar una muestra de n = 1200 viviendas, dadas las especificaciones anteriores.
+## a. Seleccione la muestra en dos etapas. En la primera etapa seleccione a2 conglomerados 
+como UPM y en la segunda una submuestra de b2 = 3 viviendas de cada UPM
+seleccionada. Previo a la selección de la muestra realice los siguientes cálculos:
+• Calcule cuántas UPM debe seleccionar (a2 =?).
+• Calcule la fracción de muestreo de este diseño (f2 =?).
+```{r}
+b2=3
+#Número de UPM a seleccionar.
+a2=n/b2
+#Fracción de muestreo del Diseño 2.
+f2=round(a2/A*b2/B,3)
+#Resultados.
+datos2=c(A, B, N, a2, b2, n, f, f2)
+names(datos2)<-c("A","B", "N", "a2", "b2", "n", "f", "f2")
+t(datos2)
+
+```
+
+## b. Seleccione la muestra solicitada con mas usando la función mstage() de la librería 
+samling(). Verifique que el número de UPM y el tamaño de la muestra sean los solicitados 
+(use las funciones dim() y summarise()).
+
+```{r}
+set.seed(123)
+seleccion2<-mstage(marco6a, stage=c("cluster",""), 
+ varnames = list("pcds","vivienda"), size=list(400,c(rep(3,400))),
+ method=list("srswor","srswor"))
+muestra6_2=getdata(marco6a, seleccion2[[2]])
+dim(muestra6_2)
+```
+
+## c. Defina el Diseño 2, es decir, el bietápico de conglomerados, en el que se seleccionaron a =
+400 conglomerados en la primera etapa y b = 3 viviendas en la segunda, usando mas en 
+ambas etapas. Verifique el diseño definido con la función summary().
+```{r}
+pcds2<-as.numeric(muestra6_2$pcds)
+N2<-rep(1200/22158,1200)
+N2<-as.data.frame(N2)
+muestra6_2<-cbind(muestra6_2, pcds2, N2)
+diseno2 <- svydesign(id=~pcds2, data=muestra6_2, nest = TRUE, fpc=N2)
+```
+
+## d. Utilizando el Diseño 2 elabore un gráfico que muestre el total de personas en cada zona.
+```{r}
+total.personas=svyby(~total,~zona,diseno2,svytotal)
+as.matrix(total.personas)
+```
+
+## 10. Procedimiento de selección y estimación en un muestreo de conglomerados iguales en 
+dos etapas, con estratificación proporcional y mas. Se requiere seleccionar una muestra 
+de 𝑛 = 1200 viviendas, dadas las especificaciones anteriores.
+
+## a. Previo a la selección de la muestra, estratifique con la variable zona, la que contiene cuatro 
+estratos (1=Urbano, 2=Periferia urbana, 3=Rural concentrado y 4=Rural disperso). Haga 
+la asignación de la muestra a los estratos de forma proporcional. Dentro de cada estrato, en 
+la primera etapa, seleccione 𝑎3 conglomerados como UPM y, en la segunda etapa, una 
+submuestra de b3 = 3 viviendas de cada UPM seleccionada. Use mas en ambas etapas. 
+Obtenga la información solicitada con la función summarise(), antes de proceder a hacer la 
+selección:
+• Número de viviendas de cada estrato (𝑁ℎ).
+• Peso de cada estrato (𝑊ℎ).
+• Número de viviendas a seleccionar de cada estrato (𝑛ℎ).
+• Número de UPM en cada estrato (𝐴ℎ).
+• Número de UPM a seleccionar en cada estrato (𝑎ℎ).
+• Tamaño de muestra final a seleccionar en cada estrato (𝑛ℎ𝑓).
+• Fracción de muestreo de cada estrato (𝑓ℎ).
+```{r}
+b3=3
+n=1200
+A=3693
+N=22158 
+ah=400
+fh=n/N
+
+total=cbind(N,1,n,A,ah,n,fh)
+
+Nh=tapply(marco6a$i,marco6a$zona,sum)
+wh=Nh/sum(Nh)
+nh=round(n*wh,0)
+Ah=3693*wh
+ah=round((nh/b3),0)
+nhf=ah*b3
+fh=nh/Nh
+datos3=cbind(Nh,wh,nh,Ah,ah,nhf,fh);datos3=rbind(total,datos3)
+colnames(datos3)=c("N","wh","nh","A","ah","nhf","fh")
+rownames(datos3)<-c("Total", "Urbana", "PerifU", "RuralC", "RuralD");round(datos3,3)
+```
+
+## b. Seleccione la muestra con la función mstage() y corrobore que el número de UPM y el 
+tamaño de la muestra sean los requeridos (use las funciones dim() y summarise()).
+```{r}
+marco6a<-marco6a[order(marco6a$zona, marco6a$pcds, marco6a$vivienda),]
+set.seed(123)
+seleccion3 <-mstage(marco6a, 
+ stage=c("stratified", "cluster", "cluster"),
+ varnames=list("zona","pcds", "vivienda"),
+ size=list(size1=table(marco6a$zona),size2=c(218,60,27,95),
+ size3=rep(3,400)),
+ method=list("","srswor","srswor"), description=TRUE)
+muestra6_3 <- getdata(marco6a, seleccion3)[[3]]
+dim(muestra6_3)
+
+```
+
+## c. Defina el Diseño 3, es decir, el diseño estratificado con asignación proporcional y selección 
+bietápica de conglomerados. Verifique el diseño definido con la función summary().
+```{r}
+zona3<-as.numeric(muestra6_3$zona)
+pcds3<-as.numeric(muestra6_3$pcds)
+N3=rep(c(654/12048,180/3312,81/1518,285/5280),c(654,180,81,285)) 
+N3<-as.data.frame(N3)
+muestra6_3<-cbind(muestra6_3,zona3,pcds3,N3)
+diseno3<-svydesign(id=~pcds3, strata=zona3, data=muestra6_3, nest=TRUE, 
+fpc=N3)
+```
+
+## d. Calcule el intervalo de confianza para el número de aposentos por vivienda (aposentos) y 
+compare con el valor poblacional. Haga lo mismo por estrato.
+```{r}
+svymean(~aposentos, diseno3)
+confint(svymean(~aposentos, diseno3))
+pro.zona=svyby(~aposentos,~zona3, diseno3,svymean);round(as.matrix(pro.zona),3)
+confint(pro.zona)
+```
+
+# 11. Procedimiento de selección y estimación en un muestreo de conglomerados iguales, en 
+una etapa, con selección sistemática. Se va a seleccionar una muestra de n = 1200 viviendas, 
+dadas las especificaciones anteriores.
+
+## a. Se va a seleccionar una muestra de n = 1200 viviendas usando conglomerados completos, 
+en una etapa, con muestreo sistemático. Previo a la selección, calcule lo siguiente:
+• ¿Cuántas UPM debe seleccionar (a4 =?)?
+• ¿Cuánto es la fracción de muestreo de este diseño (f4 =?)?
+
+```{r}
+#Número de UPM a seleccionar del marco.
+B=6
+a4=n/B
+#Fracción de muestreo del diseño.
+f4=round(a4/A,3)
+#Resultados.
+datos4=c(A, B, N, n, a4, B, f, f4)
+names(datos4)<-c("A","B","N","n", "a4", "B", "f","f4")
+round(t(datos4),3)
+
+```
+
+## b. Seleccione la muestra y verifique que el número de UPM y el tamaño de la muestra sean los 
+solicitados (use las funciones dim() y summarise()).
+```{r}
+set.seed(123)
+seleccion4<-sampling::cluster(marco6a, clustername=c("pcds"), size=200, 
+method="systematic", pik=rep(1,3693), description=TRUE)
+muestra6_4<-getdata(marco6a, seleccion4)
+dim(muestra6_4)
+
+```
+
+## c. Defina el Diseño 4, es decir, en el que fueron seleccionados a = 200 conglomerados 
+completos con muestreo sistemático (B = 6 viviendas en cada conglomerado seleccionado). 
+Verifique el diseño definido con la función summary().
+```{r}
+pcds4=as.numeric(muestra6_4$pcds)
+N4<-rep(1200/22158,1200)
+diseno4=svydesign(id=~pcds4, data=muestra6_4, nest = TRUE, fpc=N4)
+```
+
+## d. Calcule el intervalo de confianza para la razón de hombres (hombres) a mujeres (mujeres) y 
+compare con el valor poblacional.
+```{r}
+poblacional=sum(marco6a$hombres)/sum(marco6a$mujeres);poblacional
+ratio.hm=svyratio(~muestra6_4$hombres,~muestra6_4$mujeres,diseno4);ratio.hm
+confint(ratio.hm)
+```
+
+## e. Elabore un gráfico que muestre los intervalos de confianza para la edad según sexo.
+
+## 12. Procedimiento de selección y estimación en un muestreo de conglomerados iguales, en 
+dos etapas (submuestreo), con selección sistemática. Se va a seleccionar una muestra de 
+n = 1200 viviendas, dadas las especificaciones anteriores.
+
+## a. Seleccione la muestra de n = 1200 viviendas en dos etapas. En la primera seleccione a5
+conglomerados como UPM y en la segunda una submuestra de b5 = 3 viviendas de cada 
+UPM seleccionada. Previo a la selección, calcule cuántas UPM debe seleccionar (a5 =?) y 
+la fracción de muestreo de este diseño (f5 =?).
+```{r}
+n=1200
+b5=3
+#cuantas UPM a selecionar
+a5=1200/b5;a5
+#fraccion de muestreo
+f5=round((a5/A)*(b5/B),3);f5
+#resultados
+datos5=c(A,B,N,n,a5,b5,f,f5)
+names(datos5)<-c("A","B","N","n","a5", "b5", "f", "f5")
+t(datos5)
+```
+
+## b. En ambas etapas seleccione la muestra con muestreo sistemático usando la función 
+mstage(). Verifique que el número de UPM y el tamaño de la muestra sean los solicitados 
+(use las funciones dim() y summarise()).
+```{r}
+set.seed(123)
+seleccion5<-mstage(marco6a, stage=c("cluster",""), 
+ varnames = list("pcds", "vivienda"),
+ size=list(400,c(rep(3,400))),
+ method=list("systematic","systematic"), 
+ pik=list(pik1=rep(1,3693), pik2=rep(1,22158)), description=TRUE)
+muestra6_5=getdata(marco6a, seleccion5[[2]])
+dim(muestra6_5)
+```
+
+## c. Defina el Diseño 5, es decir, el diseño bietápico de conglomerados, en el que se 
+seleccionaron a= 400 conglomerados en la primera etapa y b=3 viviendas en la segunda, 
+usando muestreo sistemático en ambas etapas. Verifique el diseño definido con la función 
+summary().
+
+```{r}
+pcds5=as.numeric(muestra6_5$pcds)
+N5=rep(n/N,1200)
+diseno5=svydesign(id=~pcds5, data=muestra6_5, nest = TRUE, fpc=N5)
+```
+
+## d. Cuantifique los jefes de hogar según sexo para cada una de las zonas del país y elabore un 
+gráfico que permita visualizar la comparación.
+```{r}
+round(svyby(formula=~as.factor(sexo),by=~zona, 
+design=diseno5,FUN=svytotal),0)
+```
+
+# 13. Selección de un diseño muestral si la variable de estudio fuera la tenencia de 
+microcomputadora. ¿Cuál de los cinco diseños muestrales elaborados escogería si la 
+variable de interés para la encuesta fuera la tenencia de microcomputadora (micro)?
+
+## a. Calcule para cada diseño (del 1 al 5) el error estándar de p, el efecto del diseño, el 
+coeficiente de variación y el intervalo de confianza.
+```{r}
+mp1<-as.data.frame(svymean(~micro, diseno1, deff=TRUE))
+mp2<-as.data.frame(svymean(~micro, diseno2, deff=TRUE))
+mp3<-as.data.frame(svymean(~micro, diseno3, deff=TRUE))
+mp4<-as.data.frame(svymean(~micro, diseno4, deff=TRUE))
+mp5<-as.data.frame(svymean(~micro, diseno5, deff=TRUE))
+mp=rbind(mp1,mp2,mp3,mp4,mp5)
+cvm1=cv(svymean(~micro, diseno1, deff=TRUE))
+cvm2=cv(svymean(~micro, diseno2, deff=TRUE))
+cvm3=cv(svymean(~micro, diseno3, deff=TRUE))
+cvm4=cv(svymean(~micro, diseno4, deff=TRUE))
+cvm5=cv(svymean(~micro, diseno5, deff=TRUE))
+cvm=rbind(cvm1,cvm2,cvm3,cvm4,cvm5)
+icm1<-as.data.frame(confint(svymean(~micro, diseno1, deff=TRUE)))
+icm2<-as.data.frame(confint(svymean(~micro, diseno2, deff=TRUE)))
+icm3<-as.data.frame(confint(svymean(~micro, diseno3, deff=TRUE)))
+icm4<-as.data.frame(confint(svymean(~micro, diseno4, deff=TRUE)))
+icm5<-as.data.frame(confint(svymean(~micro, diseno5, deff=TRUE)))
+icm=rbind(icm1,icm2,icm3,icm4,icm5)
+final1=cbind(c(1:5),mp,cvm, icm)
+colnames(final1)=c("Diseño","Prop", "ee(p)", "deff", "cvpct", "Li", "Ls")
+rownames(final1)=c("1","2", "3", "4", "5")
+round(final1,3)
+
+```
+
+## b. Elabore un gráfico que muestre los intervalos de confianza para cada diseño (incluya la 
+estimación de la media).
+## c. Grafique los coeficientes de variación de la tabla anterior.
+##vd. Elabore un gráfico para comparar el efecto del diseño de los cinco diseños elaborados.
+
+# 14. Selección de un diseño muestral si la variable de estudio fuera el número de personas 
+por vivienda. ¿Si el número de personas (total) por vivienda fuera la variable de interés 
+para la encuesta, cuál diseño escogería?
+## a. Construya una tabla que contenga la media, el error estándar de la media, el efecto del 
+diseño, el coeficiente de variación y el intervalo de confianza.
+```{r}
+per1<-as.data.frame(svymean(~total, diseno1, deff=TRUE))
+per2<-as.data.frame(svymean(~total, diseno2, deff=TRUE))
+per3<-as.data.frame(svymean(~total, diseno3, deff=TRUE))
+per4<-as.data.frame(svymean(~total, diseno4, deff=TRUE))
+per5<-as.data.frame(svymean(~total, diseno5, deff=TRUE))
+per=rbind(per1,per2,per3,per4,per5)
+cvper1=cv(svymean(~total, diseno1, deff=TRUE))*100
+cvper2=cv(svymean(~total, diseno2, deff=TRUE))*100
+cvper3=cv(svymean(~total, diseno3, deff=TRUE))*100
+cvper4=cv(svymean(~total, diseno4, deff=TRUE))*100
+cvper5=cv(svymean(~total, diseno5, deff=TRUE))*100
+cvper=rbind(cvper1,cvper2,cvper3,cvper4,cvper5)
+icper1<-as.data.frame(confint(svymean(~total, diseno1, deff=TRUE)))
+icper2<-as.data.frame(confint(svymean(~total, diseno2, deff=TRUE)))
+icper3<-as.data.frame(confint(svymean(~total, diseno3, deff=TRUE)))
+icper4<-as.data.frame(confint(svymean(~total, diseno4, deff=TRUE)))
+icper5<-as.data.frame(confint(svymean(~total, diseno5, deff=TRUE)))
+icper=rbind(icper1,icper2,icper3,icper4,icper5)
+final2=cbind(c(1:5), per,cvper, icper)
+colnames(final2)=c("Diseño","Media", "eeybar", "deff", "cvper", "Li", "Ls")
+rownames(final2)<-c("1","2", "3", "4", "5")
+round(final2,3)
+```
+
+## b. Construya un gráfico que compare entre diseños el intervalo de confianza del número de 
+personas por vivienda.
+## c. Grafique los efectos del diseño de la tabla anterior.
+## d. Elabore un gráfico para comparar los coeficientes de variación de los cinco diseños 
+elaborados.
+
+

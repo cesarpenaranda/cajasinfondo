@@ -1,0 +1,563 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r include=FALSE}
+library(lattice)
+library(ggplot2)
+library(dplyr)
+library(car)
+
+```
+
+# Potencia 
+potencia(1-B)
+probabilidad de encontrar diferencias de almenos delta (diferencia relevante), si en realidad existen 
+
+* n es igual a numero de replicas por tratamiento
+* grops es el numero de tratamientos
+* library(pwr)
+
+**Ejemplo tortugas**
+
+factor dieta diseño (dieta,alimento)
+factor sexo (macho,hembra)
+
+son 8 tortugas por cada condicion 
+```{r}
+power.anova.test(groups = 2,n=8,between.var = var(c(30,32)),within.var=6.97101)
+```
+son dos grupos por que lo importante para mi era la condicion, por esto son solo dos grupos porque ignoramos el sexo
+
+**conclusion**
+
+Hay una probabilidad de 0,29 de llegar a la conclusión de que hay diferencias
+cuando en realidad las medias difieren al menos 2 gr/dl. Es un experimento
+que difícilmente va a lograr detectar que hay un efecto real de la condición de
+alimento aún cuando sí se esté dando ese efecto.
+
+**tamaño de muestra** 
+```{r}
+power.anova.test(groups=2,between.var=var(c(30,32)),within.var=6.97101,power=0.9)
+```
+Se necesitan 38 tortugas por condición para asegurar esa potencia
+
+**Ejemplo tortugas con interaccion**
+
+factor de diseño cond (estricta,balace, abun)
+factor especie (chelos,kynos)
+Se cuenta con 4 réplicas por condición de alimento dentro de cada especie.
+
+estamos fijando la especia por eso son tres grupo, esto por la interaccion (especie,cond), lo podemos ver como cuando comparamos con bonferroni
+```{r}
+power.anova.test(groups = 3,n=4,between.var = var(c(30,31,32)),within.var=2.555556)
+```
+
+var(c(30,31,32)) el rango de las medias debe de ser igual a delta(diferencia relevante), exactamente el menor y el mayor, la resta de estos dos debe de darme mi diferencia relevante
+
+**tamaño de muestra** 
+```{r}
+power.anova.test(groups = 3,power=0.9,between.var = var(c(30,31,32)),within.var=2.555556)
+```
+Con 18 datos por tratamiento
+
+# nivel de picante 
+
+factor de diseño -> nivel de picante 
+
+* suave
+* medio 
+* fuerte 
+
+factor incluido -> tipo de tomate 
+
+* cherry
+* pera
+
+cantidad de catadores -> 8 jueces 
+
+* cada uno prueba los 6 tratamientos
+
+variable respuesta -> indice de satisfaccion 
+
+
+
+
+a) realice los calculos necesarios para determinar que tanta potencia tiene este experimentos
+con interacion
+
+**con interacion**
+```{r}
+cmres=0.4970
+power.anova.test(groups = 3,n=8,between.var = var(c(3.5,4,3.7)),within.var=cmres) 
+```
+no importa el orden en betwen el rango debe de ser la diferencia
+
+**sin interacion**
+
+no me importa el otro factor porque solo nos importa el nivel de picante, n pasa a ser el total de la fila picante
+```{r}
+cmres=0.4932
+power.anova.test(groups = 3,n=16,between.var = var(c(3.5,4,3.7)),within.var=cmres)
+```
+trats es igual a 3 porque solo me importa el nivel de picante ademas hay 16 reps en total por cada picante 
+
+b) explique claramente el significado del resultado del punto anterior
+
+por las similutudes entre los cmres se puede esperar que no haya interaccion
+se tiene una probabilidad de 0.40, de detectar diferencias de 0.5, si estas diferencias existen. 
+
+c) realice los calculos adecuados para determinar el numero de personas que recomienda participen en el estudio para que se asegure una potencia minima de 0.90
+
+**con interacion**
+```{r}
+cmres=0.4932
+power.anova.test(groups = 3,power=0.90,between.var = var(c(3.5,4,3.7)),within.var=0.4932)
+```
+son 25 personas porque 50 es para cada uno de los niveles, pero cada nivel tiene dos grupos entonces son 25 por trat 
+se necesita un n de 50
+
+**sin interaccion**
+```{r}
+power.anova.test(groups=6,power=0.90,between.var=var(c(3.5,3.7,4)),within.var=0.4932)
+```
+serian 26 replicas por tratamiento 
+
+d) explique claramente el significado del resultado del punto anterior 
+
+esto quiere decir(punto con interaccion) que necesitamos 25 replicas por tratamientos para obtener una prob de .90 de encontrar diferencias entre los trats de 0.5 si estas realmente existen
+
+* preguntas de materia 
+a) un experimentos tiene una potencia de 0.3 de detectar diferencias de 2 unidades, ¿ es posible que se llegue a la 
+conclusion de que el factor de diseño si tenga un efecto sobre la respuesta promedio? justifique porque se puede dar esto. 
+Si, es posible llegar a la conclusion de que el factor de diseño tenga un efecto sobre la respuesta promedio, esto porque aunque la probabilidad es baja, sigue siendo probable el encontrar diferencias de 2 unidades en el caso de que realmente existen
+
+b) suponga que se tiene un experimento con una potencia de 0.9 cuando la diferencia relevante es de 5 unidades, altener 3 niveles del factor de diseño con 10 replicas y con una cierta varianza condicional
+
+* Que sucede con la potencia en un experimento similar en el que se pierden 5 replicas en uno de los tratamientos? justifique
+
+Es de esperar que la potencia disminuya, ya que como supuesto por lo general a mayor replicas mayor sera la potencia, si disminuimos las replicas esto va afecta la potencia en un sentido negativo**
+
+* que sucede con la potencia en un experimento similar donde la vrinaza condicional es mayor? 
+
+Si la varianza condicional es mayor, esperamos que la potencia disminuya esto porque a mayor varianza es mas dificil captar diferencias en casos en los que efectivamente existen
+
+* Que se puede esperar de los promedios verdaderos si no se rechaza la hipotesis nula?
+esperamos que los promedios sean iguales.
+
+3.	Para medir el *efecto del detergente sobre el pH del agua* se realizó un diseño factorial. La variable respuesta fue la diferencia en valor absoluto entre el pH del agua antes de aplicarle cualquier detergente y el pH luego de haber aplicado el detergente. Esto debido a que un cambio en la acidez o pH del agua después de haber aplicado el detergente puede considerarse una medida de contaminación. Se considera que una *diferencia de 0.3* unidades entre los cambios de acidez o pH promedio de dos detergentes ya indican que uno de los detergentes es más contaminante que el otro.
+
+Los *tipos de detergente* utilizados fueron los siguientes: *biodegradable marca Bluetech, ecológico marca Meyer y no biodegradable doméstico en barra marca San Luis*. Los investigadores pensaban que sus resultados podrían variar si se utilizaban distintos tiempos de exposición del agua al detergente, sin embargo, no podrían controlar este tiempo de exposición, sino que registraban el tiempo que el asistente les decía que había transcurrido desde que se aplicó el detergente a la muestra hasta que fue analizada.
+
+La unidad experimental fue una muestra de 40 ml de agua recolectada. Se recolectaron *12 muestras* de 40 ml de manera individual en la Zona Protectora Río Tiribí, en San Ramón de La Unión. El instrumento de medición empleado fue el pH-metro, el cual regresa valores entre 0 y 14.
+
+El *objetivo es investigar si hay diferencias relevantes entre los tipos de detergente*, cuál de ellos produce menor contaminación y cuantificar esas diferencias con 95% de confianza.  Para esto se usa un modelo que también tome en cuenta el tiempo de exposición y la interacción entre el factor de diseño y la covariable.
+
+Los datos del experimento se encuentran en la base llamada “basedet1” dentro de ”datos5.Rdata”
+```{r include=FALSE}
+load("Bases/datos5.Rdata")
+str(basedet1)
+basedet1$det=as.factor(basedet1$det)
+```
+
+a)	Escriba la ecuación del modelo asociado al experimento en la forma larga (con variables auxiliares) y usando la restricción de tratamiento de referencia.  Diga cuál es esta restricción. (5 puntos)
+
+b)	Justifique gráficamente si la inclusión de la covariable tiene algún beneficio en el análisis (5 puntos).
+library(lattice)
+```{r}
+mod1=lm(ph~det,data=basedet1);anova(mod1)
+mod2=lm(ph~det*tiempo,data =basedet1);anova(mod2)
+boxplot(ph~det,data = basedet1)
+xyplot(ph~tiempo|det,type=c("r","p"),data=basedet1)
+```
+
+c)	Justifique gráficamente si se espera interacción entre la covariable y el factor de diseño. (5 puntos)
+```{r}
+xyplot(ph~tiempo,groups=det,type=c("r","p"),data = basedet1)
+```
+
+d)	Realice el análisis adecuado para responder al objetivo planteado.  (15 puntos)
+```{r}
+mod2$coefficients
+tapply(basedet1$ph,basedet1$det,mean)
+summary(basedet1$tiempo)
+
+x1=3
+x2=45
+x3=85
+```
+Por la interacion entre la cov y el factor, debemos hacerlo condicionalmente
+```{r}
+x=3
+v1=c(1,0,0,x,0,0)
+v2=c(1,1,0,x,x,0)
+v3=c(1,0,1,x,0,x)
+
+c1=v2-v1
+c2=v3-v1
+c3=v3-v2
+
+cont=cbind(c1,c2,c3)
+
+L=t(cont)%*%mod2$coefficients;L
+
+#error 
+ee=sqrt(diag(t(cont)%*%vcov(mod2)%*%cont))
+
+#tprueba 
+t=L/ee
+
+#prueba
+gl=nrow(basedet1)-length(mod2$coefficients)
+
+p=pt(t,gl,lower.tail = F)
+p>0.05/3
+```
+
+```{r}
+x=45
+v1=c(1,0,0,x,0,0)
+v2=c(1,1,0,x,x,0)
+v3=c(1,0,1,x,0,x)
+
+c1=v2-v1
+c2=v3-v1
+c3=v3-v2
+
+cont=cbind(c1,c2,c3)
+
+L=t(cont)%*%mod2$coefficients;L
+
+#error 
+ee=sqrt(diag(t(cont)%*%vcov(mod2)%*%cont))
+
+#tprueba 
+t=L/ee
+
+#prueba
+gl=nrow(basedet1)-length(mod2$coefficients)
+
+p=pt(t,gl,lower.tail = F)
+p>0.05/3
+
+#cotas 
+qt=qt(1-0.05/3,gl)
+lim=L[1:3]-qt*ee[1:3];lim
+```
+**solo v3-v1 es una diferencia significativa relevante**
+
+```{r}
+x=85
+v1=c(1,0,0,x,0,0)
+v2=c(1,1,0,x,x,0)
+v3=c(1,0,1,x,0,x)
+
+c1=v2-v1
+c2=v3-v1
+c3=v3-v2
+
+cont=cbind(c1,c2,c3)
+
+L=t(cont)%*%mod2$coefficients;L
+
+#error 
+ee=sqrt(diag(t(cont)%*%vcov(mod2)%*%cont))
+
+#tprueba 
+t=L/ee
+
+#prueba
+gl=nrow(basedet1)-length(mod2$coefficients)
+
+p=pt(t,gl,lower.tail = F)
+p>0.05/3
+
+#cotas 
+qt=qt(1-0.05/3,gl)
+lim=L[1:3]-qt*ee[1:3];lim
+```
+
+
+**en el caso de x=85 todas las diferencias son significativas y relevantes**
+
+# cosas importantes de 100metros 
+
+(c) Para visualizar la variabilidad dentro de cada tratamiento haga primero un
+gráfico del tiempo por tratamiento incluyendo ambos factores de diseño.
+```{r eval=FALSE}
+boxplot(base$tiempo~base$calent+base$salida)
+```
+
+(d) Ahora se tratará de visualizar la variabilidad de la respuesta tomando en
+cuenta la covariable. Haga un gráfico de puntos del tiempo contra imc
+agregando una línea de regresión para cada tipo de tratamiento. Ponga los
+dos factores dentro de la función: xyplot(Y~X|A+B,type=c("r","p")) en
+la librería lattice..
+```{r eval=FALSE}
+xyplot(tiempo~imc|calent+salida,type=c("r","p"),data = base)
+xyplot(tiempo~imc,groups=calent,type=c("r","p"),data = base)
+```
+
+4. Inclusión de covariable:
+```{r eval=FALSE}
+mod0=lm(tiempo~calent*salida+imc,data=base)
+anova(mod0)
+r=mod0$residuals
+```
+(b) ¿Qué representa cada uno de estos residuales?
+
+**Estos representan la distancia de las observaciones a su media estimada por tratamiento (linea de regresion)**
+
+(c) Obtenga el cuadrado medio residual del modelo a partir de los residuales.
+```{r eval=FALSE}
+cmres=sum(r**2)/59;cmres
+anova(mod0)[5,3]
+```
+
+(e) Encuentre la SCRes de ambos modelos que los representamos como
+SCResΩ y SCResω. A partir de ellas obtenga la suma de cuadrados de
+regresión marginal como SCRegMar = SCResω−SCResΩ, la cual representa
+la parte de la variabilidad de la respuesta que es explicada por
+calentamiento cuando entra después de las otras dos variables.
+```{r eval=FALSE}
+scres1=anova(mod5a)[4,2]
+scres2=anova(mod5b)[3,2]
+
+screg=scres2-scres1;screg
+```
+
+(f) Construya el estadístico F y haga la prueba de la hipótesis obteniendo la
+probabilidad asociada a este valor de F en una distribución que tiene los
+grados de libertad usados en la construcción de la misma.
+```{r eval=FALSE}
+cmreg=screg/2 #gl=2
+cmres=3.63 #gl=61
+f=cmreg/cmres
+pf(f,2,61,lower.tail = F)
+
+```
+
+(b) Investigue con cuál tipo de calentamiento se puede esperar el menor
+tiempo promedio.
+
+```{r eval=FALSE}
+mod4a=lm(tiempo~calent+salida+imc,data=base)
+tapply(base$tiempo,base$calent,mean)
+
+#coeficientes
+b=mod4a$coefficients;b
+
+#marginales 
+A=c(1,0,0,0,0)
+B=c(1,1,0,0,0)
+C=c(1,0,1,0,0)
+
+#contrastes
+BA=B-A
+BC=B-C
+CA=C-A
+
+#matriz de contrastes
+cont=cbind(BA,BC,CA)
+L=t(cont)%*%b;L
+
+#error
+ee=sqrt(diag(t(cont)%*%vcov(mod4a)%*%cont))
+qt=L/ee
+#probabilidades asociadas a los contrastes
+p=pt(qt,61,lower.tail = F);p
+#significancia a comparar(bonferroni)
+0.05/3
+```
+**hay dos significativas, BA y BC esto comparado con un a/3 = 0.017**
+
+calculo de cotas inferiores
+```{r eval=FALSE}
+#correc de bonferoni, 2 = grupos significativos
+qt=qt(1-0.05/2,61) #prop, gl
+(lim=L[1:2]-qt*ee[1:2])
+```
+
+# cosas importantes de asfalto
+(e) ¿Cuántas repeticiones hay en cada combinación?
+```{r eval=FALSE}
+with(base2,table(antiox,env,agreg))
+```
+
+(c) Para visualizar la variabilidad dentro de cada tratamiento haga primero un
+gráfico del módulo por tratamiento. Al lado haga un gráfico del módulo
+por combinación tratamiento-factor. Observe que las etiquetas del eje X
+son muy largas por lo que no caben, entonces se pueden voltear usando
+las=2 en el boxplot.
+```{r eval=FALSE}
+boxplot(mod~antiox,col=c(2,4),xlab="antioxidante",ylab="módulo",data=base2)
+boxplot(mod~antiox+agreg+env,col=c(2,4),cex.axis=0.5,las=2,
+xlab="antioxidante-fuente-envejecimiento",ylab="módulo",data=base2)
+```
+
+(a) Obtenga la correlación entre la respuesta y cada una de las covariables.
+```{r eval=FALSE}
+cor(base2$frec,base2$mod)
+cor(base2$temp,base2$mod)
+```
+
+(b) Obtenga estas mismas correlaciones pero dentro de cada uno de los niveles
+de antioxidante.
+```{r eval=FALSE}
+cor(base2$frec[base2$antiox=="ASC"],base2$mod[base2$antiox=="ASC"])
+cor(base2$frec[base2$antiox=="OR"],base2$mod[base2$antiox=="OR"])
+cor(base2$temp[base2$antiox=="ASC"],base2$mod[base2$antiox=="ASC"])
+cor(base2$temp[base2$antiox=="OR"],base2$mod[base2$antiox=="OR"])
+```
+
+(c) Haga un grafico de puntos del módulo contra la temperatura agregando
+una línea de regresión para cada antioxidante. En la librería lattice,
+use xyplot(Y~X,groups=F,type=c("r")), donde Y es la respuesta, X es la
+covariable y F es el factor.
+```{r eval=FALSE}
+xyplot(mod~temp,groups=antiox,type=c("r","p"),data=base2)
+xyplot(mod~temp|antiox,type=c("r","p"),data=base2)
+```
+
+5. Análisis completo: ahora vamos a realizar el análisis tomando en cuenta todos
+los factores incluidos en el estudio. Para esto vemos que hay dos covariables
+(temperatura y frecuencia), y también se tienen el envejecimiento y el agregado
+además del factor de diseño (antioxidante). Para que las interpretaciones
+no sean tan complicadas es deseable que no exista interacción entre factor
+de diseño y las covariables continuas. El modelo inicial debe incluir estas
+interacciones para probar si el supuesto de no interacción se cumple. Además
+deben incluirse interacciones entre el factor de diseño y otros factores incluidos
+en el análisis.
+En el modelo se usa la siguiente notación: i para antioxidante, j para
+envejecimiento, k para agregado, X_1 para temperatura y X_2 para frecuencia.
+Se usa el término α(1)i para referirse a la interacción entre antioxidante
+y temperatura, y α(2)i para referirse a la interacción entre antioxidante y
+frecuencia. El modelo completo es el siguiente:
+µijk,X1,X2 = β0 +αi +δj +τk +β1X1 +β2X2 + (αδ)ij + (ατ)ik +α(1)iX1 +α(2)iX2
+
+(a) Compare el modelo completo contra otro modelo donde no hay
+interacciones entre el factor de diseño y las covariables. Debe estimar
+dos modelos: 1) el modelo completo y 2) el modelo donde no tenga las
+interacciones que se mencionan. Luego debe comparar los dos modelos
+con anova(mod.pequeño,mod.grande). Establezca la hipótesis nula que se
+va a probar y concluya.
+```{r eval=FALSE}
+mod5.1=lm(mod~antiox*env+antiox*agreg+antiox*temp+antiox*frec,data=base2)
+mod5.2=lm(mod~antiox*env+antiox*agreg+temp+frec,data=base2)
+anova(mod5.2,mod5.1)
+```
+La hipótesis nula es que los dos modelos dan una misma explicación, lo que
+implica que \(\alpha^{(1)}_i = \alpha^{(2)}_i = 0.\) Al comparar los dos modelos se obtiene una
+probabilidad de error tipo I de 0,55, lo cual lleva a no rechazar la hipótesis nula
+y se puede asumir que ambos modelos explican lo mismo, es decir, que no existe
+interacción entre antioxidante y cada una de las covariables.
+
+(b) Ahora haga un proceso de selección hacia atrás para ir descartando
+interacciones entre el factor de diseño y los otros factores. Use la función
+drop1(mod,test="F"). En este caso debe empezar con el modelo donde ya
+se eliminaron las interacciones con las covariables.
+```{r eval=FALSE}
+drop1(mod5.2,test = "F")
+mod5.3=lm(mod~antiox*env+agreg+temp+frec,data=base2)
+drop1(mod5.3,test="F")
+```
+**modelo final**
+mod5.3=lm(mod~antiox*env+agreg+temp+frec,data=base2)
+
+(c) Haga un gráfico del módulo contra envejecimiento diferenciando por
+antioxidante. Use xyplot con type=c("a"). Puesto que se encontró una
+interacción entre antioxidante y envejecimiento, trate de explicar con el
+gráfico por qué se da esa interacción.
+```{r eval=FALSE}
+xyplot(mod~env,groups=antiox,type=c("a"),data=base2)
+xyplot(mod~env|antiox,type=c("a"),data=base2)
+```
+**al inicio la diferencia de promedios es mayor pero con el paso de los años la diferencia va disminuyendo entre los dos antiox**
+
+(d) Escriba el modelo resultante.
+**modelo final**
+mod5.3=lm(mod~antiox*env+agreg+temp+frec,data=base2)
+
+(e) Debido a la presencia de interacción, para hacer intervalos de confianza
+al comparar las medias de módulo entre los dos antioxidantes, debe
+considerarse el envejecimiento, pero no es importante considerar el
+agregado, la temperatura o la frecuencia. Deben hacerse tres intervalos
+de confianza, uno para cada nivel de envejecimiento. Puesto que se nota
+que el promedio para ASC es siempre mayor que para OR, es importante
+ver la media de ASC menos la de OR para cada nivel de envejecimiento.
+Verifique cuál es el nivel de referencia para antioxidante y envejecimiento.
+
+*consideramos solo env
+*se hacen tres intercalos uno para cada nivel de env
+```{r eval=FALSE}
+contrasts(base2$antiox)
+```
+
+```{r eval=FALSE}
+contrasts(base2$env)
+```
+
+(f) Se está usando el modelo de tratamiento de referencia y la referencia
+es ASC para antioxidante y 4 para envejecimiento, es decir que i=1 para
+ASC, i=2 para OR, j=1 para 4, j=2 para 8, j=3 para 16. Entonces α1 =
+δ1 = 0, además (αδ)11 = (αδ)12 = (αδ)13 = (αδ)21 = 0. Usamos la siguiente
+notación: µij para indicar la media del antioxiante i y el envejecimiento j,
+para un agregado cualquiera, para una temperatura fija y una frecuencia
+fija. Verifique las siguientes relaciones:
+µ11 −µ21 = −α2
+µ12 −µ22 = −α2 −(αδ)22
+µ13 −µ23 = −α2 −(αδ)23
+(g) Observe los coeficientes del modelo y escriba los coeficientes para los tres
+contrastes escritos anteriormente.
+```{r eval=FALSE}
+coe=mod5.3$coefficients;coe
+summary(mod5.3)
+```
+```{r}
+mu11=c(1,0,0,0,0,0,0,0,0)
+mu21=c(1,1,0,0,0,0,0,0,0)
+mu12=c(1,0,1,0,0,0,0,0,0)
+mu22=c(1,1,1,0,0,0,0,1,0)
+mu13=c(1,0,0,1,0,0,0,0,0)
+mu23=c(1,1,0,1,0,0,0,0,1)
+
+ASC.4_OR.4=mu11-mu21
+ASC.8_OR.8=c2=mu12-mu22
+ASC.16_OR.16=c3=mu13-mu23
+
+
+
+```
+
+(h) Obtenga las estimaciones de los contrastes.
+```{r eval=FALSE}
+cont=cbind(ASC.4_OR.4,ASC.8_OR.8,ASC.16_OR.16)
+L=t(cont)%*%coe;L 
+```
+
+(i) Verifique la hipótesis para cada contraste usando solo una cola, es decir,
+poniendo la alternativa H1 : L > 0. Debe verificar si los contrastes son
+ortogonales para decidir si debe ajustar el α.
+
+**Son ortogonales por su independencia por cada contraste**
+
+```{r eval=FALSE}
+ee=sqrt(diag(t(cont)%*%vcov(mod5.3)%*%cont))
+t=L/ee
+#dos formas de obtener los gl 
+gl=nrow(base2)-length(mod5.3$coefficients)
+#la otra usar los residuales del mod
+anova(mod5.3)[7,1]
+
+p=pt(t,gl,lower.tail = F);round(p,4)
+```
+
+(j) Construya cotas inferiores con 95% de confianza en los casos de 4 y 8 años
+e interprete el resultado según la relevancia que estableció el investigador.
+```{r eval=FALSE}
+qt=qt(1-0.05,gl)
+lim=L[1:2]-qt*ee[1:2];lim
+
+```
+**obtenemos como resultado que la diferencia en modulo entre los dos antioxidantes es relevante en los primeros 4 años ya que la cota inferior para estos es de 11.8804, pero conforme el pasa el tiempo esta diferencia va disminuyendo hasta el punto en el que no es significativa para 16 años y no es relevante para 8 años la diferencia entre los dos acidos es de 2.4256, siendo en los dos casos mayor el promedio de modulo del antioxidante asc respecto a or **

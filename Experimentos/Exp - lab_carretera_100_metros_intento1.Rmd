@@ -1,0 +1,297 @@
+
+```{r}
+library(dplyr)
+library(lattice)
+```
+
+## 6.2 Carrera 100 metros
+Se hizo un estudio para examinar el efecto que tiene la posición de salida y el tipo
+de calentamiento en el tiempo de recorrido de 100 metros planos. Se trabajó con la
+población entre 17 a 24 años en la sede Rodrigo Facio de la Universidad Costa Rica.
+Se usaron tres tipos de calentamiento: (A) solo estirando, (B) calentamiento normal
+para hacer ejercicio regular y (C) calentamiento para correr. Además se usaron dos
+tipos de salida: (+) salida baja con 4 apoyos y (-) salida normal de pie.
+Para tomar en cuenta la variabilidad que introduce el hecho de que hay unos
+estudiantes más grandes que otros y que además tienen pesos diferentes, se tomó
+el peso y la estatura para calcular el índice de masa corporal de cada uno de ellos,
+el cual se calcula dividiendo el peso entre la estatura al cuadrado (IMC = P/E**2).
+La variable respuesta es el tiempo al recorrer 100 metros planos (en segundos). Los
+investigadores consideran que una diferencia de 2 segundos entre dos promedios es
+relevante.
+
+factores -> tipo de salida y calentamientos
+
+* calentamiento 
+-A solo estirando
+-B calentamiento normal 
+-C calentamiento para correr 
+
+* salida
++ salida baja con 4 apoyes 
+- salida normal de pie 
+
+covariable -> imc 
+
+respuesta -> tiempo(en segundos)
+
+diff relevante -> 2 segundos
+
+
+
+6.2.1 Ejercicios
+# 1. Preparación:
+## (a) Cargue el archivo 100metros.Rdata.
+```{r}
+load("Bases/100metros.Rdata")
+```
+
+## (b) A partir del peso y la estatura cree la variable imc.
+```{r}
+# P/E**2
+base$imc=base$peso/base$estatura**2
+```
+
+## (c) ¿Cuántos tratamientos tiene este experimento tomando en cuenta solo los
+factores de diseño?
+
+**En total son 6 tratamientos**
+
+## (d) ¿Cuántas repeticiones hay en cada tratamiento?
+```{r}
+table(base$salida,base$calent)
+```
+**Son 11 repeticiones por tratamien**
+# 2. Linealidad:
+## (a) En este caso se tiene una covariable (imc) que se incluye porque se sabe
+que el tiempo está asociado linealmente al índice de masa corporal como
+se verá con el cálculo de las correlaciones. Primero obtenga el coeficiente
+de correlación lineal entre la respuesta y la covariable.
+```{r}
+cor(base$tiempo,base$imc)
+```
+
+## (b) Obtenga los coeficientes de correlación dentro cada uno de los
+tratamientos. Use la función summarise en la librería dplyr, de la siguiente
+forma: summarise(group_by(base,A,B),cor(X,Y)), donde A y B son los
+factores que definen los grupos.
+```{r}
+summarise(group_by(base,calent,salida),cor(tiempo,imc))
+```
+**Se obtiene que dentro de cada tratamiento, hay correlaciones mas altas que la general**
+
+## (c) Es importante verificar que la relación que existe entre la respuesta y
+la covariable es lineal dentro de cada tratamiento. Para esto haga un
+gráfico usando la función scatterplot de la librería car de la siguiente
+forma: scatterplot(y~x); para hacer un gráfico para un solo tratamiento
+delimite la base de la siguiente forma: data=base[basecalent ==
+”A”basesalida==",]. Observe cada par de líneas, la línea recta indica una
+relación lineal perfecta, mientras que la línea curva sigue los datos. Si
+ambas son parecidas es porque sí hay una relación lineal entre la covariable
+y la respuesta.
+```{r}
+scatterplot(tiempo~imc,data = base[base$calent=="A"& base$salida=="-",])
+```
+
+# 3. Variabilidad de la respuesta:
+## (a) Obtenga la variancia de la respuesta dentro de cada tratamiento.
+```{r}
+v=tapply(base$tiempo,list(base$calent,base$salida),var);v
+```
+
+## (b) Obtenga una estimación de la variancia dentro de los tratamientos
+asumiendo homocedasticidad.
+```{r}
+mean(v)
+```
+
+## (c) Para visualizar la variabilidad dentro de cada tratamiento haga primero un
+gráfico del tiempo por tratamiento incluyendo ambos factores de diseño.
+```{r}
+boxplot(base$tiempo~base$calent+base$salida)
+```
+
+## (d) Ahora se tratará de visualizar la variabilidad de la respuesta tomando en
+cuenta la covariable. Haga un gráfico de puntos del tiempo contra imc
+agregando una línea de regresión para cada tipo de tratamiento. Ponga los
+dos factores dentro de la función: xyplot(Y~X|A+B,type=c("r","p")) en
+la librería lattice..
+```{r}
+xyplot(tiempo~imc|calent+salida,type=c("r","p"),data = base)
+xyplot(tiempo~imc,groups=calent,type=c("r","p"),data = base)
+```
+
+
+## (e) Observe la variabilidad que hay en cada tipo de calentamiento y en
+cada tratamiento. Primero observe como varían todos los puntos de un
+mismo tipo de calentamiento y un mismo tratamiento, luego vea la
+variabilidad de los puntos de un mismo tipo de calentamiento y un
+mismo tratamiento en un intervalo de imc muy corto. Haga este ejercicio
+visualmente haciendo pequeños intervalos de imc.
+
+# 4. Inclusión de covariable:
+## (a) Para tomar en cuenta la variabilidad que está induciendo el imc, se
+debe hacer un modelo con los factores y la covariable. Puede incluir la
+interacción entre los dos factores de diseño. Obtenga los residuales del
+modelo.
+```{r}
+mod0=lm(tiempo~calent*salida+imc,data=base)
+anova(mod0)
+r=mod0$residuals
+```
+## (b) ¿Qué representa cada uno de estos residuales?
+
+**Estos representan la distancia de las observaciones a su media estimada por tratamiento (linea de regresion)**
+
+## (c) Obtenga el cuadrado medio residual del modelo a partir de los residuales.
+```{r}
+cmres=sum(r**2)/59;cmres
+anova(mod0)[5,3]
+```
+
+## (d) Compare el cuadrado medio residual obtenido en este modelo con la
+estimación de la variancia por tratamiento que obtuvo al principio.
+```{r}
+cbind(cmres,mean.v=mean(v))
+```
+
+# 5. Prueba formal: para estudiar el efecto de los factores de diseño es importante
+tomar en cuenta que el imc introduce mucho ruido. Sería ideal tener a todas las
+personas con valores específicos de imc. Resulta muy complicado hacer grupos
+por imc puesto que es una variable continua difícil de controlar.
+## (a) Estime un modelo con los dos factores de diseño pero no incluya el imc.
+Plantee este modelo cambiando el orden de los factores. Obtenga el anova
+de ambos modelos y observe si hay cambios.
+```{r}
+mod1a=lm(tiempo~calent*salida,data=base);anova(mod1a)
+mod1b=lm(tiempo~salida*calent,data=base);anova(mod1b)
+```
+**No hay cambios**
+## (b) Haga la prueba de hipótesis correspondiente para determinar si alguno
+de los tipos de calentamiento produce una media de tiempo diferente.
+Observe la probabilidad asociada.
+```{r}
+mod2=lm(tiempo~calent*salida,data=base);anova(mod2)
+```
+**Se rechaza la hipotesis de igualdad de medias, por lo que hay evidencia de que hay un tipo de calentamiento que produce un tiempo promedio menor que los demas, con una p asociada de 0.02**
+
+## (c) Ahora tome en cuenta la covariable introduciéndola en un modelo. Hágalo
+sin tomar en cuenta la interacción entre los factores de diseño. Hágalo
+colocando primero los factores y luego la covariable y al contrario.
+```{r}
+mod3a=lm(tiempo~calent+salida+imc,data=base);anova(mod3a)
+mod3b=lm(tiempo~imc+salida+calent,data=base);anova(mod3b)
+```
+
+
+## (d) Puesto que el anova en este caso se ve afectado por el orden en que se
+introducen los factores, siempre se debe colocar de último el factor que
+se está poniendo a prueba. Para entender lo que hace este anova corra
+dos modelos: 1) con los dos factores de diseño y la covariable, 2) solo con
+salida y la covariable. Representamos con Ω al modelo más grande y con
+ω al modelo más pequeño.
+```{r}
+mod5a=lm(tiempo~calent+salida+imc,data=base);anova(mod5a)
+mod5b=lm(tiempo~salida+imc,data=base);anova(mod5b)
+```
+
+
+## (e) Encuentre la SCRes de ambos modelos que los representamos como
+SCResΩ y SCResω. A partir de ellas obtenga la suma de cuadrados de
+regresión marginal como SCRegMar = SCResω−SCResΩ, la cual representa
+la parte de la variabilidad de la respuesta que es explicada por
+calentamiento cuando entra después de las otras dos variables.
+```{r}
+scres1=anova(mod5a)[4,2]
+scres2=anova(mod5b)[3,2]
+
+screg=scres2-scres1;screg
+```
+
+## (f) Construya el estadístico F y haga la prueba de la hipótesis obteniendo la
+probabilidad asociada a este valor de F en una distribución que tiene los
+grados de libertad usados en la construcción de la misma.
+```{r}
+cmreg=screg/2 #gl=2
+cmres=3.63 #gl=61
+f=cmreg/cmres
+pf(f,2,61,lower.tail = F)
+
+```
+
+## (g) La prueba correcta se puede hacer siempre de forma segura con la función
+drop1, a la cual hay que agregar el agrumento test="F", que permite
+comparar dos modelos, uno con la variable a probar y otro sin ella.
+```{r}
+mod.d=lm(tiempo~salida+calent+imc,data = base)
+drop1(mod.d,test="F")
+```
+
+## (h) Observe la probabilidad asociada al factor de calentamiento y compárela
+con la que se había obtenido en el anova que no consideraba el imc.
+```{r}
+mod.d2=lm(tiempo~calent+salida,data = base);anova(mod.d2)
+```
+**La probabilidad asociada es mucho mas baja en el que incluye imc, lo que nos indica que disminuye la variabilidad al introducir la cov**
+
+# 6. Prueba de interacción: considere la interacción entre los dos factores de diseño
+(si se siguiera un orden lógico, esto sería lo primero que debería probarse).
+```{r}
+mod=lm(tiempo~calent*salida+imc,data = base);anova(mod)
+```
+
+## (a) Tome el modelo que contiene la interacción entre esos dos factores y
+además contiene la covariable. Usando el drop1 puede verificar la hipótesis
+de no interacción.
+```{r}
+drop1(mod,test = "F")
+```
+**Se acepta H0, no hay interaccion**
+
+# 7. Comparaciones finales: en este tipo de análisis puede resultar más conveniente
+usar el modelo de tratamiento referencia. En cualquiera de los dos modelos
+el intercepto no representa la media general. La dirección de las comparaciones
+se hace basada en los coeficientes del factor que se analiza, recordando que el
+tratamiento referencia tiene un coeficiente igual a cero.
+## (a) Escriba el modelo resultante.
+
+## (b) Investigue con cuál tipo de calentamiento se puede esperar el menor
+tiempo promedio.
+
+```{r}
+mod4a=lm(tiempo~calent+salida+imc,data=base)
+tapply(base$tiempo,base$calent,mean)
+
+#coeficientes
+b=mod4a$coefficients;b
+
+#marginales 
+A=c(1,0,0,0,0)
+B=c(1,1,0,0,0)
+C=c(1,0,1,0,0)
+
+#contrastes
+BA=B-A
+BC=B-C
+CA=C-A
+
+#matriz de contrastes
+cont=cbind(BA,BC,CA)
+L=t(cont)%*%b;L
+
+#error
+ee=sqrt(diag(t(cont)%*%vcov(mod4a)%*%cont))
+qt=L/ee
+#probabilidades asociadas a los contrastes
+p=pt(qt,61,lower.tail = F);p
+#significancia a comparar(bonferroni)
+0.05/3
+```
+**hay dos significativas, BA y BC esto comparado con un a/3 = 0.017**
+
+calculo de cotas inferiores
+```{r}
+#correc de bonferoni, 2 = grupos significativos
+qt=qt(1-0.05/2,61) #prop, gl
+(lim=L[1:2]-qt*ee[1:2])
+```
+

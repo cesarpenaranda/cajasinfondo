@@ -1,0 +1,194 @@
+En una ciudad hay 600 colegios de secundaria y cada uno tiene 40 grupos de estudiantes. Además, se sabe que cada grupo tiene 30 estudiantes. Hay persona docente diferente para cada grupo y una persona directora distinta para cada colegio. Dentro de cada colegio seleccionado se va a seleccionar un grupo de cada nivel (cinco niveles) y un tercio del estudiantado de cada grupo. El total de estudiantes a entrevistar es 1,200, además se entrevistará por separado a cada una de las personas docentes de los grupos seleccionados, así como la persona en el cargo de dirección de las instituciones seleccionadas. 
+```{r}
+A=600
+a=40
+B=30
+N.estu=A*a*B
+N.profe=40*600
+N.director=600
+n1=(1/3)*30
+n=n1*5
+n.cole=24
+n.direc=24
+n.prof=24*5 
+n.estu=1200
+```
+
+a)	¿Cuál es la probabilidad de que una persona estudiante salga seleccionada en la muestra?
+```{r}
+f1=24/600
+f2=(5*30)/(24*5*30)
+ft1=f1*f2;ft1
+ft2=n.estu/N.estu;ft2
+```
+
+b) Cuántas unidades primarias de muestreo (UPM) se van a tener disponibles para el cálculo del error de muestreo?
+```{r}
+n1=(1/3)*30
+n=n1*5
+1200/n
+```
+
+c)	¿Cuál es la probabilidad de selección de una persona en el puesto de dirección?
+```{r}
+f=24/600;f
+```
+## Ejercicio 3. (Peso en calificación: 25%)
+En una zona marginal del país se desea conocer el acceso que tienen los hogares a saneamiento. La zona es extensa y tiene tres asentamientos: Desigualdad, Educación y Violencia. 
+
+No se sabe mucho sobre la zona, sin embargo, mediante imágenes satelitales se determinó que el número de edificaciones (cualquier estructura con techo) son: 890 para Desigualdad, 1700 para Educación y 787 para Violencia. Cada asentamiento está dividido en conjuntos de edificaciones que asemejan lo que conocemos como cuadras. 
+
+No se sabe qué porcentaje de estos asentamientos son hogares; sin embargo, para efectos presupuestarios se asume que seguirá el mismo patrón de zonas similares en las que 80% de las edificaciones corresponden a hogares. El grupo de investigación decide que en cada asentamiento se seleccionarán “cuadras” al azar y se entrevistarán 12 hogares en cada cuadra. El tamaño promedio de la cuadra es de 40 edificaciones. De la Encuesta Nacional de Hogares, se obtuvo que el roh es 0,123 para una variable similar. Si se desea estimar el porcentaje de hogares con acceso a agua potable dentro del hogar, 
+
+```{r}
+#asentamientos
+# desigualdad, educacion, violencia 
+B.des=890
+B.edu=1700
+B.vio=787
+b.bar=40 
+p.hog=0.80
+n.hog=12
+a.cuadra=40
+roh=0.123
+
+N1=des+edu+vio
+
+```
+
+a)	¿Cuántos hogares deberían entrevistarse para que el error estándar del porcentaje sea de 2%? 
+```{r}
+ee=0.02
+e2=ee**2
+#maximiza la varianza es 0.5
+p=0.5
+n0=nProp(V0=e2,pU=p);n0/N1
+#hay que hacer corr por finitud porque f=0.1850755 > 0.05
+n02=nProp(V0=e2,pU=p,N=N1);n02
+#n02= 527.5244
+#n=(1+(B-1)roh)*n.mia
+n=(1+((n.hog-1)*roh))*n02;n 
+#n.f=n/(1-%B) esto porque se esperan un % de blancos 
+blancos=1-p.hog
+nf=n/p.hog;ceiling(nf)
+```
+
+b)	¿Cuántas cuadras deben seleccionarse para mantener la precisión descrita en el punto a)?
+```{r}
+ceiling(nf/12)
+```
+
+c)	Si se desea que se estime el porcentaje con acceso para cada asentamiento con la misma precisión, sin alejarse mucho del tamaño de muestra en a), ¿cuántas cuadras deben seleccionarse en cada asentamiento?
+```{r}
+B.des=890
+B.edu=1700
+B.vio=787
+
+
+p1.des=890/N1
+p2.edu=1700/N1
+p3.vio=787/N1
+
+n1.des=p1.des*nf
+n2.edu=p2.edu*nf
+n3.vio=p3.vio*nf
+
+h=cbind(n1.des,n2.edu,n3.vio);ceiling(h)
+
+cuad.f=h/12;cuad.f
+```
+
+d)	En caso de que existan varios hogares en una misma edificación, ¿qué información debería recolectarse para poder calcular los ponderadores necesarios para la estimación?
+
+
+
+# Ejercicio 4. (Peso en calificación: 25%)
+Para este ejercicio se van a utilizar los datos api de la librería survey. Para cargar los datos use el comando data(api) una vez que la librería survey esté cargada. Estos conjuntos de datos están asociados al Índice de Rendimiento Académico recolectados en el estado de California en Estados Unidos. 
+
+El conjunto de datos apipop es el marco muestral que contiene información sobre las 6194 escuelas y colegios en el estado. El conjunto de datos apiclus2 contiene una muestra aleatoria de conglomerados de 126 escuelas las cuales fueron seleccionadas de la siguiente forma:
+
+Primera etapa: Se seleccionan 40 distritos escolares de los 757 distritos escolares con un mia. Las variables dnum y dname representan el número identificador y el nombre de cada distrito respectivamente. 
+
+Segunda etapa: Se seleccionan 5 centros educativos por distrito (con un mia) si hay 5 o más centros en el distrito, si hay menos de 5 se incluyen todos los centros educativos de ese distrito en la muestra. Las variables snum y sname representa el número identificador y el nombre de cada escuela respectivamente. 
+
+
+
+Variable	        Contenido	                    Base
+dnum	       Id del distrito escolar	    apipop y apiclus2
+dname	      Nombre del distrito escolar	  apipop y apiclus2
+snum	        Id del centro educativo	    apipop y apiclus2
+sname	       Nombre del centro educativo	apipop y apiclus2
+stype	         Tipo de centro educativo   apipop y apiclus2
+                E= elemental 
+                  M= media 
+                  H= colegio 	
+fpc1	     Número total de distritos escolares	  apiclus2
+fpc2	 Número de centros educativos en el distrito escolar del centro 	apiclus2
+enroll	Número de estudiantes matriculados en el centro educativo	apipop y apiclus2
+awards	Indicador (0= no, 1= sí) si el centro ha recibido premios monetarios 	apipop y apiclus2
+api00	Puntuación en el índice de rendimiento académico 	apiclus2
+
+```{r}
+data(api)
+```
+apipop marco
+6194 escuelas y colegios 
+
+apiclus2 muestra al de conglo
+126 escuelas 
+
+**forma de selec**
+etap1
+40 distritos escolares de un total de 757 mia
+dname y dnum es el nombre e id de distrito
+
+etp2
+5 sentros educ por distri mia si hay 5 o mas en el distrito
+todos si hay menos de 5 de ese distrito 
+snum y sname, identificador y nombre de cada escuela
+
+```{r}
+N.escu=6194
+b.escu=126
+
+#etapa1
+a.distri=40
+A.distri=757
+#etapa2
+#B.edu
+#b.edu=depend 
+
+```
+
+a.	Escriba la fórmula de selección del diseño presentado. 
+
+b.	Calcule el peso base el diseño muestral descrito para apiclus2. Inclúyalo en la base de apiclus2 con el nombre pond1. Proporcione medidas resumen de los pesos (use la función summary).
+```{r}
+B=1229
+ft1=(a.distri/A.distri)*(5/B)
+w1=1/ft1
+apiclus2 = apiclus2 %>%mutate(pond1 = case_when(fpc2 >=5 ~ w1,TRUE~1/((a.distri/A.distri)*(apiclus2$fpc2/B))))
+summary(apiclus2$pond1)
+```
+c.	Estime la media, el error estándar y el intervalo de confianza (95% de confianza) de la variable enroll usando el diseño de muestra adecuado. Como ponderador utilice la variable pw, es decir no use el peso calculado en el punto b). No use correcciones por finitud.
+
+```{r}
+diseno=svydesign(ids = ~dnum+snum, weights = apiclus2$pw, data = apiclus2,nest=T)
+med=svymean(x = ~enroll, design = diseno, deff = T,na.rm=T);med
+confint(object =med, level = 0.95, df = degf(diseno))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,64 @@
+Si en una UPM tiene que seleccionar 15 viviendas de las 150 viviendas anotadas en el marco 
+muestral y resulta que en la visita al campo verifican que el numero real es de 225 viviendas. 
+a) Cuantas viviendas debería seleccionar para que la muestra se mantenga MESIP? 
+
+```{r}
+15/150
+
+225*(15/150)
+
+22.5/225
+```
+b) Si usted decide seleccionar las 15 viviendas como estaba planeada, Por que factor debe 
+ponderar esa UPM para que el procedimiento se mantenga MESIP? 
+```{r}
+f=15/225*22.5/15
+w=1/f;w
+```
+En un ciudad hay 600 colegios de secundaria, cada uno tiene 40 grupos de estudiantes. 
+Además se sabe que cada grupo tiene 30 estudiantes. Hay un profesor diferente para cada uno 
+de los grupos de estudiantes y un director para cada uno de los colegios. Dentro de cada 
+colegio seleccionado se va a seleccionar un grupo de cada nivel (5 niveles) y un tercio 1/3 de los estudiantes de cada grupo. El total de estudiantes a entrevistar es de 1200 y también se va a entrevistar a los directores de los colegios, así como los profesores de cada uno de los grupos seleccionados. 
+
+```{r}
+A=600
+a=40
+B=30
+N.estu=A*a*B
+N.profe=40*600
+N.director=600
+n1=(1/3)*30
+n=n1*5
+n.cole=24
+n.direc=24
+n.prof=24*5 
+n.estu=1200
+```
+
+a) Cual es la probabilidad de que un estudiante salga seleccionado en esa muestra? 
+Muestre la probabilidad de selección en la primera, segunda etapa así como la 
+probabilidad final. 
+
+```{r}
+f1=24/600
+f2=(5*30)/(24*5*30)
+ft1=f1*f2;ft1
+ft2=n.estu/N.estu;ft2
+```
+b) Cuantas UPM se van a tener disponibles para el calculo de los errores de muestreo? 
+a= conglomerados en la muestra
+```{r}
+24
+```
+c) Cual es la probabilidad de que un director sea seleccionado en la muestra
+Dado que tenemos un director por colegio
+```{r}
+f=24/600;f
+```
+d) Cual es la probabilidad que tienen los profesores de ser seleccionados en la muestra?
+```{r}
+f.p=((24)/(600))*((24*5)/(24*40));f.p
+fp2=(24*5)/(600*40);fp2
+```
+
+

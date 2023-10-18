@@ -1,0 +1,276 @@
+---
+title: "Lab8_2022"
+author: "Gilbert Brenes Camacho"
+date: "3/15/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+XS-2110 Métodos Estadísticos
+
+Modelos de Regresión y Modelo Lineal General
+
+Los objetivos de este laboratorio son:
+a) Ofrecer una introducción a la estimación de ecuaciones de regresión
+b) Mostrar como el Modelo Lineal General resume la mayoría de técnicas paramétricas
+estudiadas en este curso.
+
+
+
+La única librería por usar es car.
+
+```{r}
+library(car)
+
+#Cargar base de datos
+rm(list=ls())
+#setwd("C:/Users/Gilbert BC/Documents/Teletrabajo/Metodos 2022/Laboratorios/Labo 8/")
+load(file="antropomexicano.Rdata")
+attach(antropomexicano)
+names(antropomexicano)
+```
+
+
+Verificar valores perdidos y recodificarlos
+
+```{r}
+table(peso)
+peso2=Recode(peso,"995:999=NA")
+table(altura)
+altura2=Recode(altura,"995:999=NA")
+table(cintura)
+cintura2=Recode(cintura,"995:999=NA")
+table(cadera)
+cadera2=Recode(cadera,"995:999=NA")
+```
+
+
+Verificar supuestos de asociación lineal
+Gráficos bivariados
+
+
+```{r}
+par(mfrow=c(1,3))
+plot(altura2,peso2)
+plot(cintura2,peso2)
+plot(cadera2,peso2)
+```
+
+
+
+Estimamos el modelo de regresion metiéndolo en un objeto
+siempre que queremos estimar un regrecion lineal tenemos que utilizar lm()
+
+
+```{r}
+peso.regresion=lm(peso2~altura2+cintura2+cadera2)
+summary(peso.regresion)
+```
+el ultimo p-value, no toma en cuenta B_0=0 porque solo toma en cuenta las pendientes
+
+En el modelo tenemos cinco contrastes de hipótesis:
+
+H0: Beta_0=0
+H0: Beta_1=0
+H0: Beta_2=0
+H0: Beta_3=0
+H0: Beta_1=Beta_2=Beta_3=0   #por lo tanto almenos un B_i<>0
+ 
+La homestacidad, es el 7.106 
+ 
+Las ecuaciones serían:
+
+Peso_techo= -124.247 + 0.673*altura+0.392*cintura+0.464*cadera
+
+Estimamos el ANDEVA asociado a la ecuación de regresión
+
+```{r}
+anova(peso.regresion)
+```
+Residuals 2501 126289      50 en el examen nos pueden preguntar intervalos de confianza sobre este valor
+para sacar el resultado
+anova(peso.regresion)[4:3] es de esta manera y para sacarle la raiz seria:
+sqrt(anova(peso.regresion)[4:3])
+
+
+Analicemos supuestos del modelo peso.regresion
+
+
+Normalidad condicional
+
+
+```{r}
+qqPlot(peso.regresion$residuals)
+```
+
+```{r}
+shapiro.test(peso.regresion$residuals)
+```
+
+
+
+Ahora homoscedasticidad
+Se busca una nube aproximadamente horizontal
+
+```{r}
+plot(peso.regresion$fitted.values, peso.regresion$residuals)
+```
+
+Analizar colinealidad
+matriz de correlacion donde la primera es una variable dependiente 
+```{r}
+round(cor(cbind(peso2,altura2,cintura2,cadera2),use="pairwise.complete.obs"),3)
+
+```
+
+
+Ahora supongamos que queremos ver las diferencias por sexo
+Primero transformemos sexo a factor y estimemos un modelo de regresión nada más con sexo
+
+```{r}
+sexo.factor=as.factor(sexo)
+peso.regresion2=lm(peso2~sexo.factor)
+summary(peso.regresion2)
+```
+
+Noten que:
+
+H0: Beta_1=0  ==> H0: Mu1=Mu2  ==> H0: Mu1-Mu2=0 ===> H0: Mu[mujeres]-Mu[hombre]=0
+
+Ahora recodifiquemos sexo en una variable binaria que es igual a 1 si es mujer
+
+```{r}
+mujer=Recode(sexo,"1=0;2=1")
+peso.regresion3=lm(peso2~mujer)
+summary(peso.regresion3)
+```
+
+#Veamos los dos anovas.  Vean que son equivalentes.
+
+
+```{r}
+t.test(peso2[sexo==1],peso2[sexo==2],paired=F,Mu=0,var.equal=T)
+anova(peso.regresion2)tremos 
+anova(peso.regresion3)
+```
+
+
+```{r}
+```
+
+
+Analicemos supuestos del modelo peso.regresion2
+
+
+Normalidad condicional
+
+
+```{r}
+qqPlot(peso.regresion2$residuals)
+shapiro.test(peso.regresion2$residuals)
+
+```
+
+Ahora homoscedasticidad
+
+```{r}
+plot(peso.regresion2$residuals~peso.regresion2$fitted.values)
+```
+
+
+Ahora estimemos con educacion
+Recodifiquemos educacion como lo teníamos antes y plantémoslo como factor
+
+
+```{r}
+educacion=Recode(escola, "0=0; 1:6=1; 7:19=2; 99=NA")
+educacion=as.factor(educacion)
+peso.regresion4=lm(peso2~educacion)
+summary(peso.regresion4)
+anova(peso.regresion4)
+
+###H0: Beta_1=Beta_2=0  ==>  H0: Mu1=Mu2=Mu3
+```
+
+
+
+Análisis de supuestos modelo peso.regresion4
+
+Normalidad condicional
+
+
+```{r}
+qqPlot(peso.regresion4)
+shapiro.test(peso.regresion4$residuals)
+```
+
+
+Ahora homoscedasticidad
+
+
+```{r}
+
+par(mfrow=c(1,2))
+plot(peso.regresion4$residuals~peso.regresion4$fitted.values)
+
+
+###La homoscedasticidad se puede observar también con un gráfico boxplot
+
+
+boxplot(peso2~educacion)
+```
+
+
+
+A qué sería equivalente un modelo de regresión en el que no tenemos una variable indep.
+
+```{r}
+peso.regresion5=lm(peso2~1)
+summary(peso.regresion5)
+```
+
+
+H0: Beta_0=0  ==> H0: Mu=0
+
+Análisis de supuestos modelo peso.regresion5
+Normalidad condicional
+
+
+```{r}
+qqPlot(peso.regresion5$residuals)
+shapiro.test(peso.regresion5$residuals)
+```
+
+
+Ahora homoscedasticidad
+
+```{r}
+plot(peso.regresion5$residuals~peso.regresion5$fitted.values)
+```
+
+
+Por último.  Qué tal si planteamos la siguiente prueba de hipótesis. 
+Como hipótesis nula, que el peso promedio en la población es de 68Kg.
+
+```{r}
+peso.regresion6=lm(peso2-68~1)
+summary(peso.regresion6)
+
+##H0: Beta_0-68=0  ===> H0: Mu=68
+t.test(peso2,mu=68)
+```
+
+Análisis de supuestos modelo peso.regresion6
+Normalidad condicional
+
+
+```{r}
+qqPlot(peso.regresion6$residuals)
+shapiro.test(peso.regresion6$residuals)
+```
+
+
+
+
+

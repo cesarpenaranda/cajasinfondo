@@ -1,0 +1,219 @@
+
+```{r}
+library(dplyr)
+library(PracTools)
+library(sampling)
+library(survey)
+```
+Etiqueta	Significado
+
+estrato	
+Estrato de selección
+
+ganancias_anuales	
+Monto en USD de ganancias reportadas por cada compañía en 2022.
+
+num_empleados	
+Número de empleados laborando para cada compañía en diciembre de 2022
+
+tipo_prod	
+Tipo de producción: comida, servicios, tecnología, textiles. 
+
+sal_prom 
+Salario promedio mensual en USD de un puesto profesional en la empresa
+
+zona_franca	
+Ubicación dentro o fuera de una zona franca.
+
+```{r}
+load("Bases/companias.RData")
+#View(companias)
+```
+
+La muestra dentro de cada estrato fue seleccionada usando un muestreo irrestricto aleatorio.
+
+Se estima que en el país hay 6000 compañías en la GAM y 4000 fuera de la GAM. 
+
+Además se sabe que la concentración de las empresas es mayor en las zonas urbanas, donde se encuentran aproximadamente un 65% de ellas. 
+
+Con base en esta información calcule: 
+a)	El total de empresas en cada estrato. 
+```{r}
+n=nrow(companias);
+N=6000+4000;
+gam=6000
+f.gam=4000
+GAM_URB=gam*0.65
+GAM_RUR=gam*(1-0.65)
+FGAM_URB=f.gam*0.65
+FGAM_RUR=f.gam*(1-0.65)
+
+Nh=c(FGAM_RUR,FGAM_URB,GAM_RUR,GAM_URB);names(Nh)=c("FGAM_RUR","FGAM_URB","GAM_RUR","GAM_URB");Nh
+```
+
+b)	El tamaño de muestra en cada estrato. 
+```{r}
+nh=table(companias$estrato);nh
+```
+c)	El ponderador de cada estrato.
+```{r}
+fh=nh/Nh;fh
+ponde=1/fh;ponde
+```
+d)	El total de ganancias producidas en el 2022 por la industria de tecnología, su error estándar y su intervalo de confianza (a=0,05). 
+```{r}
+p.FGAM_RUR=10
+p.FGAM_URB=18.57143
+p.GAM_RUR=12.5
+p.GAM_URB=34.82143
+```
+```{r}
+base=companias%>%mutate(ponde=case_when(estrato=="FGAM_RUR"~10,estrato=="FGAM_URB"~18.57143,estrato=="GAM_RUR"~p.GAM_RUR,TRUE~p.GAM_URB))
+table(base$estrato,base$ponde)
+```
+```{r}
+diseno=svydesign(ids = ~1,strata = ~estrato,weights = ~ponde,data=base)
+```
+```{r}
+total1=svyby(base$ganancias_anuales,base$tipo_prod,diseno,svytotal);total1
+confint(total1,df=560-4)
+```
+e)	El porcentaje del total de ganancias producida por la industria textil durante el 2022.
+```{r}
+total=svytotal(~base$ganancias_anuales,diseno);total
+total.tipo=svyby(base$ganancias_anuales,base$tipo_prod,diseno,svytotal);total.tipo
+textiles=12637256274
+porcen=(textiles/total[1])*100;porcen
+```
+f)	La diferencia del salario promedio profesional entre las industrias de comida y tecnología y su intervalo de confianza.
+```{r}
+pr= svyby(formula = ~sal_prom, by = ~tipo_prod, design = diseno, FUN = svymean) ; pr
+m.comida=3020.329
+m.tex=3002.702	
+
+ds.comida=48.14910
+ds.tegno=49.25983
+
+media_r=m.comida-m.tex;media_r
+df=ds.tegno-ds.comida;df
+
+ zt=qnorm(0.05, lower.tail = FALSE)
+Li=media_r-zt*df
+Ls=media_r+zt*df
+cbind(Li,Ls)
+```
+g)	Interprete los resultados obtenidos en el punto f. 
+```{r}
+
+```
+
+
+h)	Estime el total de empleados en el país en los cuatro sectores estudiados
+```{r}
+total.emp=svytotal(base$num_empleados,diseno);total.emp
+```
+
+##2
+Ejercicio 3. (Peso en calificación: 25%)
+Lea el archivo “naranjo.Rdata”. El archivo corresponde a una lista de fincas que cosechaban naranjas en el estado de Florida en 1987. La cámara de productores de naranja de dicho estado desea realizar un estudio para actualizar sus registros sobre el número de fincas y el área sembrada, además si han cambiado de cultivo desde 1987. 
+La lista incluye: 1) el número de identificación de la finca (ID_unit), 2) la región del estado dónde está la finca (region) y el número de acres sembradas en 1987 (acres87). 
+
+```{r}
+load("Bases/naranjo.Rdata")
+#View(m1)
+```
+
+a)	Calcule el tamaño de muestra necesario para estimar el número promedio de acres sembrado por finca para que el error estándar no supere un 10% de la media. Además, considere que se estima que un 8% de las fincas han cerrado desde el levantamiento de la lista en 1987. También se espera que estratificar produzca una ganancia en la estimación de la variancia del promedio de acres sembradas de un 15%.
+```{r}
+N=nrow(m1);N
+N_=N-(N*0.08);N_
+s2=var(m1$acres87)
+y.barra=mean(m1$acres87)
+ganancia=0.15
+ed=1-ganancia;ed
+n.mia <- nCont(CV0 = 0.1, S2= s2, ybarU = y.barra, N=N_);n.mia
+n.esta=n.mia*ed;n.esta;ceiling(n.esta)
+```
+b)	Suponga que se va a seleccionar una muestra de 60 fincas, especifique cuántas se deben seleccionar bajo: 
+
+b.1) Una afijación proporcional 
+b.2) Una afijación de Neyman 
+```{r}
+n=60
+Nh=table(m1$region)
+sh2=tapply(m1$acres87,m1$region,var)
+sh=sqrt(sh2)
+n_prop= strAlloc(n.tot=n, Nh= Nh, alloc= "prop") 
+n_ney= strAlloc(n.tot=n, Nh= Nh, Sh=sh, alloc= "neyman")
+x=cbind(n_prop$nh, n_ney$nh)
+colnames(x)=c("prop","neyman");round(x)
+```
+
+c)	Seleccione una muestra aleatoria estratificada usando la afijación proporcional y  liste el identificador (ID_unit) de las primeras 5 fincas seleccionadas en el 
+```{r}
+set.seed(050623) 
+m1 <- m1[order(m1$region),]
+muestra_prop = sampling::strata(data = m1, stratanames ="region", size = c(21, 4,8,27), method = "srswor"); muestra_prop
+muestra2 = getdata(m1, muestra_prop); muestra2
+
+id=c(4,7,9,13,16)
+```
+
+##3
+
+```{r}
+n=400 ; N=3200 ; c=10
+nc=n/c;nc
+```
+
+```{r}
+k=N/n
+k2=c*k;k2
+```
+
+
+```{r}
+1/k2
+```
+
+
+```{r}
+1/k
+```
+
+```{r}
+3
+3+k
+11+k
+19+k
+```
+
+```{r}
+datos=c(0.33,0.27,0.73,0.26,0.06,0.70,0.76,0.41,0.61,0.38)
+N=3200
+n=400
+f=n/N
+c=10
+media_r=mean(datos);media_r*100
+```
+
+
+```{r}
+desvmedia_r=sqrt(1-f)*sd(datos)/sqrt(c);desvmedia_r
+```
+
+```{r}
+p=0.05
+if (c<30){
+ zt=qt(p, df=c-1, lower.tail = FALSE)
+} else if (c>=30){
+ zt=qnorm(p, lower.tail = FALSE)
+}
+Li=media_r-zt*desvmedia_r
+Ls=media_r+zt*desvmedia_r
+
+Li;Ls
+```
+
+
+

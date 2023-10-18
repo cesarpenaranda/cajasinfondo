@@ -1,0 +1,333 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-29"
+---
+
+#5.2 Burbujas
+Tres investigadoras quieren analizar el efecto que tienen las diferentes proporciones
+de glicerina y tipo de agua utilizados en la mezcla para la confección de burbujas,
+sobre el tiempo promedio de resistencia de las mismas. Se obtiene una mezcla simple
+y posteriormente se ajusta al propósito de la investigación. En la mezcla se van
+variando el tipo de agua (destilada, grifo, añejada) y la cantidad de glicerina (60ml,
+120ml). A partir de estos factores se obtienen 6 tratamientos.
+El experimento se realiza con 6 personas que funcionan como bloques, cada una
+de las cuales hace 5 burbujas con cada tratamiento, para un total de 30 burbujas
+por persona. El orden en que cada persona tiene que utilizar un tipo de mezcla se
+aleatoriza de la siguiente manera: por cada persona se aleatorizan los 6 tratamientos
+con repeticiones hasta completar 5 burbujas por tratamiento.
+La variable respuesta es el tiempo promedio de resistencia de las burbujas (en
+minutos) de cada tratamiento para cada persona, lo cual da un total de 36 valores
+de la respuesta. Aunque cada persona (bloque) hace 30 burbujas, solo se tienen
+6 valores de la respuesta por persona, uno para cada tratamiento. En este caso el
+promedio de las 5 burbujas es una mejor medida de la resistencia que se obtiene en
+un tratamiento en un persona específica, ya que puede haber muchísima variación
+entre esa resistencia de una burbuja a otra aún cuando sean hechas por la misma
+persona y con el mismo tratamiento.
+
+5.2.2 Solución
+#1. Preparación:
+##(a) Lectura:
+```{r}
+load("Bases/burbujas.Rdata")
+```
+
+##(b) Revisión de definición de factores:
+```{r}
+str(base1)
+base1$bloque=factor(base1$bloque)
+base1$glicerina=factor(base1$glicerina)
+str(base2)
+
+```
+
+```{r}
+base2$bloque=factor(base2$bloque)
+str(base)
+```
+
+```{r}
+base$bloque=factor(base$bloque)
+base$glicerina=factor(base$glicerina)
+```
+
+#2. Visualización de datos con glicerina:
+##(a) Gráfico de líneas:
+```{r}
+library(ggplot2)
+ggplot(base1, aes(x=bloque, y=tiempo, group = glicerina)) +
+stat_summary(fun.y="mean", geom="line", aes(linetype = glicerina))+
+labs(x = "persona")
+```
+
+##(b) Comparación por niveles de glicerina:
+El tiempo tiende a ser mayor cuando el nivel de glicerina es 120 (Figura 5.3).
+##(c) Tendencia según personas:
+Las personas 1, 4 y 6 tienden a tener tiempos más bajos, mientras que la
+persona 5 tiende a tener tiempos más altos. Se quiere eliminar del análisis estas
+diferencias en los tiempos de las personas, para que la comparación se centre en
+las diferencias entre los niveles de glicerina.
+##(d) Interacción entre glicerina y persona:
+En algunas personas hay poca diferencia en los tiempos obtenidos para los dos
+niveles de glicerina (personas 1, 4, 5 y 6), mientras que para la persona 3, la
+diferencia es muy grande. Esto se puede ver como una indicación de alguna
+interacción entre glicerina y persona.
+##(e) Hipótesis de no interacción:
+Cuando hay solo una observación por tratamiento para cada bloque, no se
+puede verificar la hipótesis de no interacción porque no se tienen grados de
+libertad para los residuales. En ese caso se dice que el efecto de interacción
+se confunde con el residual y se toma la variancia residual asumiendo que la
+variancia de interacción es nula, principalmente porque esta variancia residual
+es fundamental para hacer la verificación de otras pruebas.
+
+##(f) Datos centrados por persona:
+```{r}
+mod1=lm(tiempo~bloque,data=base1)
+pre=predict(mod1)
+t1=base1$tiempo-pre+mean(base1$tiempo)
+```
+
+##(g) Comparación de gráficos:
+```{r}
+par(mfrow=c(1,2))
+boxplot(tiempo~glicerina,ylim=c(3,17),xlab="glicerina",ylab="tiempo",data=base1)
+boxplot(t1~glicerina,ylim=c(3,17),xlab="glicerina",
+ylab="tiempo centrado",data=base1)
+```
+
+##(h) Análsis sobre variabilidad en los gráficos:
+En el gráfico con los datos originales (Figura 5.4 izquierda) se observa una
+mayor variabilidad en el nivel 120 de glicerina, la cual se debe principalmente a
+las diferencias entre bloques, es decir, las diferencias entre personas. Al eliminar
+esas diferencias se observa en el gráfico de la derecha que la variabilidad se ha
+reducido. Ahora la variabilidad es más parecida en los dos tratamientos por lo
+que se podría pensar que la homocedasticidad sí se cumple.
+#3. Variancia residual:
+#(a) Estimación de modelos con datos originales y centrados:
+```{r}
+mod2=lm(tiempo~glicerina+bloque,data=base1)
+mod3=lm(t1~glicerina,data=base1)
+```
+
+##(b) Comparación de resultados:
+```{r}
+anova(mod2)
+anova(mod3)
+sct2=sum(anova(mod2)[,2])
+sct3=sum(anova(mod3)[,2])
+c(sct2,sct3)
+```
+
+```{r}
+
+scres2=anova(mod2)[3,2]
+scres3=anova(mod3)[2,2]
+c(scres2,scres3)
+```
+
+La SCTot es diferente porque la respuesta cambió. Cuando se centran los datos
+se está reduciendo la variabilidad total por lo que se tiene una menor SCTot. La
+SCTot original incluye la varibilidad debida a las personas (bloques) mientras
+que la SCTot en el caso de datos centrados ya no tiene esa variabilidad. Sin
+embargo, se mantiene la SCRes. Entonces los dos modelos dan un mismo valor
+de la SCRes pero con diferentes grados de libertad. En el caso de los datos
+centrados se olvida que el modelo incluyó los bloques por lo que estaría dando
+más grados de libertad a los residuales de los que realmente tienen.
+##(c) Variancia residual correcta:
+Aunque los dos modelos dan la misma SCRes, el modelo con los datos centrados
+no toma en cuenta los grados de libertad que se deben atribuir a los bloques en
+el diseño, por lo tanto, la estimación correcta es la que da el modelo donde se
+incluyeron los bloques con la variable original.
+
+##(d) Estimación de la variancia del error.
+```{r}
+anova(mod2)[3,3]
+```
+La estimación correcta de la variancia del error es el CMRes del modelo que
+incluye el bloque con la respuesta original, la cual es 12,49.
+##(e) ¿Qué representa esta variancia?
+Este valor es una medida de la variabilidad de la respuesta dentro de cada
+tratamiento una vez que se ha eliminado el efecto del bloque.
+#4. Homocedasticidad:
+##(a) Verificación del supuesto de homocedasticidad:
+```{r}
+bartlett.test(mod2$res~base1$glicerina)
+```
+No se rechaza la hipótesis de homocedasticidad.
+#5. Conclusión:
+El interés es ver si el nivel de glicerina tiene un efecto sobre la resistencia
+promedio de las burbujas. Puesto que la probabilidad asociada a glicerina
+(ver anova del mod2) es alta (0,23), no se rechaza la hipótesis de igualdad de
+medias entre los dos niveles de glicerina. Se concluye que no se ha encontrado
+un efecto del nivel de glicerina sobre la resistencia promedio de las burbujas.
+Debe analizarse si este experimento tiene la suficiente potencia para detectar
+diferencias cuando en realidad existen diferencias.
+
+#6. Análisis con tipos de agua:
+##(a) Visualización:
+```{r}
+ggplot(base2, aes(x=bloque, y=tiempo, group = agua)) +
+stat_summary(fun.y="mean", geom="line", aes(linetype = agua))+labs(x = "persona")
+```
+En la Figura 5.5 se observa que el tiempo promedio tiende a ser mayor con agua
+añejada (a) especialmente que con el agua destilada (d), aunque no es tan claro
+que sea diferente del agua del grifo (n).
+
+```{r}
+mod4=lm(tiempo~bloque,data=base2)
+pre=predict(mod4)
+t2=base2$tiempo-pre+mean(base2$tiempo)
+boxplot(tiempo~agua,ylim=c(0,35),ylab="tiempo",data=base2)
+boxplot(t2~agua,ylim=c(0,35),ylab="tiempo centrado",data=base2)
+```
+Al centrar los datos se observa un promedio de tiempo mucho mayor para los
+datos con agua añejada que con agua destilada (Figura 5.6). Para el tratamiento
+con agua del grifo se observa un comportamiento intermedio.
+
+#(b) Verificación de la homocedasticidad:
+```{r}
+mod5=lm(tiempo~agua+bloque,data=base2)
+bartlett.test(mod5$res~base2$agua)
+```
+No se rechaza la hipótesis de homocedasticidad.
+
+##(c) Hipótesis sobre el efecto del tipo de agua:
+```{r}
+anova(mod5)
+```
+Se rechaza la hipótesis de igualdad de promedios para los tres tipos de agua,
+con lo cual se concluye que sí existe una efecto del tipo de agua sobre el tiempo
+promedio.
+##(d) Comparaciones entre los promedios de tiempo para los tres tipos de agua:
+Puesto que interesa ver cuál de los tres tipos de agua produce una resistencia
+mayor, conviene usar comparaciones múltiples con Tukey.
+```{r}
+table(base2$agua)
+(m=tapply(base2$tiempo,base2$agua,mean))
+```
+```{r}
+a.d=m[1]-m[2]
+a.n=m[1]-m[3]
+n.d=m[3]-m[2]
+d=c(a.d,a.n,n.d)
+cmres=anova(mod5)[3,3]
+ee=sqrt(2*cmres/6)
+q=d/ee
+p=ptukey(q*sqrt(2),3,10,lower.tail = F); names(p)=c("a-d","a-n","n-d"); p
+```
+
+Se ha encontrado que el promedio del tiempo con agua añejada es mayor que
+el de agua destilada pero el promedio con agua del grifo no se diferencia de
+ninguno de los otros dos. Finalmente se va a cuantificar la diferencia que se
+puede encontrar entre los promedios donde se encontraron diferencias.
+```{r}
+t=qt(0.95,10)
+(lim=d[1]-t*ee[1])
+```
+
+Con 95% de confianza se puede esperar que el tiempo promedio cuando se
+hacen las burbujas con agua añejada sea al menos 5,11 minutos mayor que con
+agua destilada.
+#7. Análisis con ambos factores:
+#(a) Visualización:
+```{r}
+mod6=lm(tiempo~bloque,data=base)
+t3=base$tiempo-predict(mod6)+mean(base$tiempo)
+boxplot(t3~glicerina+agua,xlab="glicerina-agua",ylab="tiempo centrado",
+cex.lab=1.5,data=base)
+```
+```{r}
+boxplot(t3~agua+glicerina,xlab="agua-glicerina",ylab="tiempo centrado",
+cex.lab=1.5,data=base)
+```
+
+En la figura 5.7 destaca que el promedio de tiempo parece ser mayor cuando
+el nivel de glicerina es 120, mientras que en la figura 5.8 se observa que el
+promedio de tiempo parece ser mayor cuando el agua es añejada.
+#(b) Interacción entre glicerina y agua:
+```{r}
+ggplot(base, aes(x=agua, y=tiempo, group = glicerina)) +
+stat_summary(fun.y="mean", geom="line", aes(linetype = glicerina))
+```
+Parece haber interacción entre glicerina y agua ya que cuando se tiene agua
+destilada la diferencia entre los promedios para los dos niveles de glicerina es
+un poco menor que en los otros dos casos, sin embargo, puede ser que haya
+mucha variabilidad en el error y esa interacción no sea tan clara (Figura 5.9).
+```{r}
+mod7=lm(tiempo~glicerina*agua+bloque,data=base)
+anova(mod7)
+```
+Al hacer la prueba formal de la hipótesis de no interacción entre glicerina y
+agua se obtiene una probabilidad de error tipo I (0,13) más alta que el nivel de
+significancia de 0,05, por lo que no se puede afirmar que haya interacción. En
+adelante se puede asumir que estos dos factores no tienen interacción entre sí.
+##(c) Efecto de la glicerina:
+```{r}
+mod8=lm(tiempo~glicerina+agua+bloque,data=base)
+anova(mod8)
+```
+
+La probabilidad asociada al factor glicerina es pequeña (p < 0,001), por lo que
+se rechaza la hipótesis de igualdad de las medias según niveles de glicerina.
+
+#(d) Inferencia con 95% de confianza:
+```{r}
+table(base$glicerina)
+```
+
+```{r}
+(m=tapply(base$tiempo,base$glicerina,mean))
+
+```
+
+```{r}
+d=m[2]-m[1]
+cmres=anova(mod8)[4,3]
+ee=sqrt(2*cmres/18)
+t=qt(0.95,27)
+(lim=d-t*ee)
+
+```
+En este caso se observa que con mayor cantidad de glicerina se obtiene un
+tiempo promedio mayor de las burbujas. Con 95% de confianza se espera que
+el tiempo promedio de las burbujas sea al menos 4,33 minutos mayor cuando
+se usa un nivel de glicerina de 120 ml con respecto a cuando se usa 60 ml, esto
+independientemente del tipo de agua que se utilice.
+##(e) Efecto del tipo de agua:
+La probabilidad asociada al factor agua es pequeña (p = 0,003) por lo que se
+rechaza la hipótesis de igualdad de las medias según tipo de agua.
+##(f) Verificación de diferencias según tipo de agua:
+```{r}
+table(base$agua)
+```
+
+```{r}
+(m=tapply(base$tiempo,base$agua,mean))
+```
+
+```{r}
+a.d=m[1]-m[2]
+a.n=m[1]-m[3]
+n.d=m[3]-m[2]
+d=c(a.d,a.n,n.d)
+ee=sqrt(2*cmres/12)
+q=d/ee
+p=ptukey(q*sqrt(2),3,27,lower.tail = F); names(p)=c("a-d","a-n","n-d"); p
+```
+
+```{r}
+t=qt(0.95,27)
+lim=d[1:2]-t*ee
+names(lim)=names(p)[1:2]
+lim
+```
+
+Se concluye, con un nivel de signficancia de 0,05, que el promedio de tiempo con
+agua añejada es mayor que el promedio con cualquiera de los otros dos tipos de
+agua. Además se espera con 95% de confianza, que el promedio de tiempo con
+agua añejada sea al menos 3,5 minutos más que con agua destilada y al menos
+3,05 minutos más que con agua del grifo, esto independientemente del nivel de
+glicerina que se use. Por lo tanto, se tendrá una mayor resistencia promedio con
+agua añejada que sobrepasa los 3 minutos en promedio el tiempo que se obtiene
+con los otros tipos de agua. Además, usar 120 ml sobrepasa en promedio en más
+de 4 minutos que si se usa un nivel de glicerina de 60 ml.

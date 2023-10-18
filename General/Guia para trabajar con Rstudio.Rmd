@@ -1,0 +1,2463 @@
+---
+title: "Guia para trabajar con Rstudio"
+author: "Cesar Peñaranda"
+date: '2022-06-27'
+output:
+  pdf_document: null
+  toc: yes
+  html_document:
+    df_print: paged
+---
+
+# Actualizar R Para ello ejecutamos el siguiente comando:
+```{r}
+install.packages("installr", dependencies = TRUE) library(installr) updateR()
+```
+
+
+## Eliminar la lista de datos - ver los objetos activos:
+```{r}
+#Vemos los objetivos activos con: 
+objects()  
+#Eliminamos una variable con:
+rm()  
+#Eliminamos toda la lista con:
+rm(list=ls())
+#Eliminar objetos:
+remove()
+#Reiniciar el Rstudio: 
+crt+shift+f10
+```
+
+
+## Instalacion de paquetes:
+Es importante para intalar los paquetes, intalar sus dependencias con el dependencies = T ademas no olvidar que podemos intalar varios por medio de un vector de la siguiente manera: c("dataframes2xls", "faraway", "rio", "MASS", "carData")
+
+De la siguiente manera intalamos los paquetes manualmente:
+
+```{r}
+#De manera individual
+install.packages("car", dependencies = TRUE)
+
+#En forma de vector:
+install.packages(c("dataframes2xls", "faraway", "rio", "MASS", "carData"))
+```
+
+# LIBRERIAS 
+No olvidar siempre, sea cual sea el método, si se quiere usar, es necesario llamar a las librerías con el comando:
+
+```{r}
+library(faraway)
+library(MASS)
+library(carData)
+library(abind)
+library(MASS)
+library(kableExtra)
+library(dplyr)
+library(tseries) #Para la funcion jarque bera
+library(survival) #Para la prueba wilcox
+library(car) #Para recodificar,  para qqPlot, recode
+library(rio) #Para usar datos extrangeros
+library(foreign) #read_sav necesaria,para pruebas de hipotesis
+library(haven) #mutate necesaria, para pruebas de hipotesis
+library(readr)
+```
+
+
+## Operaciones aritmeticas
+
+```{r}
+#Suma   #Resta   #Division  #Multiplicacion    #Potencias        #Raiz
+8+10    (18)-3   (15/3)       5*5            (15**2)(15^2)  sqrt(15) (2**.5)
+```
+
+## Operaciones estadisticas basicas
+```{r}
+#Para el promedio:
+mean() 
+#Para la varianza:
+var()
+#Para la desviacion estandar: 
+sd()
+#La suma de un arreglo:
+sum()
+```
+
+# GRAFICOS
+```{r}
+#Para un histograma: hist()
+Ejemplo: hist(x)
+#Para analizar la normalidad: qqPlot()
+Ejemplo: qqPlot(x)
+#Grafico para observar linealidad homoestasticidad: plot()
+Ejemplo: plot(income.i~religion2)
+#Para grafico de cajas: bloxplot()
+Ejemplo: boxplot(jacaranda~grupofactor, names=etiquetas) 
+```
+
+
+# Tipos de datos en R
+
+-   Vectores
+-   Matrices
+-   Hojas de datos (data frames)
+-   Listas
+
+# Algunos comandos basicos
+```{r}
+#Contar el numero de elementos de un objeto, su tamaño 
+length()
+#Para saber que tipo de dato es: numerico, categorico
+class() 
+#Para redondear
+round()
+#Para medir la correlacion entre dos variables
+cor()
+#Para crear una matris de vectores 
+rbind() cbind()
+#Para ver las dimenciones de la matriz
+dim()
+#Crea un arreglo 
+seq()
+#Crear numeros 
+rep()
+#Para observar los nombres que contienen las matrices
+names()
+#Para recodificar variables
+recode() 
+#Para ver el objeto en una ventana 
+view()
+#Para hacer análisis sobre una variable en especifico 
+attach()
+#Para leer una base de datos 
+read.spss()
+#Ver encabesados 
+head()
+#Para saber donde estamos trabajando
+getwd()
+#Para ver una tabla con las frecuencias de una variable
+table()
+#Para cambiar el nombre de una varable de una tabla 
+mutate()
+#Para una tabla de contingencia
+ftable()
+#Para porcentajes por columna
+prop.table()
+#Función permite aplicar funciones a subconjuntos de datos de un data data frame o vectores
+tapply()
+```
+
+# Cambiar tipos de datos
+```{r}
+#Asignar como matris
+as.matrix() 
+#Asignar como factor
+as.factor()#Variable cualitativa
+#Asignar como numerico
+as.numeric()#Variable cuantitativa
+```
+
+# Vectores o arreglos Se pueden generar arreglos de datos ("data arrays") con la función "c()"
+```{r}
+peso = c(60, 72,  57, 90, 95, 72)
+peso
+length(peso)
+```
+
+Y después se pueden realizar operaciones con los arreglos de datos, así como aplicarles funciones
+```{r}
+sum(peso)  #Da la suma de los elementos del arreglo peso
+
+altura = c(1.75, 1.80, 1.65, 1.90, 1.74, 1.91)
+
+indice.masa.corporal = peso/altura^2
+
+indice.masa.corporal   
+
+round(indice.masa.corporal,1)   #Limitar el numero de decimales a 1 
+
+#Promedio de la variable peso:
+mean(peso)
+#Para medir la correlacion de las dos variables:
+cor(altura,peso)
+```
+
+# Matrices acercamiento 
+También se pueden hacer arreglos en forma de matriz:
+## Para hacer arreglos en forma de filas
+```{r}
+pesoaltura = rbind(peso, altura)
+pesoaltura
+```
+## Para hacer arreglos en forma de columnas
+```{r}
+pesoaltura = cbind(peso, altura,indice.masa.corporal)
+pesoaltura
+```
+
+El rbind produce la transpuesta de cbind. Esto no pasaría si los consideramos como matrices y vectores     como vamos a ver. Con as.matrix() se define un objeto como matriz
+
+```{r}
+#Para definir esta nueva variable como una matriz hacemos lo siguiente: 
+pesoaltura2 = as.matrix(pesoaltura)
+pesoaltura2
+```
+## La función dim() devuelve las dimensiones de la matriz
+```{r}
+dim(pesoaltura2)
+```
+# Otras formas de crear arreglos de datos son con los siguientes comandos
+```{r}
+#Crea un arreglo con 6 números: 4,5,6,7,8,9
+seq(1,9)  
+#Esto también se puede conseguir con:
+4:9
+#Crear el arreglo de datos pero de dos en dos
+seq(4,9,2)
+#También con el comando rep:
+
+#Crear 10 unos
+rep(1,10)  
+#Crear 10 ceros seguidos por 5 unos
+rep(0:1, c(10,5)) 
+```
+
+# Indexación
+Se pueden "llamar" a subconjuntos de los arreglos de datos utilizando indexación
+
+```{r}
+#Para buscar el peso en la posición 2
+peso[2]
+#Para buscar en por intervalos
+peso[2:4]
+peso[c(1,3,6)]
+```
+
+# Eliminar entradas 
+Alternativamente para eliminar entradas de los arreglos de datos peso
+```{r}
+peso[-3]
+```
+#Plantear operaciones booleanas o lógicas
+```{r}
+peso>85
+which(peso>85)
+```
+
+#Convertir matrices en bases de datos (data.frame) e importar bases de datos
+```{r}
+pesoaltura = cbind(peso, altura,indice.masa.corporal)
+pesoaltura
+
+antropo = data.frame(pesoaltura)
+```
+
+Observemos las diferencias entre nuestros dos objetos 
+```{r}
+antropo
+pesoaltura    
+```
+
+# Trabajar sobre una variable de un objeto
+"$"es la forma de estrer solo una variable de un data frame y trabajar sobre ella
+```{r}
+antropo$peso
+antropo$altura
+round(antropo$indice.masa.corporal,1) #Para redondear
+```
+
+# RECODIFICACION 
+## Podemos crear variables en las que recodificamos alguna variable existente
+tenemos varias maneras de lograrlo, algunas son las siguientes:
+```{r}
+#Necesitamos cargar la libreria car para esto
+library(car)
+#Con recode recodificamos
+obeso= recode(antropo$indice.masa.corporal, '18:29.9=0; 30:32=1')
+#podemos utilzar el "lo" para valor mas bajo y "hi" para el valor mas alto 
+obeso
+```
+
+##Creando una condicion
+```{r}
+obeso=ifelse(antropo$indice.masa.corporal<30,0,1)
+obeso
+```
+##Al multiplicarlo por 1 creamos una variable cuantitativa de los datos logicos
+```{r}
+obeso=1*(antropo$indice.masa.corporal>=30)
+obeso
+```
+
+Se debe actualizar la base de datos para agregar obeso
+```{r}
+antropo=data.frame(cbind(antropo,obeso)) 
+```
+
+```{r}
+antropo$obeso=obeso
+antropo
+```
+Miramos los nombres de antropo
+```{r}
+names(antropo)
+```
+
+observamos algunos datos especificos
+```{r}
+antropo=data.frame(antropo[,1:4])
+antropo
+```
+```{r}
+antropo2=data.frame(antropo[,1:3])
+antropo2
+```
+#Seleccionar datos
+```{r}
+antropo$peso[antropo$obeso==1]  
+```
+
+Notese el doble signo de igual "==" para los condicionales 
+Para hacer análisis estadístico es conveniente "llamar" al data frame con el comando attach() (entonces ya no necesitamos escribir antropo\$peso)
+```{r}
+attach(antropo)
+```
+
+```{r}
+peso[obeso==1]
+```
+
+#Directorio de trabajo
+```{r}
+setwd("C:/Users/cesar/Documents/")
+save(antropo, file= "data.RData")
+```
+
+# Utilizar bases de datos de otros software
+La primera alternativa es usar el icono de "Import Data" que aparece en el Environment
+También se puede con el paquete foreign se pude llamar bases de datos de otro software
+Se podrán traerse una base de datos de SPSS con el paquete rio 
+
+```{r}
+library(rio)
+library(foreign)
+```
+
+Asignamos un nombre "basenuevaspss" 
+especificamos el lugar en donde se encuentra
+
+```{r}
+antropomexicano=read.spss('antropomexicano.sav', to.data.frame=TRUE)
+names(antropomexicano)
+```
+
+Es importante agregar el argumento "to.data.frame=T" para que lea adecuadamente los datos .sav como ya tenemos un directorio de trabajo especificado, solamente lo guardamos
+
+```{r}
+save(antropomexicano,file= 'antropomexicano.spss.Rdata')
+```
+
+```{r}
+names(antropomexicano)
+#Si queremos observar el data frame en una ventana aparte 
+#View(antropomexicano) 
+```
+
+# RENOMBRAR VARIABLES
+lo hacemos de la siguiente manera:
+```{r}
+names(antropomexicano)[1]="id" 
+names(antropomexicano)
+```
+Tambien lo podemos hacer como un vector como el siguiente ejemplo:
+```{r}
+names (DatosTdoPeso) = c("Tratamiento", "Variedad", "Parcela", "Peso40", "Peso41a45", "Peso46a60", "PesoMas61")
+names (DatosTdoPeso)
+#este es un ejemplo de la sintaxis 
+```
+
+#Algunos analisis estadisticos
+
+```{r}
+library(haven)
+library(readr) #necesarias para este codigo
+antropomex=read_sav("antropomexicano.sav") #suponiendo que se trabaja sobre el directorio correcto
+```
+
+```{r}
+attach(antropomex)
+names(antropomex)
+#View(antropomex)
+```
+
+con table podemos ver una tabla con las frecuencias de la variable de interes
+```{r}
+table(escola)
+```
+
+recodificamos la variable escola para tratar sus datos
+```{r}
+
+nivel.educacion= Recode(escola,"0=0; 1:6=1; 7:19=2; 99=NA")
+antropomex=antropomex %>% mutate(escola = nivel.educacion)
+
+antropomex$nivel.educacion =  as.factor(nivel.educacion) #Aqui estamos creando esta columna nivel.educacion
+
+antropomex$sexof = as.factor(sexo) #Aqui estamos creando esta columna sexof
+```
+
+#BORRAR O CREAR COLUMNA
+```{r}
+antropomex$sexof = as.factor(sexo) #Esta es la sintaxis que nos ayudara a lograr ese cometido
+#por ejemplo: 
+#antropomex$sexof = NULL #para eliminar la columna sexof dentro de antropomex
+```
+
+#Cuandros
+Los siguientes cuadros dan una distribucion de frecuencias.  Ustedes escogen
+```{r}
+attach(antropomex)
+```
+
+```{r}
+cuadro=table(nivel.educacion,sexof)
+cuadro
+```
+
+```{r}
+prop.table((table(nivel.educacion,sexof)),2) #Porcentajes por columna
+```
+
+
+```{r}
+round(prop.table((table(nivel.educacion,sexof)),1),2) #Porcentajes por fila
+```
+
+#Generar una tabla de medias
+La siguiente es la forma de generar una tabla de medias
+```{r}
+(cuadro2<-tapply(peso, nivel.educacion, mean, na.rm=TRUE))
+```
+
+Para mejorar la presentacion
+```{r}
+cadro2 = round(t(t(cuadro2)) ,2)
+cuadro2
+```
+Analizamos la variable urbano
+```{r}
+table(urbano)
+```
+Generamos un cuadro
+```{r}
+(cuadro.urbano= t(t(table(urbano))))
+```
+
+Podemos también generar un cuadro más simple de proporciones de residencia urbana
+aprovechando las propiedades de las variables binarias porque la media aritmética de una variable binaria es equivalente a la proporción de unos.
+
+```{r}
+(cuadro.urbano.prop=tapply(urbano, sexof, mean, na.rm=TRUE))
+```
+
+Para que se vea con mejor presentació bonita, le pueden dar
+```{r}
+(cuadro.urbano.prop=round(t(t(cuadro.urbano.prop)),2))
+```
+
+#Recodificar según grupos
+se calcula con tapply la media de altura de la rodilla por sexo
+recodificamos la variable rodilla de la siguiente forma, tomando como 
+punto la media la variable nueva seria (rodilla.nueva)
+
+Recodifique rodilla de 0 a menos de la mediana igual a 0, y de la mediana 
+al máximo igual a 1.
+
+```{r}
+tapply(rodilla,sexof, median, na.rm=T)
+```
+
+
+```{r}
+summary(rodilla)
+```
+
+```{r}
+rodilla.nueva=rodilla
+rodilla.nueva[sexof==1]<-Recode(rodilla[sexof==1], "0:51.9999=0; 52:120=1; 880:999=NA")
+rodilla.nueva[sexof==2]<-Recode(rodilla[sexof==2], "0:46.9999=0; 47:120=1; 880:999=NA")
+table(rodilla.nueva)
+
+```
+
+```{r}
+table(rodilla.nueva,sexof)
+```
+
+Se puede presentar ahora un ejemplo de variancias en una tabla cruzada.  
+La variancia por sexo y residencia urbana
+
+```{r}
+rodilla2<-Recode(rodilla, "880:999=NA")
+
+round(tapply(rodilla2, list(sexof,urbano), var, na.rm=T),3)
+```
+```{r}
+levels(sexof)<-c("Hombre","Mujer")
+urbanof<-as.factor(urbano)
+levels(urbanof)<-c("Rural","Urbano")
+
+round(tapply(rodilla2, list(sexof,urbanof), var, na.rm=T),3)
+```
+# Generar tabla 
+de la siguiente manera podemos generar una tabla
+
+```{r}
+cuadro5 <-round(tapply(rodilla2, list(sexof,urbanof), var, na.rm=T),2)
+cuadro5 %>%
+  kbl(caption = "Cuadro 5. Variancia de rodilla, por sexo, según zona") %>%
+  kable_classic(full_width = F, html_font = "Arial") %>%
+  row_spec(0,background ="lightgray")
+```
+
+#PRUEBAS DE HIPOTESIS PARA LA MEDIA DE UNA POBLACION
+ hipótesis para una población utilizando las siguientes pruebas en R:
+-Kolmogorov Smirnov
+-Shapiro Wilks
+-Jarque Bera
+-Prueba t
+-Prueba binomial exacta
+-Prueba para una proporción
+-Prueba de mediana
+
+
+Librerias utilisadas
+```{r}
+library(haven)
+library(readr)
+```
+
+Abrimos el archivo de antropo
+```{r}
+antropomexicano <- read_sav("antropomexicano.sav")
+
+```
+algunos analisis ademas de sujetar el dataframe
+```{r}
+names(antropomexicano)
+attach(antropomexicano)
+```
+
+
+analisis descriptivos de la variable edad
+```{r}
+mean(edad)
+sd(edad)
+```
+#NO PARAMETRICAS para analisis de normalidad
+## KOLMOGOROV SMIRNOF   
+
+H0: Edad proviene de una poblacion normal con Mu=60.3 y sigma=10.6,  alfa=0.05
+H1: Edad NO proviene de una poblacion normal con Mu=60.3 y sigma=10.6,  alfa=0.05
+
+```{r}
+ks.test(edad,"pnorm",mean(edad),sd(edad))
+```
+
+##Una cola Kolmogorov smirnov de una cola
+H0: Mu=55.5
+H1: Mu<55.5   (Si Mu>, alternative=greater)
+
+```{r}
+ks.test(edad,"pnorm",55.5,11, alternative="less")
+```
+
+##Analisis con graficas de normalidad 
+```{r}
+library(car) #libreria necesaria para el qqplot
+qqPlot(edad)
+```
+Recordar:
+Es teóricamente incorrecto estimar la prueba KS con información muestral
+Además, se da la advertencia por los empates
+
+Observamos sus frecuencias
+```{r}
+table(edad)
+```
+
+
+```{r}
+summary(edad)
+```
+
+
+```{r}
+sd(edad)
+```
+## SHAPIRO-WILKS
+Para analizar bondad de ajuste a una distribución normal, sin
+presuponer los valores de los parámetros, se puede usar la Shapiro-Wilks.
+
+H0: Edad proviene de una poblacion normal
+H1: Edad NO proviene de una poblacion normal
+
+```{r}
+shapiro.test(edad)
+```
+Sin embargo, una de las ventajas de la prueba KS es que se puede analizar la bondad de ajuste a otras distribuciones
+
+##kolmogoro smirnov - distribución exponencial
+
+H0: Edad proviene de una poblacion con distribucion exponencial con tasa = 1/60.3
+H1: Edad NO proviene de una poblacion con distribucion exponencial con tasa = 1/60.3
+
+```{r}
+ks.test(
+  edad,
+  "pexp",
+  rate = 1 / mean(edad)
+)
+```
+Los histogramas pueden servir para analizar la forma distribucional de la variable.
+```{r}
+hist(edad)
+```
+# JARQUEBERA PARA NORMALIDAD
+H0: Edad proviene de una dist normal
+H1: Edad NO proviene de una dist normal
+```{r}
+library(tseries) #libreria necesaria
+jarque.bera.test(edad)  
+```
+La prueba de Kolmogorov Smirnov es una prueba no paramétrica
+
+#TEST WILCOXON PRUEBA DE LA MEDIA
+
+##una alternativa no paramétrica a la prueba t
+H0:Mu_ed=60.5
+H1:Mu_ed diferente 60.5
+```{r}
+wilcox.test(
+  edad, 
+  mu = 60.5
+)
+
+```
+
+
+#PARAMETRICAS para analicis de normalidad
+
+Vamos ahora con pruebas paramétricas para una media.
+
+## t
+H0: Mu=60.5
+H1: Mu<>60.5
+```{r}
+t.test(
+  edad,
+  mu=60.5
+)
+```
+## Una cola Prueba t
+
+H0: Mu=55.5
+H1: Mu<55.5   (Si Mu>, alternative=greater)
+
+```{r}
+t.test(
+  edad,
+  mu=55.5,
+  alternative="less"
+)
+```
+##PRUEBAS PARA UNA PROPORCION
+
+Se analizará la proporción de población urbana
+```{r}
+mean(urbano)
+```
+##Prueba no paramétrica para una proporción
+H0: P=0.65
+```{r}
+binom.test(
+  sum(urbano),
+  length(urbano),
+  p=0.65
+)  #No parametrica  
+```
+
+##Prueba paramétrica para una proporción
+H0: P=0.65
+```{r}
+prop.test(
+  sum(urbano),
+  length(urbano),
+  p=0.65
+) #Parametrica
+```
+
+#MEDIDAS DE ASOCIACION
+medidas de asociación en R:
+-Prueba X2 (CHI.CUADRADO)
+-Coeficiente de contingencia
+-V de Cramer
+-Prueba Fisher
+-Odds ratio
+-Razón de correlación (ETA)
+-Correlación de Pearson
+-Correlación de rangos de Spearman
+-Coeficiente tao de Kendall
+
+Data frame de trabajo mhasbasico.Rdata, lo podemos abrir directo 
+
+```{r}
+attach(mhasbasico)
+```
+
+Explorando el archivo
+```{r}
+names(mhasbasico)
+```
+
+###Reprogramar
+hay dos formas de crear la misma variable
+
+Opcion 1 con el recode 
+```{r}
+library(car) #necesaria para recode
+ingreso.median=Recode(income.i, "-2000000:1252.083=0; 1252.083:100000000=1")
+```
+
+opcion 2 con lo siguiente 
+```{r}
+ingreso.median=(income.i>=1252.083)*1
+```
+
+
+Observamos las variables creadas
+```{r}
+t(t(table(ingreso.median))) 
+#0=Ingresos bajos 
+#1=Ingresos altos
+#Ingreso.median y migracion son variables cualitativas binarias
+```
+
+
+```{r}
+ingreso.por.migracion=table(ingreso.median,migracion)
+ingreso.por.migracion
+```
+
+```{r}
+tapply(ingreso.median,migracion,mean, na.rm=TRUE)
+```
+
+##PRUEBA X2
+H0: Altos ingresos son independientes de la experiencia migratoria
+H1: Altos ingresos NO son independientes de la experiencia migratoria.
+```{r}
+prueba.X2=chisq.test(ingreso.por.migracion)
+prueba.X2
+```
+Subobjetos del objeto de la Prueba X2
+```{r}
+names(prueba.X2)
+prueba.X2$expected
+prueba.X2$statistic #valor X2
+```
+##COEFICIENTE DE CONTINGENCIA
+Este necesita valores de la prueba X2 prueba.X2$statistic
+```{r} 
+(C=sqrt(prueba.X2$statistic/(prueba.X2$statistic+length(ingreso.median)) ))
+```
+##PRUEBA V DE CRAMER 
+Este necesita valores de la prueba X2 prueba.X2$statistic
+```{r}
+(V=sqrt(prueba.X2$statistic/(length(ingreso.median))))
+
+```
+
+##Alternativa NO paramétrica a la prueba X2
+
+##PRUEBA FISHER
+```{r}
+fisher.test(ingreso.por.migracion, conf.level=.95)
+``` 
+interpretacion de lo anterior
+Los odds de altos ingresos entre los migrantes son 1.08 veces los odds de altos ingresos entre los no migrantes
+
+##ODDS RATIO
+H0: Independencia entre dos variables: P1=P2
+```{r}
+ingreso.por.migracion
+```
+
+
+```{r}
+prop.test(c(136,1327),c(136+127,1327+1337))
+```
+
+
+```{r}
+OR=(0.517/(1-0.517))/(0.498/(1-0.498))
+OR
+```
+
+##ETA (RAZON DE CORRELACION):
+
+Para una variable cualitativa y una cuantitativa
+observamos la variable a39
+```{r}
+table(a39)
+```
+
+Recodificamos la variable a39 relacionada con la religion
+```{r}
+library(car)
+religion=Recode(a39, "8:9=NA")
+
+religion2=as.factor(religion)
+table(religion2)
+
+```
+Realisamos el anova 
+```{r}
+anova(
+  lm(
+    income.i~religion2
+    )
+  )
+```
+
+vemos las frecuencias 
+```{r}
+tapply(
+  income.i,
+  religion2,
+  mean,
+  na.rm=TRUE
+  )
+```
+  
+Realizamos la prueba eta
+```{r}
+eta=sqrt(1486100000/(1486100000+1727500000000))
+eta
+```
+
+
+H0: Eta poblacional=0 
+Se observa el p-value del ANOVA
+mediante un grafico de cajas
+```{r}
+plot(income.i~religion2)
+```
+##Para analizar asociación entre variables cuantitativas
+
+#Correlación
+Primero se analizan supuestos: Linealidad
+
+```{r}
+plot(income.i~escolaridad)
+```
+Grafica para observar la Normalidad
+```{r}
+qqPlot(income.i)
+```
+Prueba de normalidad para variables cuantitativas Shapiro-Wilk
+```{r}
+shapiro.test(income.i)
+```
+Analisamos la normalidad de escolaridad
+```{r}
+qqPlot(escolaridad)
+```
+
+Cálculo de la correlación de Pearson
+y sus equivalentes no paramétricos
+la r de person no es recomendable cuando
+-tenemos valores extremos
+-cuando nos hace falta normalidad 
+-cuando no tenemos linealidad
+
+Entre la r de spearman y tau de kendall podemos eliger cualquiera de las dos, en este caso son mas recomentables que pearson
+
+#CORRELACION
+```{r}
+cor(escolaridad, income.i, use="pairwise.complete.obs")
+```
+
+##Pearson
+```{r}
+cor(escolaridad,income.i, use="pairwise.complete.obs", method="pearson")
+```
+##Spearmas
+```{r}
+cor(escolaridad,income.i, use="pairwise.complete.obs", method="spearman")
+```
+
+##Tau kendall
+```{r}
+cor(escolaridad,income.i, use="pairwise.complete.obs", method="kendall")
+```
+
+#Se puede calcular incluyendo las respectivas pruebas de hipótesis.
+pearson
+```{r}
+cor.test(escolaridad,income.i, use="pairwise.complete.obs", method="pearson")
+```
+
+Spearman
+```{r}
+cor.test(escolaridad,income.i, use="pairwise.complete.obs", method="spearman")
+```
+
+Kendall
+```{r}
+cor.test(escolaridad,income.i, use="pairwise.complete.obs", method="kendall")
+```
+
+Cuando la variable cualitativa es binaria, se puede calcular una correlación de Pearson, que es equivalente a eta.
+podemos calcular el eta con la funcion corr si la variable cualitativa es binaria
+
+observamos los datos
+```{r}
+t(t(table(migracion)))
+```
+
+calculamos su correlacion
+```{r}
+cor(migracion, income.i, use="pairwise.complete.obs")
+```
+
+#PRUEBAS EN MUESTRAS PAREADAS
+
+Libreria necesaria
+```{r}
+library(car)
+```
+
+#Prueba t-pareada
+
+Ejemplo:
+Suponga que tiene a 10 pacientes hipertensos a los cuales 
+se les receta una medicina nueva para controlar la presión arterial.  
+Se tiene la medición de la presión sistólica antes de la receta
+y tres semanas después de estar tomando la medicina.
+
+El objetivo es analizar si la medicina ayudó a reducir la presión sistólica
+```{r}
+ps.antes=c(140,150,167,180,210,110,125,133,158,170)
+
+ps.despues=c(135,148,133,185,190,110,130,90,145,160)
+```
+
+H0: Mu_antes=Mu_despues =  H0: Mu_dif=0
+H1: Mu_antes<>Mu_despues
+
+```{r}
+t.test(ps.antes,ps.despues,paired=T)
+```
+H1: Mu_antes>Mu_despues
+```{r}
+t.test(ps.antes,ps.despues,paired=T, alternative = "greater")
+```
+
+H1: Mu_despues<Mu_antes
+```{r}
+t.test(ps.despues,ps.antes,paired=T, alternative = "less")
+```
+
+Otra forma de hacerlo, con las diferencias
+H0: Mu_dif=0
+H1: Mu_dif>0
+
+```{r}
+diferencia=ps.antes- ps.despues
+
+t.test(diferencia, alternative = "greater")
+```
+Observamos los supuestos mediante graficos
+```{r}
+par(mfrow=c(1,3))
+
+qqPlot(ps.despues)
+```
+
+normalidad mediante graficas
+```{r}
+qqPlot(ps.antes)
+```
+
+normalidad mediante graficas
+```{r}
+qqPlot(diferencia)
+```
+
+prueba de normalidad
+```{r}
+shapiro.test(diferencia)
+```
+#Alternativas no paramétricas:
+##Prueba de rangos de wilcoxon
+
+Se usa el mismo comando que la U de Mann Whitney
+H1: Mu_antes>Mu_despues
+
+```{r}
+#vectores utilizados:
+#ps.antes=c(140,150,167,180,210,110,125,133,158,170)
+#ps.despues=c(135,148,133,185,190,110,130,90,145,160)
+
+wilcox.test(ps.antes,ps.despues,paired=T, alternative = "greater")
+
+```
+#Prueba signos
+```{r} 
+#Vector utilizado
+#ps.antes=c(140,150,167,180,210,110,125,133,158,170)
+#ps.despues=c(135,148,133,185,190,110,130,90,145,160)
+difej1=ps.antes- ps.despues
+
+summary(difej1)
+```
+
+Recodificacion
+```{r} 
+difej1rec=Recode(difej1,"-5:-1=-1;0=NA;1:43=1")
+table(difej1rec)
+```
+
+H1: Mu_antes>Mu_despues
+```{r} 
+signosej1<-binom.test(7,9,p=0.5, alternative = "greater")
+signosej1
+
+```
+
+Ejercicio 15
+Para comparar dos escuelas secundarias, A y B, en efectividad académica, 
+se diseñó un experimento que requería el uso de 10 pares de gemelos idénticos, 
+donde cada gemelo acababa de terminar el sexto grado. En cada caso, los gemelos 
+del mismo par habían tenido su enseñanza en los mismos salones de clase en cada 
+nivel de grado. Un niño fue seleccionado al azar de cada par de gemelos
+y asignado a la escuela A. Los demás niños fueron enviados a la escuela B. 
+Cerca del final del noveno grado, se aplicó cierto examen de aprovechamiento a cada 
+niño del experimento. 
+
+Pruebe la hipótesis de que las dos escuelas son iguales en efectividad académica, 
+medida por calificaciones en el examen de aprovechamiento, contra la alternativa de que 
+las escuelas no son igualmente efectivas. Use la prueba t pareda, la prueba de signos 
+y la prueba coxon
+
+```{r}
+A<-c(67, 80, 65, 70, 86, 50, 63, 81, 86, 60)
+B<-c(39, 75, 69, 55, 75, 52, 56, 72, 89, 47)
+```
+
+H0: Mu(A)=Mu(B)
+H1: Mu(A)<>Mu(B)
+
+#wilcox
+```{r}
+wilcox.test(B, A, paired=TRUE, correct=FALSE)
+```
+
+
+#prueba t pareada
+```{r}
+t.test(A,B,paired=TRUE)
+difab<-A-B
+```
+
+#signos pareada
+Hacemos el table y recodificamos 
+```{r}
+table(difab)
+difabrecode<-Recode(difab,"-4:-1=-1;0=NA;1:28=1")
+```
+
+prueba de signos
+```{r}
+table(difabrecode)
+signosab<-binom.test(7,10,p=0.5)
+signosab
+```
+Probamos normalidad Shapiro-Wilk normality
+```{r}
+shapiro.test(difab)
+```
+observamos la normalidad
+```{r}
+qqPlot(difab)
+```
+
+#Prueba de McNemar
+
+Necesitamos una matris para hacer la prueba de la siguiente manera
+```{r}
+presion<-matrix(c(38,33,4,35),nrow=2, dimnames=list("Antes"=c("Controlado", "No controlado"), "Despues"=c("Controlado", "No controlado")))
+presion
+```
+H0: P1=P2
+H1: P1<>P2
+
+```{r}
+mcnemar.test(presion,correct=FALSE)
+
+#Prop(controlados_antes)=(38+4)/110
+(38+4)/110
+
+#Prop(controlados_despues)=(38+33)/110
+(38+33)/110
+```
+#prueba de signos
+
+```{r}
+presion
+
+binom.test(33,37,p=.5)
+binom.test(4,37,p=.5)
+```
+#Ejemplos Mendenhall
+
+Ejemplo 10.5
+Para comparar las cualidades de desgaste de dos tipos de llantas de automóvil,
+A y B, una llanta de tipo A y una de tipo B se asignaron al azar y se montaron 
+en las ruedas traseras de cada uno de cinco automóviles. Estos se hicieron correr 
+un número especificado de millas y se registró la cantidad de desgaste para cada llanta.
+¿Los datos presentan suficiente evidencia para indicar una diferencia en el 
+promedio de desgaste para los dos tipos de llantas?
+
+H0: mu(tipoa)=mu(tipob)
+H1: mu(tipoa)<>mu(tipob)
+
+Datos:
+```{r}
+tipoA<-c(10.6, 9.8, 12.3, 9.7, 8.8)
+tipoB<-c(10.2, 9.4, 11.8, 9.1, 8.3)
+dif10.5<-tipoA-tipoB
+```
+
+
+Supuestos de normalidad 
+
+```{r}
+qqPlot(dif10.5)
+
+shapiro.test(dif10.5)
+```
+
+t-test para muestras pareadas
+```{r}
+t.test(tipoA, tipoB, paired=TRUE)
+t.test(dif10.5)
+```
+
+
+Ejemplo 10.45
+En respuesta a una queja de que un asesor de impuestos en particular (A) estaba sesgado,
+se realizó un experimento para comparar al asesor citado en la queja con otro asesor de 
+impuestos (B) de la misma oficina. Se seleccionaron ocho propiedades y cada una fue evaluada
+para ambos asesores. 
+
+H0: Mu(A)=Mu(B)
+H1: Mu(A)>Mu(B)
+
+```{r}
+asesorA<- c(76.3, 88.4, 80.2, 94.7, 68.7, 82.8, 76.1, 79.0)
+asesorB<- c(75.1, 86.8, 77.3, 90.6, 69.1, 81.0, 75.3, 79.1)
+difasesores<-asesorA-asesorB
+```
+
+Supuestos de normalidad
+```{r}
+qqPlot(difasesores)
+```
+
+pureba t 
+```{r}
+t.test(asesorA,asesorB,paired = TRUE, alternative = "greater")
+```
+
+
+```{r}
+table(difasesores)
+```
+
+
+
+#Mendenhall con la prueba de signos
+
+Ejemplo 15.17
+En respuesta a una queja de que un asesor de impuestos en particular (A) estaba sesgado,
+se realizó un experimento para comparar al asesor citado en la queja con otro asesor de 
+impuestos (B) de la misma oficina. Se seleccionaron ocho propiedades y cada una fue evaluada
+para ambos asesores. 
+
+```{r}
+asesorA<- c(76.3, 88.4, 80.2, 94.7, 68.7, 82.8, 76.1, 79.0)
+asesorB<- c(75.1, 86.8, 77.3, 90.6, 69.1, 81.0, 75.3, 79.1)
+difasesores<-asesorA-asesorB
+
+table(difasesores)
+```
+
+
+```{r}
+difasesoresrecode=Recode(difasesores,"-0.4:-0.001=-1;0=NA;0.001:5=1")
+table(difasesoresrecode)
+```
+
+
+```{r}
+signosej15.17<-binom.test(6,8,p=0.5)
+signosej15.17
+```
+
+
+```{r}
+difasesores2<-asesorB-asesorA
+difasesores2
+```
+
+otra forma
+```{r}
+positivos.ej15.17<-binom.test(6,8,p=0.5, alternative = "greater")
+positivos.ej15.17
+```
+
+
+```{r}
+negativos.ej15.17<-binom.test(2,8,p=0.5, alternative = "less")
+negativos.ej15.17
+
+positivos.ej15.17$p.value+negativos.ej15.17$p.value
+
+```
+
+#GENERAR NUMEROS ALEATORIOS EN R
+Generaremos números aleatorios
+
+R tiene funciones ya establecidas para generar números aleatorios:
+
+- rnorm(# de obs, mean=, sd=): # números aleatorios de una distribución normal con media mean y desviación estándar sd
+
+- rnorm(#) # números aleatorios de una dist normal estándar
+
+- runif(# de obs, min=, max=) # números aleatorios de una distancia uniforme con mínimo y máximo
+
+- rexp(#, rate=) # números aleatorios de una dist exponencial con parámetro=1/lambda
+
+- rpois(#, lambda=) # números aleatorios de una dist Poisson con parámetro=lambda
+
+- rbinom(#,size=, prob=) # números aleatorios de una dist binomial con n=size yp=prob
+
+- rnbinom(#, size, prob, mu) # números aleatorios de una dist binomial negativa con n=size yp=prob, o mu=media
+
+- rgeom(#, prob) # números aleatorios de una dist geométrica con p=prob
+                  
+Por ejemplo:
+                    
+Generaremos 100 columnas de 10 números aleatorios cada una con una distribución normal
+estándar.
+
+Esta es la creación de una matriz con 100 columnas y 10 filas con números aleatorios
+de una distribucion normal estandar
+
+
+```{r}
+matriznorm=matrix(rnorm(1000),nrow=10, byrow=T)
+
+#como la matris es tan grande observamos solo las primeras 10
+matriznorm[1:10,1:10]
+``` 
+Con este comando lo pasamos a tipo dataframe
+```{r}
+norma=data.frame(matriznorm)
+names (norma)
+```              
+Ahora generaremos 10000 columnas con 12 números aleatorios cada una
+con una distribución Bernoulli con probabilidad p=0.5.  
+
+
+```{r}                  
+bernoulli=matrix(
+  rbinom(120000,size = 1,prob=0.5),
+  nrow=12,
+  byrow=T
+  )
+b=data.frame(bernoulli)
+#esta me genera muestras de variables binarias
+b$X1 #para observar
+``` 
+#SIMULACION DE POR QUE NO SE PUEDE USAR LA PRUEBA t CON VARIABLES BINARIAS
+
+NOTAR CÓMO SE MUESTRA QUE SI NO SE SUPONE NORMALIDAD,
+EL ESTADÍSTICO TE NO SE DISTRIBUYE COMO UNA T DE STUDENT.
+                  
+Ciclos para probar algo varias veces
+Supongan que queremos probar si la distribución muestral de la media aritmética
+de una variable Bernoulli se distribuye normalmente con una muestra de tamaño 12.
+
+Con esto estamos evaluando el teorema del límite central con muestras de tamaño 12.
+                  
+Tomaremos el archivo anterior que generamos con variables aleatorias Bernoulli
+Usaremos el comando ttest para generar las estimaciones de la variable estandarizada
+
+```{r}                  
+attach (b)
+```                 
+
+```{r}                  
+media=rep(NA,10000) ###Almacenar las 10mil medias
+te=rep(NA,10000) ###Almacenar los 10mil t_calculados
+```
+
+H0: Mu=0.5
+H1: Mu<>0.5
+```{r}
+for (i in 1:10000) {
+      if(sd(b[1:12,i])==0) result=NA else result=t.test(b[1:12,i], mu=0.5)
+      if(sd(b[1:12,i])==0) media[i]=NA else media[i]=mean(b[1:12,i])
+      if(sd(b[1:12,i])==0) te[i]=NA else te[i]=result$statistic
+}
+hist(media)
+hist(te,freq=F)
+#superponemos el grafico de un t con 19 grados de libertad
+#para ello creamos los pares ordenados
+t=seq(-4,4,length=100)
+ht=dt(t,11)
+lines(t,ht,col="red")
+```
+
+#SIMULACION Y POTENCIA 
+
+Ejemplo
+En una poblacion especifica de hombres, se ha determinado que el peso promedio 
+del adulto de 18 años ha sido historicamente de 60 kilogramos, con una desviacion estandar
+de 20 kilogramos.  Sin embargo, un cambio en la dieta en la que los chicharrones de cerdo 
+han sustituido a los picadillos de vegetales, hace pensar que el peso promedio se ha incrementado.
+Se desea probar que el peso promedio aumento, con un nivel de significancia alfa=0.05.  
+Se toma una muestra de 2000 personas y se les pesa con una bascula estandarizada.En esta muestra se obtuvo que el peso promedio de los hombres es de 63 kilogramos.  
+Prueba la hipotesis de que el peso promedio de los hombres ha aumentado, con un alfa=0.05.
+
+
+H0: Mu=60
+H1: Mu>60
+
+sabemos que la significancia se puede definir como:
+alfa=P(Rechazar H0 | H0 cierta) = P(Ybarra > ybarra_tabular | H0: Mu=60)
+El valor de ybarra_tabular es el que hace que dicha probabilidad sea igual a 0.05
+En el ejemplo manual habiamos encontrado que ybarra_tabular=60.73
+
+Recuerdese que para una simulacion siempre es bueno tener vectores de almacenamiento.
+Mi objetivo ahora es simular la distribucion muestral de ybarra y encontrar el valor de ybarra_tabuar tal que alfa=0.05
+
+Sabemos ademas que el ybarra_tabular segun el metodo de las unidades de medicion es 60.735
+Y, con el metodos de los cuantilos, el z_tabular es 1.645
+En otras palabras, por calculos manuales, sabemos a partir de que valor se define
+una significancia del 5% 
+
+Programareamos manual la prueba z.  Sabemos entonces que se rechaza la prueba 
+si ybarra>ybarra_tabular
+
+Se va a generar la distribucion muestral de ybarra a partir de 10000 muestras 
+de tamaño 2000
+
+```{r}
+almacen.ybarra=rep(NA,10000)
+almacen.rechazo=rep(NA,10000)
+
+for (i in 1:10000) {
+    
+    y=rnorm(2000,mean=60, sd=20) #Se genera la muestra
+    almacen.ybarra[i]=mean(y)    #Se almacena la media
+    almacen.rechazo[i]=1*(almacen.ybarra[i]>=60.73) #Es el x.barra.tab con unidades de medicion
+  
+}
+```
+
+El histograma de almace.ybarra refleja la distribucion muestral de las medias.
+
+```{r}
+hist(almacen.ybarra)
+```
+
+El percentil 95 es el valor que delimita las zonas de rechazo y de no rechazo.
+Noten el valor tan cercano al ybarra_tabular calculado a mano.
+
+```{r}
+quantile(almacen.ybarra,0.95)
+```
+La significancia seria la proporcion de veces en que ybarra fue mayor al ybarra_tabular.
+
+```{r}
+mean(almacen.rechazo)
+```
+Noten que el valor anterior es aproximadanente igual a la significancia.
+
+El p-value o probabilidad asociada a la prueba se puede calcular con esta distribucion muestral.
+Por calculos manulaes, sabiamos que el p-value era: 0.0000000000097
+Como apenas estamos simulando 10000 repeticiones, la aproximacion va a ser baja.
+
+Vease que en la muestra se obtuvo un ybarra=63
+Y se sabe que el p-value es la probabilidad de observar el valor de la muestra 
+o uno mas extremo condicional a la hipotesis nula.
+
+
+```{r}
+almacen.p.value=1*(almacen.ybarra>=63)
+
+mean(almacen.p.value)   # La media de esta variable binaria sera aproximadamente igual al p-value.
+```
+
+Con las simulaciones tambien se puede calcular la potencia.  Recuerdese el ejemplo visto en clase:
+
+En una poblacion especifica de hombres, se ha determinado que el peso promedio del adulto de 18
+años o mas ha sido historicamente de 60 kilogramos, con una desviacion estandar de 20 kilogramos.  
+Sin embargo, un cambio en la dieta en la que los chicharrones de cerdo han sustituido 
+a los picadillos de vegetales, hace pensar que el peso promedio se ha incrementado.  
+Se desea probar que el peso promedio aumento, con un nivel de significancia alfa=0.05.  
+Se toma una muestra de 1000 personas y se les pesa con una bascula estandarizada.
+
+Se quiere saber cual es la potencia que tendria esta prueba con la muestra de 1000 personas 
+para detectar un peso de 61.5 kilogramos.
+
+H0: Mu=60
+H1: Mu>60
+H1*: Mu=61.5
+
+Recuerdese que la definicion de potencia seria:
+
+P(Rechazar H0 | H0 falsa) = P(Rechazar H0 | Mu=61.5 )
+
+```{r}
+almacen.ybarra2=rep(NA,10000)
+almacen.rechazo2=rep(NA,10000)   #El mas importante para calcular potencia
+
+for (i in 1:10000) {
+  
+  y=rnorm(1000,mean=61.5, sd=20)  #Se genera la muestra ahora con una media de 61.5
+                                  #Porque la probabilidad es condicional a H1*
+                                  #Ademas el tamaño de muestra es 1000
+  almacen.ybarra2[i]=mean(y)      #Se almacena la media
+  almacen.rechazo2[i]=1*(almacen.ybarra2[i]>=61.04)
+  
+}
+
+```
+
+La potencia seria la proporcion de veces en que se rechaza H0.
+```{r}
+mean(almacen.rechazo2)
+```
+En nuestros calculos manuales, la potencia era igual a 0.7673.  
+Noten la similitud.
+
+Ahora bien, esta es una ilustracion del caso en el que se programo muy 
+rudimentariamente la prueba z.  Cuanto seria la potencia si volvieramos a hacer 
+el contraste con la prueba t.
+Para ello, aun asi, tenemos que seguir suponiendo el valor de la desviacion estandar poblacional, que planteamos en 20
+
+
+```{r}
+almacen.ybarra3=rep(NA,10000)
+almacen.rechazo3=rep(NA,10000)
+
+for (i in 1:10000) {
+  
+y=rnorm(1000,mean=61.5, sd=20)  
+#Se genera la muestra ahora con una media de 61.5
+#Porque la probabilidad es condicional a H1*
+#Ademas el tamaño de muestra es 1000
+  
+almacen.ybarra3[i]=mean(y) #Se almacena la media
+prueba.t=t.test(y, mu=60)   #Se realiza la prueba con la funcion ya programada.
+almacen.rechazo3[i]=1*(prueba.t$p.value<0.05) #En el subobjeto "p.value", R guarda el pvalue.
+  
+}
+
+mean(almacen.rechazo3)
+
+```
+
+Noten como decrecio ligeramente la potencia con respecto de la prueba anterior.
+Porque la prueba t es menos potente que la prueba z cuando se conoce la variancia poblacional
+
+
+#BOOSTRAP EN R
+
+El siguiente es el ejemplo que trae R para calcular el error estándar 
+de la razón de dos medias.
+Usaremos los datos del paquete bootstrap.  Los datos se llaman city.
+
+bootstrap no es exactamente una simulacion, es un remuestreo.
+generalmente tenemos una muestra sin remplazo, y esta muestra la remuestramos una grancantidad de veces
+con remplazo.
+
+
+```{r}
+library(boot)
+data(city)
+names(city)
+city
+```
+
+sum(city$x)/sum(city$u) lo que me dice es que cuantas veces es la poblacion en ese pais en el momento 0 con repecto al momento 1
+
+```{r}
+sum(city$x)/sum(city$u)
+#Lo que me dice es cuantas veces es el momento 10 con respecto al momento 0 
+#En este caso vemos que la poblacion 0 es 1.52 veces la poblacion 1
+```
+
+Es necesario definir una función.  Definamos la función ratio como el ratio de las medias de las variables x y u
+
+```{r}
+#ratio es razon 
+ratio = function(datos, d) # esta sera nuestra funcion (datos es nuestro nombre en general) #d es mi contador
+{
+  sum(datos$x[d])/sum(datos$u[d])
+}
+
+ratio(city) #llamamos nuestra funcion
+#[d] es necesario para nuestras posiciones
+```
+
+boostrap se utiliza cuando no puedo definir matematicamente, la distribucion
+
+```{r}
+#Ahora usaremos la función boot para calcular el sesgo y 
+#El error estándar
+
+boot(
+  city, 
+  ratio, #Recordar que esta es mi funcion
+  R=999
+) #Se recomiendan numeros terminados en 9 para el "R="
+```
+Bootstrap Statistics :
+  original  (indicador original)    
+t1* 1.520312   
+
+   bias (sesgo, es el valor espearado de mi distribucion muestral, original-promedio de todos los valores de la muestral simulada,mi diferencia entre el original y el nuevo )
+0.04691979 
+
+   std. error (error, estandar)
+0.2226353
+
+##FUNCIONES QUE USAN LAS FUNCIONES DE BOOTSTRAP.
+Para entender cómo bootstrap utiliza funciones, vamos a explicar 
+notación un poco más complicada en R.
+Suponga que se tiene un vector de enteros obs=c(2,3,7)
+Suponga además que se tiene un vector x.
+Entonces, la notación x[obs] es un vector con los elementos x[2], x[3], y x[7].
+En dataframes (bases de datos) se puede utilizar de la siguiente manera:
+
+
+```{r}
+# Para vectores
+x = c(10,20,30,40,50)
+d = c(3,2,2)
+x[d]
+```
+
+
+```{r}
+# Para data frames
+D = data.frame(x=seq(10,50,10), y=seq(500,100,-100))
+D
+D[d,]
+#esto es lo que hace mi funcion boot
+```
+
+Ahora bien, cómo usa R esta función?  
+El paquete boot de R "llama" repetidamente a la función de estimación, 
+y en cada momento, la muestra de bootstrap es generada usando 
+un vector de índices enteros como el mencionado antes denominado d.
+
+```{r}
+samplemean = function(x, d) {
+  return(mean(x[d]))
+}
+samplemedian = function(x, d) {
+  return(median(x[d])) #Aqui se me genera la mediana de x 
+}
+samplemedian(x)
+```
+La función de estimacin óutiliza los datos en x y un vector de índices en d 
+que no se ve, pues la función boot es la que lo generaró.  En cada momento, 
+los datos x son los mismos, pero la muestra de bootstrap será diferente.
+En cada llamado, el paquete boot genera un nuevo conjunto de índices d.  
+La notación x[d] permite generar un nuevo vector (la muestra bootstrap), 
+la cual es dada a la función mean() o median().  
+Esto refleja muestreo con reemplazo desde el vector original de datos.
+
+```{r}
+x
+b = boot(x, samplemedian, R=1000)           # 1000 replicas
+```
+
+El objeto b que es estimado por boot() tiene una serie de subobjetos.  
+Escriba lo siguiente para que vea que genera.
+llamamos a b
+```{r}
+b
+```
+
+mi error estandar
+```{r}
+sd(b$t[,1]) #Tiene varios subobjetos, aqui estan todas las medianas de todas las remuestras
+```
+
+mi valor esperado
+```{r}
+mean(b$t[,1])
+```
+
+##Intervalos de confianza del boot
+```{r}
+ci = boot.ci(b, type="all") #type="percentile"
+ci
+```
+ledamos principalmente atencion al percentile
+
+```{r}
+hist(b$t[,1])
+```
+nuestro interes es el 'level percentile'. con type=percentile nos genera solo este dato 
+El subobjeto b$t es una matriz que contiene 1000 filas con todos los resultados 
+de la estimación.  La primera columna en ella es la mediana remuestreada.
+
+```{r}
+plot(b)
+```
+cuando vemos un qqplot en forma de gradas es que no tenemos continuidad
+Haciendo ejemplos con datos que uno tiene (bases de datos).
+Calcularemos un intervalo bootstrap para la razón de dos desviaciones estándar.
+
+```{r}
+sdratio = function(D, d) {
+  E=D[d,]
+  return(sd(E$x)/sd(E$y))
+}
+
+x = runif(100)
+y = 2*runif(100)
+D = data.frame(x, y)
+
+b = boot(D, sdratio, R=1000)
+b
+
+ci = boot.ci(b, type="all")
+ci
+plot(b)
+```
+
+
+```{r}
+#Ejemplo con la media acotada
+trimmedmean = function(x, d, trim=0) {
+  return(mean(x[d], trim/length(x)))
+}#con mean y trim lo que me hace es una acotada, con trim estoy quitando los 5 valores mas extremos ya que el tamano de x es de 100
+b = boot(x, trimmedmean, R=1000, trim=5) #Con este trim estamos quitando el 5 porciento de valores extremos 
+b
+```
+
+
+
+#PRUEBA DE HIPOTESIS PARA DOS POBLACIONES: Muestras independientes.
+
+El objetivo de este laboratorio es realizar las siguientes pruebas de hipótesis para dos poblaciones en R:
+_Prueba t
+_Wilcoxon (U Mann Whitney)
+_Kruskal Wallis
+_Kolmogorov Smirnov para 2 muestras independientes.
+_Proporciones
+_Chi-cuadrado
+_Test Fisher
+
+Cargar mhasbasico.Rdata
+```{r}
+rm(list=ls())
+setwd("C:/Users/cesar/Documents/")
+load(file="mhasbasico.Rdata")
+attach(mhasbasico)
+
+names(mhasbasico)
+
+
+```
+
+Estadísticas descriptivas de la variable ingreso
+```{r}
+summary(income.i) #Para generar los percentiles
+length(income.i)
+```
+
+##Para quitar ingreso ignorado NA's
+```{r}
+ingreso=na.omit(income.i)
+summary(ingreso)
+length(ingreso)
+#Esto nos ayuda a analizar los datos, ya que algunas funciones nos dan error al tener NA's
+```
+
+es preferible utilizar esta manera para evitar perder muchos datos
+```{r}
+dim(mhasbasico)
+
+mhasbasico2=
+  subset(
+  mhasbasico, 
+  is.na(income.i)==F
+  ) #Aqui estamos eliminando los NA's de los datos de otra forma 
+```
+
+```{r}
+#Especificamente en ingreso
+mhasbasico3=
+  na.omit(mhasbasico) 
+#Con este estoy eliminando todas las filas que tienen NA's como
+#hay muchas filas tienen NA's pierdo todos los datos por eso no estan aconsejable, ya que son TODAS las filas de los datos
+
+dim(mhasbasico2)
+dim(mhasbasico3)
+
+detach(mhasbasico)
+#Le hago attach a la nueva base de interes
+attach(mhasbasico2)
+```
+
+Recodificación de la variable migración
+
+```{r}
+library(car)
+table(a25)
+#1    2    8 => quiere decir sin respuesta 
+#263 2666  3 
+#migracion=as.factor(Recode(a25, "1=1; 2=0; 8=NA")) esta varible ya existe 
+t(t(table(migracion)))
+```
+
+migracion [,1]
+        0 2666=> mi grupo sin experiencia migratoria 
+        1  263=> mi grupo con experiencia migratoria
+
+
+##Prueba de levenetest
+Esta prueba es para saber si puedo suponer homocedasticidad
+Vamos a realizar una prueba t de diferencia de medias en ingreso(income.i)
+según migración
+
+H0: Var1=Var2
+H1: Var1<>Var2
+lo primero que hacemos es la prueba de hipotesis para comparar varianzas
+```{r}
+#La prueba de levenetest es robusta osea aunque yo viole ciertos supuestos aun asi le puedo creer su resultado, ante el supuesto de normalidad, estan es una variacion de la prueba t, pongo primero la cuantitativa, y luego la cuanlitativa o las as.factor
+
+leveneTest(
+  income.i,# Primero la cuantitativa
+  migracion # Luego la variable tipo factor
+  )
+
+```
+Levene's Test for Homogeneity of Variance (center = median)
+        Df F value => (fcalculado)  Pr(>F) => (mi p-value)    
+group    1  11.115                 0.0008671 *** 
+      2925
+##t.test
+Esta es mi prueba parametrica 
+H0: Mu1=Mu2   ===>  Mu1-Mu2=0
+H1: Mu1<>Mu2
+
+```{r}
+
+t.test(
+  income.i[migracion==0],
+  income.i[migracion==1], 
+  alternative= "two.sided",
+  mu=0, #Por la equivalencia de la H0 
+  var.equal=F #Aqui es false porque rechace la H0 de leventest de lo contrario seria T
+  )
+#Interpretacion del codigo:
+#income.i[migracion==0] tome todos los ingresos de los no migrantes
+#income.i[migracion==1] tome todos los ingresos de los migrantes
+```
+apesar de no poder supor normalidad podemos creer los resultados de la misma ya que el tamaño de los datos que se asemeja a una normal
+en este caso no hay suficiente evidencia estadistica para rechazar la hipotesis nula de que el ingreso de los no migrantes es igual al ingreso de los migrantes porque pvalue>alfa
+
+```{r}
+shapiro.test(income.i[migracion==0])
+
+shapiro.test(income.i[migracion==1])
+```
+con lo anterior vemos que no tenemos normalidad por ello usamos una prueba no parametrica 
+##Prueba de Wilcoxon-Mann-Whitney no parametrica
+
+H0: Mu1=Mu2   ==>  H0: F(X1)=F(X2)
+H1: Mu1<>Mu2  ==> H1: F(X1)<> F(X2)
+H0: Mu1=Mu2 ==>  Mu1-Mu2=0
+
+```{r}
+wilcox.test(
+  income.i[migracion == 0],
+  income.i[migracion == 1],
+  alternative= "two.sided",
+  mu = 0,
+  paired = F # T= wilcoxon para muestras pareandas F= manWhitney para independientes
+  )
+```
+
+##Kruskal - Wallis
+Esta es la generalizacion de la U de manW y se llega ala misma conclusion cuando tenemos dos grupos
+```{r}
+kruskal.test(
+  income.i #Mi variable cuantitativa
+  ~
+    migracion #Mi variable cualitativa
+  )
+```
+
+Noten que el pvalue es igual en wilcox.test que en kruskal.test
+
+Que hubiera pasado si las variancias hubieran sido iguales
+osea no hubiera analizado correctamente los supuestos
+
+```{r}
+t.test(
+  income.i[migracion == 0],
+  income.i[migracion == 1],
+  alternative= "two.sided",
+  mu=0, 
+  var.equal=T #Note el supuesto de varianzas iguales
+  )
+```
+
+##Comparar con ANOVA(analisis de varianza): Ver pvalue
+el analisis de la varianza es la generalizacion de la prueba t suponiendo varianzas iguales, homoestasidad, basicamente es la misma prueba con diferentes calculos
+
+anova se usa cuando suponemos varianzas iguales
+
+```{r}
+anova.ingreso=(
+  lm(income.i~migracion)
+  )
+anova(anova.ingreso)
+```
+
+Otra prueba no paramétrica: alternativa a su parametrica t 
+si no tengo homocedasticidad no es aconsejable 
+##KolmogorovSmirnov para dos muestras independientes
+H0: Mu1=Mu2   ===> H0: F(Y1)=F(Y2)
+H1: Mu1<>Mu2  ===> H1: F(Y1)<>F(Y2)
+
+```{r}
+ks.test(
+  income.i[migracion == 0],
+  income.i[migracion == 1]
+  )
+```
+Ahora analizaremos pruebas de hipótesis para dos proporciones
+
+```{r}
+median(income.i, na.rm=TRUE)
+
+#ingreso.median=recode(income.i, "-2000000:1252.083=0; 1252.083:100000000=1")
+
+t(t(table(ingreso.median)))
+```
+
+```{r}
+ingreso.por.migracion=table(ingreso.median,migracion)
+
+ingreso.por.migracion
+tapply(ingreso.median,migracion,mean)
+
+```
+
+Esta es mi prueba de hipotesis y la analizamos con lo siguiente 
+##Prueba Chi cuadrado
+
+
+H0: P1=P2
+H1: P1<>P2
+
+```{r}
+chisq.test(ingreso.por.migracion)
+```
+
+
+##Prueba exacta de Fisher, prueba no parametrica
+aconsejable si tengo tamanos pequenos 
+
+```{r}
+fisher.test(ingreso.median,migracion)
+
+fisher.test(ingreso.por.migracion)
+
+table(migracion)
+ingreso.por.migracion
+```
+
+##prueba z para proporciones
+##Prueba para dos proporciones
+
+```{r}
+#prueba z para proporciones
+prop.test(c(1327,136),# Estos son los unos 
+          c(2664,263)) #Estos son los totales
+#prop.test(c(1327,136),c(1337+1327,127+136))
+```
+
+#ANALISIS DE VARIANCIA
+Analizamos el siguiente ejemplo expuesto en clase:
+El objetivo es realizar el ejercicio sobre crecimiento de jacarandas, 
+cuyos datos están en el libro de Gutiérrez Espeleta (1995). 
+
+"Supongamos que se quiere determinar los efectos de cinco técnicas de preparación de sitio 
+sobre el crecimiento juvenil de plántulas de Jacaranda copaia (gallinazo) cuando se planta 
+en monocultivo.  Se establecen 25 parcelas y cada técnica de preparación es asignada 
+a 5 parcelas seleccionadas al azar.  Las parcelas se plantan a mano y al final del tercer año 
+se mide la altura de cada uno de los 25 árboles.
+
+1)	Haga un análisis exploratorio de variabilidad y normalidad con gráficos de caja, 
+y después haga pruebas de homogeneidad de variancias (levene y bartlett) y de normalidad condicional.
+
+## Dato importante
+levene y bartlett puede analizar mas de dos grupos, barlett analiza con desviaciones al cuadrado y levene con desviacion robusta, por ello si no podemos suponer normalidad, preferimos levene ante barlet, si si podemos suponer normalidad podemos utilizar cualquiera da las dos ya que los resultados son similares
+
+levene y bartlett puede analizar varios grupos, mas de dos, su mayor diferencia es que barlett analiza con desviaciones al cuadrado mientras que levene analiza varianzas absolutas
+
+Los datos
+```{r}
+jacaranda=c(4.5, 4.8, 3.9, 3.3, 4.2, 4.2, 4.2, 3.6, 3.9, 3.6, 3.6, 3.9, 3.3, 3.0, 3.6, 3.9, 4.5, 3.6, 3.6, 3.0, 3.9, 4.2, 3.0, 3.3, 3.3)
+```
+
+Necesariamente tengo que convertirala a asfactor, porque la funcion que nosotros vamos a usar es via el modelo lineal general
+El analicis de varianza implica que uno de los dos es cualitativo 
+```{r}
+grupofactor=as.factor(c(1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5)) 
+#Asi definimos que son grupos
+```
+
+Lo siguiente no lo necesitamos por el momento
+El siguiente bloque es para corroborar los datos con respecto al libro 
+bloque=as.factor(c(1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5))
+
+
+Pasamos los datos en un data frame
+```{r}
+jacar=
+  data.frame(
+    cbind(jacaranda,grupofactor)
+    )
+```
+
+##Análisis exploratorio de variabilidad mediante grafico de cajas
+```{r}
+etiquetas=c("S1","S2","S3","S4","S5") #Nombre de las etiquetas
+
+boxplot(
+  jacaranda~grupofactor, 
+  names=etiquetas
+  )
+```
+
+##Pruebas de homogeneidad de varianzas
+Hipotesis nula y alternativa, para las dos pruebas son las mismas hipotesis
+
+H0: Sigma1=sigma2=sigma3=sigma4=sigma5 
+H1: Al menos un sigma_i<>sigma_j
+
+##leveneTest
+```{r}
+library(car) #Necesaria para usar la prueba de levenetest
+leveneTest(jacaranda, grupofactor)
+```
+
+##bartlett
+```{r}
+bartlett.test(jacaranda, grupofactor)
+```
+
+##lm: Primera función
+
+```{r}
+anova1=lm(jacaranda~grupofactor)
+anova1
+```
+
+Análisis de supuestos
+Análisis de residuos.  
+Aquí se estudia normalidad.
+
+Mediante un grafico 
+```{r}
+qqPlot(anova1$residuals)
+```
+
+Normalidad mediante la prueba 
+La hipotesis nula es que los errores se distribuyen normalmente, estamos verificando si los datos se distribuyen normal
+H0: los errores se distribuyen normalmente
+
+```{r}
+shapiro.test(anova1$residuals)
+```
+##Otro grafico para analizar homoestasticidad con los residuos 
+en un analisis de varianza los valores predichos corresponden a los promedios de cada grupo 
+```{r}
+plot(anova1$fitted.values,anova1$residuals)
+```
+bucamos en el anterior grafico, que todas las lineas tengan una altura similar, que formen un rectangulo 
+
+##Ahora propiamente el Análisis de Variancia
+
+```{r}
+summary(anova1)
+```
+
+H0: Mu1=Mu2=Mu3=Mu4=Mu5
+H1: Al menos un MU_i <> Mu_j
+```{r}
+anova(anova1)
+```
+
+pf es equivalente a la funcion des.f de excel
+```{r}
+1-pf(5.8514,4,20)#Equivalente a DIS.F en excel 
+```
+
+El otro commando es el aov.  Permite utilizar el comando TukeyHSD
+```{r}
+anova3=
+  aov(jacaranda~grupofactor)
+anova(anova3)
+```
+Con los resultados hay suficiente evidencia estadistica, para rechazar la hipotesis nula
+
+El aov se usa para aprovechar una función preprogramada para hacer comparaciones múltiples de Tukey
+
+##TukeyHSD
+Para poder utilizarla tuve que haber utilizado la funcion aov
+
+H0:   Mu1=Mu2, Mu1=Mu3, Mu1=Mu4, Mu1=Mu5, Mu2=Mu3, Mu2=Mu4, Mu2=Mu5, Mu3=Mu4, Mu3=Mu5,          Mu4=Mu5
+```{r}
+TukeyHSD(anova3)
+```
+En este caso se rechaza: Mu2=Mu3, Mu2=Mu4, Mu2=Mu5 
+por lo siguiente:
+3-2 -0.84 -1.5307137 -0.14928631 0.0125769
+4-2 -0.90 -1.5907137 -0.20928631 0.0070635
+5-2 -0.78 -1.4707137 -0.08928631 0.0221607
+
+en este caso estas se rechazan osea que el tratamiento 2 es mejor que el 3,4,5 
+pero no mejor que el 1 por lo siguiente: 
+
+2-1  0.30 -0.3907137  0.99071369 0.6944089
+solo en 2-1 no se rechaza la hipotesis
+
+Al agricultor lo que le puedo decir es que el tratamiento es 2 mejor que el 3,4,5
+
+
+##Oneway.test cuando se viola el supuesto de homoscedasticidad
+Qué pasa cuando se viola el supuesto de homoscedasticidad.
+Se usa la siguiente función: oneway.test.
+
+H0: Mu1=Mu2=Mu3=Mu4=Mu5
+H1: Al menos un MU_i <> Mu_j
+
+```{r}
+oneway.test(jacaranda~grupofactor)
+```
+
+
+Y si se rechaza la H0, se empieza a hacer un ANDEVA heteroscedástico para cada par, corrigiendo el p-value
+
+Los p-value se comparan con 0.05/10, o sea, se rechaza la igualdad de medias si
+el p-value en cada prueba es menor a 0.005.  
+Se divide el alfa entre 10 porque hay 10 comparaciones.  Si fueran solo 3 comparaciones
+se divide nada más entre 3.
+
+correccion de bonferroni 
+```{r}
+num.grupos=
+   dim(table(grupofactor))
+
+matriz.dif.medias=
+    matrix(
+    rep(NA,num.grupos^2),
+    nrow=num.grupos
+    )
+
+matriz.pvalues=
+  matrix(
+    rep(NA,num.grupos^2),
+    nrow=num.grupos
+    )
+
+#Combinatoria 2 de 5, que serían todas las comparaciones por realizar.
+  total.cells=
+    choose(num.grupos,2)
+  
+for (i in 1:num.grupos) {
+  
+  for (j in 1:num.grupos) {
+    
+    if (i==j) {
+      
+      matriz.dif.medias[i,j]=NA
+      matriz.pvalues[i,j]=NA
+      
+    }
+    else {
+      
+      matriz.dif.medias[i,j]=
+        mean(
+          jacaranda[grupofactor == i]
+          ) - mean(
+            jacaranda[grupofactor == j]
+            )
+      
+      prueba=
+        oneway.test(
+          jacaranda[grupofactor==i 
+                    |
+                    grupofactor==j]~grupofactor[grupofactor==i
+                    |
+                    grupofactor==j]
+          )
+      
+      multiplic = 
+        prueba$p.value*total.cells
+      
+      ifelse(
+        multiplic>1,  
+        matriz.pvalues[i,j]<-1,
+        matriz.pvalues[i,j]<-multiplic
+        )
+    }
+    
+    
+  }
+  
+  
+  
+}
+
+colnames(matriz.dif.medias)=etiquetas
+rownames(matriz.dif.medias)=etiquetas
+colnames(matriz.pvalues)=etiquetas
+rownames(matriz.pvalues)=etiquetas
+
+matriz.dif.medias
+matriz.pvalues
+
+```
+aqui lo que encontramos es que el S2 es distinto a S3 y S4 pero no a S5 porque son las Ho que se rechazan 
+
+##Qué pasa cuando se viola el supuesto de normalidad o de homoscedasticidad, especialmente por valores extremos
+
+##kruskal.test
+```{r}
+kruskal.test(jacaranda~grupofactor)
+```
+
+Si se rechaza H0 en el Kruskal Wallis, ser recomienda usar la prueba de Dunn 
+con el método de Bonferroni.
+
+##dunn.test
+```{r}
+library(dunn.test) #Libreria necesaria
+dunn.test(jacaranda,grupofactor,method="bonferroni")
+```
+
+
+#MODELOS DE REGRESION Y MODELO LINEAL GENERAL
+
+Los objetivos son:
+a) Ofrecer una introducción a la estimación de ecuaciones de regresión
+b) Mostrar como el Modelo Lineal General resume la mayoría de técnicas paramétricas
+estudiadas en este curso.
+
+La única librería por usar es car.
+
+Abrimos el archivo antropomexicano
+```{r}
+library(car)
+
+#Cargar base de datos
+rm(list=ls())
+setwd("C:/Users/cesar/Documents/")
+load(file="antropomexicano.Rdata")
+```
+
+```{r}
+attach(antropomexicano)
+names(antropomexicano)
+```
+
+
+Verificar valores perdidos y recodificarlos
+```{r}
+table(peso)
+peso2=Recode(peso,"995:999=NA")
+table(altura)
+altura2=Recode(altura,"995:999=NA")
+table(cintura)
+cintura2=Recode(cintura,"995:999=NA")
+table(cadera)
+cadera2=Recode(cadera,"995:999=NA")
+```
+
+
+
+Verificar supuestos de asociación lineal
+
+la regrecion tiene tres supuestos;
+
+-linealidad
+-homocedasticidad
+-normalidad
+
+Gráficos bivariados
+```{r}
+par(mfrow=c(1,3))
+plot(altura2,peso2)
+plot(cintura2,peso2)
+plot(cadera2,peso2)
+```
+
+
+
+Estimamos el modelo de regresion metiéndolo en un objeto
+siempre que queremos estimar un regrecion lineal tenemos que utilizar lm()
+
+```{r}
+peso.regresion=
+  lm(
+    peso2~altura2+cintura2+cadera2 #Aqui decimos que el peso depende de la altura citura y cadera 
+    )
+summary(peso.regresion)
+```
+el ultimo p-value, no toma en cuenta B_0=0 porque solo toma en cuenta las pendientes
+
+En el modelo tenemos cinco contrastes de hipótesis:
+
+H0: Beta_0=0
+H0: Beta_1=0
+H0: Beta_2=0
+H0: Beta_3=0
+H0: Beta_1=Beta_2=Beta_3=0   #Por lo tanto almenos un Beta_i<>0
+ 
+La homestacidad, es el 7.106, estimacion de la varianza unica
+si yo lo elevo al cuadrado obtengo es el sigma ciuadrado techito que seria la varianza unica de los errores 
+
+Las ecuaciones serían:
+Peso_techo= -124.247 + 0.673*altura+0.392*cintura+0.464*cadera
+
+Estimamos el ANDEVA asociado a la ecuación de regresión
+
+```{r}
+anova(peso.regresion)
+```
+
+Residuals 2501 126289 *50* => este es mi cuadrado medio del error     
+50 en el examen nos pueden preguntar intervalos de confianza sobre este valor
+para sacar el resultado
+
+anova(peso.regresion)[4:3] es de esta manera y para sacarle la raiz seria:
+sqrt(anova(peso.regresion)[4:3])
+
+##Analicemos supuestos del modelo peso.regresion
+Normalidad condicional
+
+```{r}
+qqPlot(peso.regresion$residuals)
+```
+
+```{r}
+shapiro.test(peso.regresion$residuals)
+```
+
+
+
+##Ahora homoscedasticidad
+Se busca una nube aproximadamente horizontal
+
+```{r}
+plot(peso.regresion$fitted.values, peso.regresion$residuals)
+```
+
+##Analizar colinealidad
+matriz de correlacion donde la primera es una variable dependiente 
+```{r}
+round(
+  cor(
+    cbind(peso2,altura2,cintura2,cadera2),
+    use="pairwise.complete.obs"),
+  3)
+
+```
+
+
+Ahora supongamos que queremos ver las diferencias por sexo
+Primero transformemos sexo a factor y estimemos un modelo de regresión nada más con sexo
+
+```{r}
+sexo.factor=as.factor(sexo)
+
+peso.regresion2 = 
+  lm(peso2~sexo.factor)
+
+summary(peso.regresion2)
+```
+
+Noten que:
+H0: Beta_1=0  ==> H0: Mu1=Mu2  ==> H0: Mu1-Mu2=0 ===> H0: Mu[mujeres]-Mu[hombre]=0
+
+Ahora recodifiquemos sexo en una variable binaria que es igual a 1 si es mujer
+
+```{r}
+#Esto fue lo que hizo R cuando hicimos el sexo as.factor
+mujer=
+  Recode(sexo,"1=0;2=1")
+
+peso.regresion3=
+  lm(peso2~mujer)
+
+summary(peso.regresion3)
+```
+
+Veamos los dos anovas.  Vean que son equivalentes.
+
+```{r}
+t.test(
+  peso2[sexo==1],
+  peso2[sexo==2],
+  paired=F,Mu=0,
+  var.equal=T
+  )
+
+anova(peso.regresion2)
+anova(peso.regresion3)
+```
+
+Analicemos supuestos del modelo peso.regresion2
+
+Normalidad condicional
+
+```{r}
+qqPlot(peso.regresion2$residuals)
+shapiro.test(peso.regresion2$residuals)
+```
+
+Ahora homoscedasticidad
+
+```{r}
+plot(peso.regresion2$residuals~peso.regresion2$fitted.values)
+```
+
+
+Ahora estimemos con educacion
+Recodifiquemos educacion como lo teníamos antes y plantémoslo como factor
+
+H0: Beta_1=Beta_2=0  ==>  H0: Mu1=Mu2=Mu3
+```{r}
+educacion=
+  Recode(
+    escola,
+    "0=0; 1:6=1; 7:19=2; 99=NA"
+    )
+
+educacion=as.factor(educacion)
+
+peso.regresion4=
+  lm(
+    peso2~educacion
+    )
+
+summary(peso.regresion4)
+anova(peso.regresion4)
+```
+aqui podemos ver que el peso promedio de los mexicanos sin educacion es de 64.7
+
+
+Análisis de supuestos modelo peso.regresion4
+
+Normalidad condicional
+
+```{r}
+qqPlot(peso.regresion4)
+shapiro.test(peso.regresion4$residuals)
+```
+
+
+Ahora homoscedasticidad
+```{r}
+par(mfrow=c(1,2))# No tomar en cuenta
+plot(peso.regresion4$residuals~peso.regresion4$fitted.values)
+```
+
+La homoscedasticidad se puede observar también con un gráfico boxplot
+```{r}
+boxplot(peso2~educacion)
+```
+
+A qué sería equivalente un modelo de regresión en el que no tenemos una variable indep.
+```{r}
+peso.regresion5=lm(peso2~1)
+summary(peso.regresion5)
+```
+
+
+H0: Beta_0=0  ==> H0: Mu=0
+
+Análisis de supuestos modelo peso.regresion5
+Normalidad condicional
+
+```{r}
+qqPlot(peso.regresion5$residuals)
+shapiro.test(peso.regresion5$residuals)
+```
+
+
+Ahora homoscedasticidad
+
+```{r}
+plot(peso.regresion5$residuals~peso.regresion5$fitted.values)
+```
+
+
+Por último. 
+Qué tal si planteamos la siguiente prueba de hipótesis. 
+Como hipótesis nula, que el peso promedio en la población es de 68Kg.
+
+H0: Beta_0-68=0  ===> H0: Mu=68
+```{r}
+peso.regresion6=
+  lm(
+    peso2-68~1
+    )
+
+summary(peso.regresion6)
+
+
+t.test(peso2,mu=68)
+```
+
+Análisis de supuestos modelo peso.regresion6
+Normalidad condicional
+
+
+```{r}
+qqPlot(peso.regresion6$residuals)
+shapiro.test(peso.regresion6$residuals)
+```
+
+
+
+
+

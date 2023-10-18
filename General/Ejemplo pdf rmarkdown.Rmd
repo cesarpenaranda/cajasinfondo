@@ -1,0 +1,158 @@
+---
+title: "Diagrama de Barras"
+author: "Renzo Cáceres Rossi"
+date: "2022/01/07"
+output: 
+  pdf_document:
+    toc: TRUE
+lang: Es-es    
+always_allow_html: yes
+---
+
+\pagebreak
+
+<!-- Añadir comentarios a nuestro documento RMarkdown - HTML Tags -->
+
+```{r setup,include=FALSE}
+library(reticulate)
+
+library(ggplot2)
+
+library(lattice)
+
+library(vembedr)
+
+
+knitr::opts_chunk$set(echo=TRUE,message = FALSE,warning = FALSE)
+```
+
+## Diagrama de Barras - Bar Charts
+
+<p align="justify">
+
+El diagrama de barras (**Bar Chart**) es un gráfico estadístico que nos permite representar la distribución de frecuencias de variables cualitativas y cuantitativas discretas,nuestro objetico es pasar del lápiz y papel, al uso del lenguaje de programación R y su entorno de desarrollo (IDE) RStudio, compartimos la siguiente imagen.
+
+</p>
+
+<center>
+
+![](diagrama_barras_amano.jpg){width=400}
+
+</center>
+
+## Data set - mtcars
+
+<p align="justify">
+
+Para la creación de los diagramas de barras (**Bar Charts**) que se muestran en el presente informe, tomaremos como base el **data set mtcars**, compuesto por 11 variable y 32 observaciones relacionadas al mundo automotor estadounidense de la década de los 70`s, nos enfocaremos en dos variables **cyl** (cilindros) y **gear** (engranajes), como se muestra a continuación.
+
+</p>
+
+```{r mtcars}
+summary(mtcars)
+
+summary(mtcars$cyl)
+
+summary(mtcars$gear)
+
+# La función summary() nos prorpociona un resumen estadístico del dataset objeto de estudio.
+```
+
+## Diagrama de Barras - barplot()
+
+<p align="justify">
+
+La función `barplot()` nos permite crear diagramas de barras (**Bar Charts**) en el lenguaje de programación R; tomando como base la variable **cyl** (cillindros) del **data set mtcars**, como se muestra a continuación.
+
+</p>
+
+```{r barplot,fig.align='center'}
+x <- table(mtcars$cyl)
+
+colores <- c("orange","blue","purple")
+
+barplot(x,xlab="Cilindros",ylab="Frecuencias",main="Número de Cilindros",col=colores)
+```
+
+
+## Diagrama de Barras - ggplot2
+
+<p align="justify">
+
+**ggplot2** es un paquete del lenguaje de programación R, que nos permite crear gráficos estadísticos de excelente calidad, vamos a utilizarla para crear un diagrama de barras (**Bar Chart**), tomando como base la variable **cyl** (cilindros) del **data set mtcars**, como se muestra a continuación.
+
+</p>
+
+```{r ggplot2,fig.align='center'}
+ggplot(mtcars,aes(cyl)) + geom_bar(fill=colores) + labs(x="Cilindros",y="Frecuencias",title="Número de Cilindros") + theme_dark()
+```
+
+## Diagrama de Barras - Lattice
+
+<p align="justify">
+
+**Lattice** es un paquete del lenguaje de programación R, que nos permite crear gráficos estadísticos de muy buena calidad, crearemos un diagrama de barras (**Bar Chart**) tomando como base el data set mtcars, enfocandonos en su variable **cyl** (cilindros), como se muestra a continuación.
+
+</p>
+
+```{r lattice,fig.align='center'}
+
+barchart(x,xlab="Cilindros",ylab="Frecuencias",main="Número de Cilindros",col=colores,horizontal=FALSE)
+
+```
+
+## Variables cyl - gear
+
+<p align="justify">
+
+A continuación, vamos a crear dos diagramas de barras (**Bar Charts**) tomando como base las variables **cyl** (cilindros) y **gear** (engranajes) del **data set mtcars** para unirlos en un sólo gráfico.
+
+</p>
+
+```{r cyl_gear,fig.align='center'}
+
+par(mfrow=c(1,2))
+
+barplot(x,xlab="Cilindros",ylab="Frecuencias",main="Número de Cilindros",col=colores)
+
+y <- table(mtcars$gear)
+
+barplot(y,xlab="Engranajes",ylab = "Frecuencias",main="Número de Engranajes",col=rainbow(3))
+```
+
+
+## Python - Bar Chart
+
+```{python,message=FALSE,warning=FALSE,fig.align='center'}
+import matplotlib.pyplot as plt
+ 
+eje_x = [4, 6, 8]
+ 
+eje_y = [11,7,14]
+ 
+plt.bar(eje_x, eje_y,color=["orange","blue","purple"])
+ 
+plt.ylabel('Frecuencias')
+ 
+plt.xlabel('Cilindros')
+ 
+plt.title('Número de Cilindros')
+
+plt.show()
+```
+
+## YouTube - Tutorial - Bar Chart
+
+<p align="justify">
+
+El siguiente tutorial tomado de la plataforma [YouTube](https://www.youtube.com), muestra como crear un diagrama de barras (**Bar Charts**) en el lenguaje de programación R, haciendo uso de la función `barplot()` y el paquete **ggplot2**.
+
+</p>
+
+```{r embed_videos}
+
+embed_url("https://www.youtube.com/watch?v=EkxRj02iaLk&t=114s") %>% 
+  use_align("center")
+
+```
+

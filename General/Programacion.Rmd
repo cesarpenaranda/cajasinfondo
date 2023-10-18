@@ -1,0 +1,532 @@
+---
+title: "CONCEPTOS.proga"
+author: "CESAR"
+date: '2022-05-26'
+output: html_document
+---
+#for y while, y algunas funciones
+
+#while
+Estructura 
+Donde "i" es el contador While(condicion){(ejecucion),(contador)}
+```{r}
+i=0
+while(i<10){
+  print(i)
+  i=i+1
+}
+```
+
+#print()
+para imprimir print (variable a imprimir)
+#sample()
+genera numeros aleatorios enteros, sample(el rango "1:10", cantidad de numeros)
+#mean()
+me calcula el promedio de la variable u objeto, mean(objeto)
+```{r}
+x= sample(0:100,10)
+print(x)
+print(mean(x))
+```
+
+#for
+La estructura for nos permite ejecutar un bucle (loop), realizando una operación para cada elemento de un conjunto de datos.
+Su estructura es la siguiente:
+```{r}
+for(elemento in objeto) {
+  operacion_con_elemento
+}
+```
+
+"PARA" cada elemento "EN" un objeto, haz la siguiente operación.
+Al escribir un bucle for la parte que corresponde al elemento la podemos llamar como nosotros deseemos, pero la parte que corresponde al objeto debe ser el nombre de un objeto existente.
+```{r}
+objeto <- 1:10
+
+for(elemento in objeto) {
+  operacion_con_elemento
+}
+```
+
+Tradicionalmente se usa la letra i para denotar al elemento.
+```{r}
+for(i in objeto) {
+  operacion_con_elemento
+}
+```
+
+Ejemplo
+Vamos a obtener el cuadrado de cada uno de los elementos en un vector numérico del 1 al 6, que representa las caras de un dado.
+```{r}
+dado <- 1:6
+```
+
+```{r}
+for(cara in dado) {
+ x=dado^2 
+} 
+print(x)
+```
+
+```{r}
+for(numero in 1:10) {
+  print(numero)
+}
+```
+Pasamos por los valores de dado, cara por cara. La primera cara será igual a 1, la segunda a 2, y así sucesivamente hasta el 6.
+
+Podemos usar estos valores para asignar cada valor resultante de nuestras operaciones a una posición específica en un vector, incluso si este está vacio.
+
+Creamos un vector vacío, asignándole como NULL como valor.
+```{r}
+mi_vector <- NULL
+```
+
+Ejecutamos nuestro bucle.
+```{r}
+for(cara in dado) {
+  mi_vector[cara] <- cara ^ 2
+}
+```
+
+Aunque no fueron mostrados en la consola, los resultados han sido asignados al objeto mi_vector
+```{r}
+mi_vector
+```
+
+Ejemplo
+- guarden en un vector 10 números aleatorios enteros entre 0 y 100 
+calculen el promedio de los mismos.
+-ejercicio de preguntar al usurio 10 numeros aleatorios, agregarles 
+ruido y encontrar la mayor diferencia entre ellos.
+```{r}
+#guarden en un vector 10 números aleatorios enteros entre 0 y 100 
+#calculen el promedio de los mismos 
+v = NULL
+for( i in 1:10 ) {
+  v = c( v , round( runif(1, 0, 100 )   ) ) 
+}
+print( mean( v )  )
+```
+
+
+```{r}
+#solicitar al usuario 10 números , agregarles ruido, y encontrar
+#la mayor diferencia entre ellos
+
+v = NULL
+for( i in 1:10 ) {
+  var = as.numeric( readline("Digite número: ") ) + runif( 1, -1, 1)
+  v = c( v , var)
+} 
+print(max(v)-min(v))
+
+```
+
+#rm(list=ls())
+Me elimina la lista de objetos
+```{r}
+rm(list=ls())
+```
+
+#Funciones y matrices en R 
+
+creamos un vector de la siguiente manera: 
+#c(  x, y  ,..., z )
+tambien se la llama concatenar datos.
+
+Ejemplo
+```{r}
+k <- c(0.5, 1) # k es un  vector
+k[1] # es 0.5 (los vectores en R inician en 1 )
+k[2] # es 1
+```
+
+#mean(x)
+Retorna el promedio del objeto pasado como parámetro
+
+Ejemplo
+```{r}
+k <- c(0.5, 1, 3, 1) # k es un  vector
+print(  mean( k )  )
+```
+
+#sum(x)
+Retorna las suma de los elementos 
+
+Ejemplo 
+```{r}
+k <- c(0.5, 1, 3, 1) # k es un  vector
+print(sum(k))
+```
+
+#min(x) y max(x)
+Retornan el índice del objeto, mayor y menor de un vector
+```{r}
+k <- c(0.5, 1, 5, 1) # k es un  vector
+print(  max( k )  ) # Retora el número 3, haciendo referencia a la posición del 5
+```
+
+#var(x)
+Retorna la varianza de los datos del objeto
+
+Ejemplo
+```{r}
+k <- c(0.5, 1, 5, 1) # k es un  vector
+print(  var( k )  ) # Retora el número 3, haciendo referencia a la posición del 5
+```
+
+#sort(x)
+ordena los elementos de x en orden ascendente; para hacerlo en orden descendente: rev(sort(x))
+
+Ejemplo
+```{r}
+k <- c(0.5, 1, 5, 1) # k es un  vector
+print(  sort( k )  ) # Retora el vector de manera ordenada
+```
+
+#runif(cantidad, min, max )
+Genera una cantidad de números aleatorios entre min y  max 
+
+Ejemplo
+```{r}
+runif(10,min = 0,max = 60)
+```
+
+#sample(vector, cantidad, reemplazo )
+
+Seleccionar una cantidad de números aleatorios (muestra) de un conjunto de números (vectores) con o sin reemplazo
+
+Ejemplo
+```{r}
+sample(20:60,10,replace = T)
+```
+
+#roud(vector,numero de decimales)
+redondea los numeros a la cantidad de decimales deceada
+```{r}
+round(runif(10,min = 0,max = 10),2)
+```
+
+#matrix()
+Creamos matrices en R con la función matrix() acepta dos argumentos, nrow y ncol. Con ellos especificamos el número de renglones y columnas que tendrá nuestra matriz.
+
+Ejemplo
+```{r}
+# Un vector numérico del uno al doce
+1:12
+```
+
+```{r}
+# matrix() sin especificar renglones ni columnas
+matrix(1:12)
+```
+
+```{r}
+# Tres renglones y cuatro columnas
+matrix(1:12, nrow = 3, ncol = 4)
+```
+
+```{r}
+# Cuatro columnas y tres columnas
+matrix(1:12, nrow = 4, ncol = 3)
+```
+
+```{r}
+# Dos renglones y seis columnas
+matrix(1:12, nrow = 2, ncol = 6)
+```
+
+IMPOTANTE:
+Los datos que intentemos agrupar en una matriz serán acomodados en orden, de arriba a abajo, y de izquierda a derecha, hasta formar un rectángulo.
+Si multiplicamos el número de renglones por el número de columnas, obtendremos el número de celdas de la matriz. En los ejemplo anteriores, el número de celdas es igual al número de elementos que queremos acomodar, así que la operación ocurre sin problemas.
+Cuando intentamos acomodar un número diferente de elementos y celdas, ocurren dos cosas diferentes.
+Si el número de elementos es mayor al número de celdas, se acomodarán todos los datos que sean posibles y los demás se omitirán.
+
+```{r}
+matrix(1:12, nrow = 3, ncol = 3) #Matriz del 1 al 12 con tres columnas y tres filas
+#observe como se omiten datos
+```
+
+Si, por el contrario, el número de celdas es mayor que el número de elementos, estos se reciclaran. En cuanto los elementos sean insuficientes para acomodarse en las celdas, R nos devolverá una advertencia y se empezaran a usar los elementos a partir del primero de ellos
+```{r}
+matrix(1:12, nrow = 5, ncol = 4) #observe como se reciclan valores
+```
+
+Otro procedimiento para crear matrices es la unión de vectores con las siguientes funciones:
+
+#cbind() para unir vectores, usando cada uno como una columna.
+#rbind() para unir vectores, usando cada uno como un renglón.
+De este modo podemos crear cuatro vectores y unirlos para formar una matriz. Cada vector será un renglón en esta matriz.
+Creamos cuatro vectores, cada uno de largo igual a cuatro.
+
+Ejemplo
+```{r}
+vector_1 <- 1:4
+vector_2 <- 5:8
+vector_3 <- 9:12
+vector_4 <- 13:16
+```
+
+#rbind()
+Usamos rbind() para crear un matriz, en la que cada vector será un renglón.
+```{r}
+matriz <- rbind(vector_1, vector_2, vector_3, vector_4)
+matriz
+```
+
+#cbind()
+Si utilizamos cbind(), entonces cada vector será una columna.
+```{r}
+matriz <- cbind(vector_1, vector_2, vector_3, vector_4)
+matriz
+```
+
+Al igual que con matrix(), los elementos de los vectores son reciclados para formar una estructura rectangular y se nos muestra un mensaje de advertencia.
+```{r}
+# Elementos de largo diferente
+vector_1 <- 1:2
+vector_2 <- 1:3
+vector_3 <- 1:5
+
+matriz <- cbind(vector_1, vector_2, vector_3)
+matriz
+```
+
+Las matrices pueden contener NAs.
+Creamos dos vectores con un NA en ellos.
+
+Ejemplo
+```{r}
+vector_1 <- c(NA, 1, 2)
+vector_2 <- c(3,  4, NA)
+```
+
+Creamos una matriz con rbind()
+```{r}
+matriz <- rbind(vector_1, vector_2)
+
+# Resultados
+matriz
+```
+Como NA representa datos perdidos, puede estar presente en compañía de todo tipo de datos.
+
+#Propiedades de las matrices
+Las matrices y arrays son estructuras que sólo pueden contener un tipo de datos, Su clase es igual a matriz (matrix) o array(conjunto de datos) segun corresponda.
+
+Verificamos esto usando la función 
+#class().
+```{r}
+mi_matriz <- matrix(1:10)
+
+class(mi_matriz)
+```
+
+#dim()
+Las matrices y arrays pueden tener más de una dimensión.
+Obtenemos el número de dimensiones de una matriz o array con la función dim(). Esta función nos devolverá varios números, cada uno de ellos indica la cantidad de elementos que tiene una dimensión.
+
+Ejemplo
+```{r}
+mi_matriz <- matrix(1:12, nrow = 4, ncol = 3)
+dim(mi_matriz)
+```
+
+Cabe señalar que si usamos dim() con un vector, obtenemos NULL. Esto ocurre con todos los objetos unidimensionales
+Ejemplo
+```{r}
+mi_vector <- 1:12
+
+dim(mi_vector)
+```
+
+#Operaciones con matrices
+las operaciones aritméticas también son vectorizadas al aplicarlas a una matriz. La operación es aplicada a cada uno de los elementos de la matriz.
+
+Creamos una matriz.
+```{r}
+mi_matriz <- matrix(1:9, nrow = 3, ncol = 3)
+
+# Resultado
+mi_matriz
+```
+
+intentemos sumar, multiplicar y elevar a la tercera potencia.
+```{r}
+# Suma
+mi_matriz + 1
+```
+
+```{r}
+# Multiplicación
+mi_matriz * 2
+```
+
+```{r}
+# Potenciación
+mi_matriz ^ 3
+```
+
+Si intentamos vectorizar una operación utilizando una matriz con NAs, esta se aplicará para los elementos válidos, devolviendo NA cuando corresponda.
+
+Ejemplo
+Creamos una matriz con NAs
+```{r}
+vector_1 <- c(NA, 2, 3)
+vector_2 <- c(4, 5, NA)
+
+matriz <- rbind(vector_1, vector_2)
+
+# Resultado
+matriz
+```
+
+Intentamos dividir sus elementos entre dos.
+```{r}
+matriz / 2
+```
+#t()
+podemos usar la función t() para transponer una matriz, es decir, rotarla 90°.
+
+Ejemplo
+Creamos una matriz con tres renglones y dos columnas.
+```{r}
+matriz <- matrix(1:6, nrow = 3)
+
+# Resultado
+matriz
+```
+
+Usamos t() para transponer.
+```{r}
+matriz_t <- t(matriz)
+
+# Resultado
+matriz_t
+```
+
+#Ejercicios echos en clase
+Ejemplo hecho en clase
+```{r}
+#m <-  matrix( c(1,2,3,4) , ncol = 2 , nrow = 2 ) 
+
+
+
+m <-  matrix( round( runif(100, 0, 9) ) , ncol = 10 , nrow = 10 ) 
+
+m #generamos una matris 10x10 con numeros aletorios 
+```
+
+
+```{r}
+m[2,3] #extraemos el elemento de la fila 2 culumna 3
+```
+
+
+```{r}
+m[7,4] #extraemos el elemento de la fila 7 columna 4
+```
+
+
+```{r}
+m[7, 2:5] #extraemos los elementos de la fila 7 y el rango de las columnas 2:5 
+```
+
+
+```{r}
+m[2:4, 2:4] # extraemos los elementos del rango 2:4 filas al 2:4 columnas
+```
+
+
+```{r}
+m[2, ] # extraemos todos los elementos de la fila 2 
+```
+
+#Data frames 
+Podemos entender a los data frames como una versión más flexible de una matriz. Mientras que en una matriz todas las celdas deben contener datos del mismo tipo, los renglones de un data frame admiten datos de distintos tipos, pero sus columnas conservan la restricción de contener datos de un sólo tipo.
+
+Para crear un data frame usamos la función data.frame(). Esta función nos pedirá un número de vectores igual al número de columnas que deseemos. Todos los vectores que proporcionemos deben tener el mismo largo.
+
+Esto es muy importante: Un data frame está compuesto por vectores.
+
+Luego observaremos porque esta característica de un data frame es sumamente importante y también, cómo podemos sacarle provecho.
+
+Además, podemos asignar un nombre a cada vector, que se convertirá en el nombre de la columna. Como todos los nombres, es recomendable que este sea claro, no ambiguo y descriptivo.
+
+```{r}
+mi_df <- data.frame(
+  "entero" = 1:4, 
+  "factor" = c("a", "b", "c", "d"), 
+  "numero" = c(1.2, 3.4, 4.5, 5.6),
+  "cadena" = as.character(c("a", "b", "c", "d"))
+)
+
+mi_df
+```
+#dim() 
+para saber la dimencion de este data frame
+```{r}
+# Podemos usar dim() en un data frame
+dim(mi_df)
+```
+
+```{r}
+# El largo de un data frame es igual a su número de columnas
+length(mi_df)
+```
+
+```{r}
+# names() nos permite ver los nombres de las columnas
+names(mi_df)
+```
+
+```{r}
+# La clase de un data frame es data.frame
+class(data.frame) 
+```
+
+Si los vectores que usamos para construir el data frame no son del mismo largo, los datos no se reciclaran. Se nos devolverá un error
+```{r}
+data.frame(
+  "entero" = 1:3, 
+  "factor" = c("a", "b", "c", "d"), 
+  "numero" = c(1.2, 3.4, 4.5, 5.6),
+  "cadena" = as.character(c("a", "b", "c", "d"))
+)
+```
+
+También podemos coercionar esta matriz a un data frame.
+
+Creamos una matriz.
+```{r}
+matriz <- matrix(1:12, ncol = 4)
+```
+Usamos as.data.frame() para coercionar una matriz a un data frame.
+```{r}
+df <- as.data.frame(matriz)
+```
+
+Verificamos el resultado
+```{r}
+class(df)
+```
+
+```{r}
+# Resultado
+df
+```
+
+#Propiedades de un data frame
+Al igual que con una matriz, si aplicamos una operación aritmética a un data frame, esta se vectorizará.
+
+Los resultados que obtendremos dependerán del tipo de datos de cada columna. R nos devolverá todas las advertencias que ocurran como resultado de las operaciones realizadas, por ejemplo, aquellas que hayan requerido una coerción.
+```{r}
+mi_df <- data.frame(
+  "entero" = 1:4, 
+  "factor" = c("a", "b", "c", "d"), 
+  "numero" = c(1.2, 3.4, 4.5, 5.6),
+  "cadena" = as.character(c("a", "b", "c", "d"))
+)
+
+mi_df * 2
+```

@@ -1,0 +1,275 @@
+```{r}
+load("Bases/manzanas.Rdata")
+```
+
+```{r}
+tapply(base$color,base$trat,mean)
+var=tapply(base$color,base$trat,var)
+mean(var)
+```
+
+```{r}
+r=5
+k=4
+n=r*k
+mu=c(2,3.1,3.7,4)
+v=2 #diferencia relevante
+
+trat=factor(rep(c(1:k),each=5));trat #vector de tratamientos
+mu1=rep(mu,each=5);mu1
+y=rnorm(n,mu1,sqrt(v))
+```
+```{r}
+datos=data.frame(trat,y);datos
+```
+```{r}
+mod1=lm(y~trat)
+anova(mod1)
+```
+```{r}
+v=1
+med=function(r,mu,v){
+k = length(mu)
+n = r * k
+y = rnorm(n, rep(mu,each=r), sqrt(1))
+x = factor(rep(1:k, each=r))
+mod = aov(y ~ x)
+p = anova(mod)[1, 5]
+return(p)
+}
+
+med(5,mu,v)
+```
+```{r}
+v=1
+M=5000
+mu1=c(3,3,2,4)
+prob=c()
+for(j in 1:M) prob[j]=med(5,mu1)
+mean(prob<0.05)
+```
+```{r}
+plot (prob,main = c("con un proporcion de rechazo de",mean (prob<0.05)))
+abline(h=0.05)
+
+```
+```{r}
+#en este caso n es igual al numero de replicas por tratamiento 
+power.anova.test(groups = 4,n=5,between.var = var(mu),within.var = 1)
+```
+cambiando el numero de replicas a 6
+
+```{r}
+inter=5000
+pv=NULL
+
+for  (i in 1:inter){
+  pv[i]=med(r=6,mu=c(3,3,2,4),v=1)
+}
+  mean(pv<0.05)
+```
+cambiando el numero de replicas a 7
+
+```{r}
+inter=5000
+pv=NULL
+
+for  (i in 1:inter){
+  pv[i]=med(r=7,mu=c(3,3,2,4),v=1)
+}
+  mean(pv<0.05)
+```
+```{r}
+power.anova.test(groups = 4,n=7,between.var = var(c(3,3,2,4)),within.var = 1)
+#groups=cantidad de tratamientos 
+#n=replicas por tratamiento 
+```
+```{r}
+power.anova.test(groups = 4,n=9,between.var = var(c(3,3,2,4)),within.var = 1)
+#groups=cantidad de tratamientos 
+#n=replicas por tratamiento 
+#whithin.var es mi CMRes
+```
+para calcular el numero de replicas 
+```{r}
+power.anova.test(groups = 4,power=0.9,between.var = var(c(3,3,2,4)),within.var = 1)
+```
+
+0.001
+```{r}
+power.anova.test(groups = 3,n=4,between.var = var(c(5.10,5.15,5.20)),within.var =0.0005)
+```
+```{r}
+power.anova.test(groups = 3,power=0.90,between.var = var(c(5.10,5.15,5.20)),within.var =0.0005)
+```
+potencia(1-B)
+probabilidad de encontrar diferencias de almenos delta (diferencia relevante), si en realidad existen 
+
+```{r}
+t1=read.csv("Bases/tortugas1.csv")
+```
+
+```{r}
+table(t1$cond)
+```
+```{r}
+mod1=lm(t1$proteina~t1$genero+t1$cond)
+cmres=anova(mod1)[3,3]
+summary(t1$proteina)
+```
+```{r}
+#la diferencia relevante es de 2 
+var(c(34,36))
+```
+
+ya podemos calcular la potencia 
+
+```{r}
+#son dos grupos porque no hay interaccion, y como lo importante para mi era la condicion, por esto son solo dos grupos porque ignoramos el sexo
+power.anova.test(groups = 2,n=8,between.var = var(c(34,36)),within.var=cmres)
+```
+para determinar un numero de replicas
+```{r}
+power.anova.test(groups = 2,power=0.9,between.var = var(c(34,36)),within.var=cmres)
+```
+
+```{r}
+medias= tapply(t1$proteina,t1$cond,mean);medias
+tdif=qt(0.95,13)
+ee=sqrt(2*cmres/8)
+li=(medias[1]-medias[2])-tdif*ee;li
+
+```
+caso en el que tengo interaccion
+```{r}
+base=read.csv("Bases/tortugas2.csv")
+str(base)
+base$cond=as.factor(base$cond)
+```
+
+```{r}
+table(base$especie,base$cond)
+```
+```{r}
+
+mod2=lm(base$proteina~base$especie*base$cond)
+anova(mod2)
+cmres2=anova(mod2)[4,3]
+```
+```{r}
+#estamos fijando la especia por eso son tres grupo, esto por la interaccion, lo podemos ver como cuando comparamos con bonferroni
+power.anova.test(groups = 3,n=4,between.var = var(c(34,35,36)),within.var=cmres2)
+#var(c(34,35,36)) el ranfo de las medias debe de ser igual a delta, exactamente la primera y la ultima, la resta de estas dos debe de darme mi diferencia relevante
+```
+
+#preguntas nivel de picante
+factor de diseño: 
+nivel de picante
+*suave 
+*medio 
+*fuerte
+
+#a realice los calculos
+con interacion
+```{r}
+cmres=0.4970
+power.anova.test(groups = 3,n=8,between.var = var(c(3.5,4,3.7)),within.var=cmres) #no importa el orden en betwen el rango debe de ser la diferencia
+```
+sin interacion
+```{r}
+#no me importa el otro factor porque solo nos importa el nivel de picante 
+#n pasa a ser el total de las dos
+cmres=0.4932
+power.anova.test(groups = 3,n=16,between.var = var(c(3.5,4,3.7)),within.var=cmres)
+```
+#b explique significado de lo anterior
+la suma de cuadrados al ser pequeña por las similutudes entre los cmres se puede esperar que no hay interaccion
+
+se tiene una probabilidad de 0.40, de detectar diferencias de 0.5, si estas diferencias existen. 
+
+#c
+con interacion
+```{r}
+cmres=0.4932
+power.anova.test(groups = 3,power=0.90,between.var = var(c(3.5,4,3.7)),within.var=cmres)
+```
+son 25 personas porque 50 es para cada uno de los niveles, pero cada nivel tiene dos grupos entonces son 25 por trat 
+se necesita un n de 50
+
+#d explique claramente el resultado anterior 
+se necesita almenos 25 replicas por tratamiento para tener una porbabilidad de 0.90 de que se detectaran diferencias de medio punto si esa diferencia existen
+
+#pregunta tipo de disolucion
+
+
+
+respuesta:
+concentracion promedio
+
+factor disolvente:
+* agua con jabon
+* alcohol friccion 
+
+factor tiempo de expocision:
+*5
+*10
+*15
+*20
+*25
+
+factor masas:
+*0.125
+*0.25
+*0.5
+
+-peso es la covariable
+
+m1=30
+  ->15
+     -g1
+     -g2
+     -g3
+     -g4
+     -g5
+  ->15
+     -g1
+     -g2
+     -g3
+     -g4
+     -g5
+r=3 
+
+
+diferencia relevante es 2 moles 
+
+disolvente tiene una interaccion con masa 
+
+#a 
+con interacion
+
+```{r}
+#var es igual a c(4,6) porque tenemos dos grupos
+cmres=5.89
+power.anova.test(groups = 2,n=15,between.var = var(c(4,6)),within.var=cmres)
+```
+#b 
+```{r}
+cmres=5.89
+power.anova.test(groups = 2,power=0.90,between.var = var(c(4,6)),within.var=cmres)
+```
+
+
+#preguntas teoricas
+
+#a 
+es posible llegar a la conclusion de que el factor de diseño si tenga un efecto sobre la respuesta promedio, pero se tiene una probabilidad baja de detectar la diferencia de 2 unidades, si estas diferencias existen 
+
+#b 
+#1 
+a menor tamaño de muestra se pierde potencia, por ende se espera que se pierda potencia, cuando yo tengo menos unidades mi potencia va a bajar
+
+#2
+Hay menor potencia, mi potencia baja ya que la varianza condicional es mayor
+
+#3
+esperamos que los promedios sean iguales.

@@ -1,0 +1,523 @@
+---
+title: "Practica general"
+author: "Carolina Rojas"
+date: "11/10/2021"
+output: html_document
+---
+
+```{r}
+
+library(olsrr)
+library(qpcR)
+library(car)
+library(lmtest)
+library(tseries)
+library(e1071)
+library(MASS)
+library(faraway)
+library(leaps)
+```
+
+```{r}
+setwd("C:/Users/Usuario/OneDrive/Escritorio/Modelos/Examen 2/Práctica para examen parcial 2-20210816")
+```
+
+**Base Acciones**
+```{r}
+load("acciones.Rdata")
+attach(acciones)
+load("C:/Users/Usuario/OneDrive/Escritorio/Asistencia Regre/Practica/Bases/acciones.Rdata")
+```
+
+```{r}
+str(acciones)
+```
+
+```{r}
+acciones$Pais= as.character(acciones$Pais)
+acciones$P.acciones=as.numeric(acciones$P.acciones)
+acciones$IPC=as.numeric(acciones$IPC)
+```
+
+
+a)	Estime un modelo en que el P.acciones esté en función del IPC e interprete la pendiente.
+```{r}
+mod1= lm(P.acciones~IPC, data = acciones)
+
+summary(mod1)
+```
+#Se espera que cambio porcentual en el precio promedio del mercado accionario disminuya 0.1014 puntos porcentuales por el aumento de un punto porcentual en Indice de precio al consumidor IPC
+
+-----> El r2 ajustado es negativo? significa que el modelo no se ajusta muy bien a los datos?
+
+
+b)	Analice si se cumple el supuesto de normalidad de los errores comparando una prueba de Shapiro y un qq-Plot, ambos con residuos estandarizados. Coinciden o no estos dos diagnósticos.
+
+```{r}
+estandarizados=rstandard(mod1)
+qqPlot(estandarizados)
+#qqPlot(mod1$residuals)
+```
+#bello, bellismooooo. Los residuos estan dentro de la banda de confianza supone normalidad.
+
+#El 95% de los residuos este entre -2 y 2
+
+###H0: Errores se distribuyen normalmente
+###H1: Errores no  se distribuyen normalmente
+```{r}
+shapiro.test(estandarizados)
+```
+#No hay sufiente evidencia estadistica para rechazar H0, es decir los errores se distribuyen normalmente.
+
+c)	 Explique en menos de tres renglones cuál es el efecto de la violación del supuesto de normalidad en un modelo lineal gaussiano.
+
+#Si no existe el normalidad no podemos creer en los IC y las prubas de hipotesis, no se conoce la distrucion de prob correcta de los estimadores.
+
+#Cuando hay hetero no sabemos si el CME usado es el correcto por eso no se le  puede creer ni las pruebas de hipotesis ni a los IC 
+
+d)	Estime los residuos estandarizados, los leverage y los dfBetas para el beta1 del modelo analizado, y haga un gráfico de burbujas de residuos estandarizados en el eje de las abscisas, los leverage en el eje de las ordenadas, y el tamaño de las burbujas que sea proporcional al DFbeta de la pendiente. Diga si existe un valor extremo que sea a la vez influyente, identifíquelo en el gráfico con el nombre del país, y explique cómo llegó a esa conclusión.
+```{r}
+estandariz=rstandard(mod1)
+leverage= hatvalues(mod1)
+dfbeta=dfbeta(mod1)[,2]
+```
+
+```{r}
+summary(estandariz)
+```
+
+```{r}
+
+plot(estandariz,leverage, cex= abs(dfbeta)/mean(abs(dfbeta)),ylim=c(0.05,0.30),xlim=c(-3,3))
+abline(v=c(-2,2), col=6)
+abline(h=2*length(mod1$coefficients)/length(acciones$P.acciones), col= 5)#limite de leverage 
+
+text(estandariz[leverage>0.2], leverage[leverage> 0.2],Pais[leverage> 0.2],cex=0.7,pos=3,col="blue")
+```
+#parece que EU tiene un residuo estandarizado alto un leverage alto y un dbfetas alto
+#Israel no tiene el dbfeta alto por eso no aparece la burbuja--- no tiene distancia segun la base
+
+*text---90 variable eje x, variable eje y , identificador simepre de esta manera*
+
+#si fuera un valor extremo en y sería la bolita que esta abajo.
+
+```{r}
+estandariza.acc <- rstandard(mod1)
+lev.acc <- hatvalues(mod1)
+dfb.acc.beta1 <- dfbeta(mod1)[, 2]
+
+plot(lev.acc~estandariza.acc, cex = abs(dfb.acc.beta1)/mean(abs(dfb.acc.beta1)), xlab = "Residuos estandarizados", 
+     ylab = "Leverage",ylim=c(0.05,0.3))
+abline(h=2*length(mod1$coefficients)/length(acciones$P.acciones), col= 5)#limite de leverage 
+text(estandariz[leverage>0.1], leverage[leverage> 0.1],Pais[leverage> 0.1],cex=0.7,pos=3,col="blue")
+
+```
+
+e)	Vuelva a estimar un modelo excluyendo el caso que es valor extremo, y diga cómo cambiaron las estimaciones del modelo.
+```{r}
+acciones1=acciones[-12,]
+mod2=lm(acciones1$P.acciones~acciones1$IPC)
+summary(mod2)
+```
+#R2a aumento
+
+#el coeficiente de IPC  disminuye y el intercepto auemnta 
+#quiere decir que por un aumento de un punto porcentual del IPC ahora el promedio del mercado accionario va disminuir aun mas.
+
+otra forma
+```{r}
+mod2.1= lm(P.acciones~IPC, data = acciones[Pais!="Israel",])
+```
+
+```{r}
+cbind(summary(mod1)$coefficients,summary(mod2)$coefficients)
+```
+
+
+```{r}
+cbind(summary(mod1),summary(mod2))
+```
+
+#si cambia pero no tanto la pendiente sigue siendo significativamente distinto de 0
+-----------------------------------------------------------------------------------------------
+**Base supermec2**
+
+*id*   Identiicador
+*ventas* Ventas semanales en millones de colones
+*q.empacado* Calidad de surtido del área de productos empacados (escala del 0 al 10)
+*q.carnes* Calidad del servicio en el área de carnes (escala del 0 al 10)
+*amb.interno* Escala de apariencia del ambiente interno (escala de 0 a 10
+*num.pasillos* Número de pasillos
+*area.tienda* En metros cuadrados
+*distancia* Distancia en kilómetros entre el parque de la localidad y el supermercado
+
+```{r}
+load("supermerc2.Rdata")
+load("C:/Users/Usuario/OneDrive/Escritorio/Asistencia Regre/Practica/Bases/supermerc2.Rdata")
+attach(supermerc2)
+
+```
+
+```{r}
+str(supermerc2)
+```
+
+
+f)	 Estime un modelo (con el nombre mod.1) en el que se prediga las ventas según las siguientes variables: q.empacado, q.carnes, amb.interno, num.pasillos, area.tienda y distancia, haga un summary del mismo, e interprete los coeficientes de num.pasillos y q.carnes.
+
+```{r}
+mod.1=lm(ventas~q.empacado+q.carnes+amb.interno+num.pasillos+area.tienda+distancia)
+summary(mod.1)
+
+```
+#num.pasillos
+---Se espera que por cada aumento de un pasillo en el supermercado, las ventas promedio  semanales disminuyan  *0.63 millones de colones*, manteniendo constantes las demás variables.
+
+
+#q.carnes
+--- Por cada aumento en de un nivel en la escala de la calidad del servicio en el área de carnes, las ventas promedio semanales aumentan *4.1072 millones de colones* manteniendo constantes las demás variables.
+
+##todos los coeficientes no son signifitivos
+
+g)	Estime los coeficientes estandarizados de esta ecuación. Después, usando la función ya programada en R, grafique los gráficos de regresión parcial para todas las variables y argumente si la variable con el menor coeficiente estandarizado es también la variable que menor aporta a la explicación del modelo según estos gráficos. Explique cómo llegó a esa conclusión.
+
+
+```{r}
+mod.2=lm(scale(ventas)~ scale(q.empacado)+scale(q.carnes)+scale(amb.interno)+scale(num.pasillos)+scale(area.tienda)+scale(distancia))
+b1=mod.2$coef
+round(b1,3)
+```
+#El numero de pasillos es la que tiene el menor coeficiente estadanrizado, variable que menos explica 
+
+```{r}
+avPlots(mod.2)
+```
+
+
+#la varible q empacado  es la que tiene una nube muy horizontal por ende es la que menos explica y sin importar el signo es la que esta más cerca a 0 y tambien # de pasillos
+
+h)	Analice el VIF de este modelo, quite una variable del modelo original, estime un nuevo modelo (con el nombre mod.2) sin esa variable, haga un summary del modelo y diga si la multicolinealidad estaba afectando al modelo del inciso a y cómo llegó a esa conclusión. (Se le da libertad de escoger cuál variable quitar, pero tiene que ser una que indique problemas de multicolinealidad).
+
+```{r}
+vif(mod.1)
+```
+
+```{r}
+cor(supermerc2)[,c(2:8)]
+```
+
+#se observa que la correlacion de area tienda es muy alta en varias variables como q.arnes, num de pasillos, ambiente interno por eso en el vif me indica una leve presencia de  multicolinealidad.
+
+```{r}
+mod.3=lm(ventas~q.empacado+q.carnes+amb.interno+num.pasillos+distancia)
+summary(mod.3)
+```
+#todos los coeficientes no son signifitivos  0 y 
+
+#todos los coeficientes siguen no son signifitivos, ninguna variable tiene un efecto  significativo sobre y
+#En realidad ninguna variable tiene un efecto significativo.
+
+```{r}
+vif(mod.3)
+```
+#No hay multicolinealidda en ninguna variable, sin embargo q.empecado tiene una vif en la zona de indesicion esto por la alta correlacion con q.carnes
+
+i)	Utilice el procedimiento del modelo con el menor BIC usando la función de subsets para seleccionar un modelo más parsimonioso, y diga si este modelo coincide con el modelo que seleccionó anteriormente.
+```{r}
+n=nrow(supermerc2)
+
+modBIC= step(mod.1, direction="both",k= log(n))
+modBIC
+
+```
+
+
+#Modelo al cual le quite la variable area de la tienda por su alta multicolinealidad.
+--ventas~q.empacado+q.carnes+amb.interno+num.pasillos+distancia
+
+#Modelo Bic, solo quedoó una varaible.
+--ventas ~ q.carnes
+
+Considero que la correlacion de esta variable con las demás tambien era alta con algo de similitud entre ellas, por eso al sacar el modelo con el BIC dejo solo esta variable,al punto que puede explicar la variable de ventas.
+
+```{r}
+mod.4 <- lm(ventas~q.carnes, data = supermerc2)
+summary(mod.4)
+
+```
+
+
+
+j)	Explique si los 2 modelos de los incisos anteriores presentan evidencia de que la multicolinealidad les esté generando problemas de interpretabilidad.
+
+#el modelo con una variable menos segun el vif no hay tanto problema que que todos son bajos exepto q.empacado, esa podría generar problemas.
+#el modelo BIC no va tener multicolinealidad porque no hay ninguna variable para que haya correlacion.
+
+k)	Haga el siguiente procedimiento:
+1.	En un proceso de 1000 iteraciones, siga los siguientes pasos:
+•	Tome una muestra de 30 observaciones y defina t como la posición en el vector.
+•	Genere una variable X1 con distribución normal con media igual a 4 y desviación estándar igual a 1.
+•	Genere una variable de error con distribución normal estándar (media igual a 0 y desviación estándar igual a 1).
+
+•	Genere una variable Y=2+1∗X1+error
+•	Genere otra variable Ystar[t]=Y[t−1]∗0.4  Ystar[t]=Y[t−1]∗0.4. (En otras palabras, Y con rezago de orden 1.
+Dada esta operacionalización, pierde la primera observación, porque va a tener un NA en la primera posición de Ystar).
+•	 Estime un modelo de regresión en el que Ystar está en función de X1, con los casos de X que van desde la posición 2 a la 30.
+
+•	Guarde el cuadrado medio de error en un vector de almacenamiento.
+•	Estime un modelo de regresión con los casos que van desde la posición 1 a la 29 en el que Y está en función de X1.}
+•	Guarde el cuadrado medio de error en un vector de almacenamiento.
+2.	 Cuando termine el ciclo, compare las medias de los 2 cuadrados medios de error, y diga cómo ilustra esta comparación el efecto que tiene la autocorrelación sobre las estimaciones de modelos de regresión.
+
+
+```{r}
+CME1 <- rep(NA,1000)
+CME2 <- rep(NA,1000)
+
+for (i in 1:1000) {
+  X1 <- rnorm(30,mean=4,sd=1)
+  error <- rnorm(30,0,sd=1)
+  Y <- 2+X1+error
+  Ystar <- rep(NA,30)
+  Ystar[2:30] <- Y[1:29]*0.4
+  mod1 <- lm(Ystar[2:30]~X1[2:30])#mod con el rezago
+  mod2 <- lm(Y[1:29]~X1[1:29])#mod sin el rezago
+
+  CME1[i] <- anova(mod1)[2,3]
+  CME2[i] <- anova(mod2)[2,3]
+}
+
+mean(CME1)
+mean(CME2)
+
+```
+
+#Hay un efecto de rezago ystar surge de 
+--el cme1 esta sesgado, porque no tomamos en cuenta el procesos autoregresivo,deberua dar 1
+-- el cme2 no esta sesgado si lo toma en cuenta 
+
+en presencia de autocorrelacion no le podemos creer a las pruebas de hipotesis ni IC.
+
+#los errores del mod con rezago son mayores y la media es mayor.
+
+l)	El criterio “delete-one” (“quitar uno”) se utiliza para el cálculo del PRESS y de los residuos estudentizados. Explique cómo este criterio del “delete-one” para un valor extremo hace que |Yi−Y^i(i)||Yi−Y^i(i)| sea mayor que el |Yi−Y^i||Yi−Y^i|.
+
+#-----Todo valor extremo influye sobre la muestra pero si lo pongo en la estimación se elimina esa influencia en las estimaciones pero en los residuos va a resaltar más
+
+
+m)	Explique por qué el BIC penaliza en un mayor grado la cantidad de predictores de un modelo que el AIC.
+
+#-----BIC penaliza más porque se multiplica por log(n) que es más grande que n 
+*PONER FORMULAS*
+
+n)	Explique por qué se dice que el Cp de Mallows es un indicador de sesgo en la variancia del error.
+#en el cp se compara el CME  de todas las variables y ese debe ser más pequeño. y si tengo un modelo más reducido con CME más pequeños hay sesgo 
+COMPARA EL CME MOD REDUCIO VS MOD COMPLETO Y SE SUPONE QUE EL CME DEL MOD COMPLEO DEBE SER MENOR CON CP BAJO.
+--------------------------------------------------------------------------------
+**Baseex1**
+```{r}
+load("baseex1.Rdata")
+ load("C:/Users/Usuario/OneDrive/Escritorio/Asistencia Regre/Practica/Bases/baseex1.Rdata")
+attach(baseex1)
+```
+
+```{r}
+str(baseex1)
+```
+
+
+```{r}
+names(baseex1)
+```
+
+o)	Estime un modelo de regresión gaussiana (con el nombre mod1) en el que se prediga la cuota de préstamos en función del resto de variables (excepto id), haga un summary del mismo, e interprete los coeficientes de escoljefe y pobmenor5.
+```{r}
+mod1=lm(prestamosnoviv~ingreso+gastonoconsumo+gastoconsumo+miembrosocup+escoljefe+edadjefe+pobmenor5+pob15ymas+pob65ymas+numvehic)
+summary(mod1)
+```
+*PRESTAMOS ESTA EN COLONES*
+*INGRESO EN CIENTO DE MILES DE COLONES*
+
+```{r}
+round(coef(mod1),2)
+```
+
+#escolaridad jefe 8122
+#se espera que  las cuotas del prestamo en promedio aumente 8122 colones por cada año adicional de educacion del jefe, mantiendo constantes las dem´s variables. 
+
+#pobmenor5 10660 
+#se espera que el prestamo en promedio dismuya 10660 colones, por cada aumento de un niño menor a 5 años, manteniendo constantes las demáas variables.
+
+
+p)	Los siguientes puntos se hacen con mod1:
+•	i. Calcule los vifs del modelo mod1 y explique a qué conclusión se llega sobre la multicolinealidad en mod1 a partir de los valores del vif.
+
+```{r}
+vif(mod1)
+```
+#No hay problemas de multicolinealidad.
+
+•	ii. Estime dos modelos más. El modelo mod1a tiene la misma especificación del mod1, pero excluyendo la variable escoljefe. El modelo mod1b tiene la misma especificación del mod1, pero excluye la variable numvehic. Haga una tabla con el R cuadrado ajustado y el P2 de los modelos mod1, mod1a y mod1b y escoja uno de los 3 modelos, justificando su selección.
+
+```{r}
+mod1=lm(prestamosnoviv~ingreso+gastonoconsumo+gastoconsumo+miembrosocup+escoljefe+edadjefe+pobmenor5+pob15ymas+pob65ymas+numvehic)
+
+mod1a=lm(prestamosnoviv~ingreso+gastonoconsumo+gastoconsumo+miembrosocup+edadjefe+pobmenor5+pob15ymas+pob65ymas+numvehic)
+
+mod1b=lm(prestamosnoviv~ingreso+gastonoconsumo+gastoconsumo+miembrosocup+escoljefe+edadjefe+pobmenor5+pob15ymas+pob65ymas)
+```
+
+```{r}
+tabla=matrix(rep(NA,10),ncol=3,nrow=2)
+
+tabla[1,1]=summary(mod1)$adj.r.squared
+tabla[2,1]=PRESS(mod1, verbose=FALSE)$P.square
+
+tabla[1,2]=summary(mod1a)$adj.r.squared
+tabla[2,2]=PRESS(mod1a, verbose=FALSE)$P.square
+
+tabla[1,3]=summary(mod1b)$adj.r.squared
+tabla[2,3]=PRESS(mod1b, verbose=FALSE)$P.square
+
+rownames(tabla)=c("R2 ajust","P2")
+colnames(tabla)=c("Mod1","Mod1a","Mod1b")
+
+round(tabla,4)
+```
+#El mod1b tiene el mejor R2ajustado y tambien el mayor p2.
+
+•	iii. Los modelos mod1a y mod1b son modelos reducidos. El mod1 es el modelo original. Dada la estructura multivariada de las variables del modelo (en otras palabras, las relaciones entre las variables), diga por qué el R2 ajustado de uno de los modelos reducidos es mayor que el R2 ajustado del modelo original, pero el R2 ajustado del otro modelo reducido es menor que del original.
+
+###El mod1b tiene un mayor R2a que el modelo original esto porque la variable num de vehiculos no aportaba mucho al modelo y más bien al quitarla del modelo hubo una reduccion importante de la SCE.
+
+### El mod1a tienen un menor R2a que el modelo original porque la SCREG de esa variable que le quite al mod1a es muy pequeña.
+
+*cuando hablo de estructura me refiero a las correlaciones*
+cuando excluyo escol jefe que tiene una correlacion más alta con otras varaibles predictiras y por eso el R2 en el mod1a bajó 
+
+•	iv. Haga un histograma de la variable dependiente y un histograma de los residuos de mod1. Explique por qué el histograma de la variable dependiente es más asimétrico que el de los residuos.
+```{r}
+hist(prestamosnoviv, title="Varaible dependiente ")
+hist(mod1$residuals)
+```
+###Considero que la asimetria de la variable monto de cuotas de prestamos  se debe aque la variable es más cambiante, no todos van a deber la misma cantida de dinero por ende van a pagar distintas cuotas, en cambio los residuos de estas personas van a predicir este monto en cuotas, o sea cada persona que debe tiene estas mismas caracteristicas de deudor.
+
+--residuos dependen de las varia bles predictoras, residuos|variables predictoras.
+
+•	v. Dado que estos son datos reales, explique por qué es esperable que la variable dependiente del modelo NO tenga una distribución normal en Costa Rica.
+
+###Porque no todas las personas en CR van a deber la misma cantidad de dinero,es decir, el monto de cuotas por prestamos y aun más cuando se excluye los prestamos de vivienda, seran distintos para cada costarricense.
+
+#creditos de cuotas pequeñas y cuotas grandes a mayor ingreso, mayor cuota.
+
+
+q)	Estime un modelo de regresión con menos variables predictoras, usando un algoritmo stepwise basado en el AIC, y llámelo mod2. Diseñe gráficos de dispersión de la variable dependiente vs cada una de las variables predictoras seleccionadas en mod2. Explique claramente en cuáles gráficos se observa evidencia de linealidad en la relación entre la dependiente y las predictoras.
+
+
+```{r}
+mod2=step(mod1, direction="both")
+
+```
+
+```{r}
+summary(mod2)
+```
+
+```{r}
+#par(mfrow=c(1,3))
+plot(prestamosnoviv~ingreso)
+abline(lm(prestamosnoviv~ingreso))
+plot(prestamosnoviv~escoljefe)
+abline(lm(prestamosnoviv~escoljefe))
+plot(prestamosnoviv~pob15ymas)
+abline(lm(prestamosnoviv~pob15ymas))
+```
+#En la que mejor se observa linealidad es en la variable ingreso, hay una tendencia lineal positiva y creciente,
+
+r)	Los siguientes puntos se hacen con mod2:
+
+i. Con el mod2, diseñe un gráfico de residuos estandarizados vs leverage, y diga el número de identificación del valor más extremo en X y el valor más extremo en Y.
+
+```{r}
+estandariz=rstandard(mod2)
+leverage= hatvalues(mod2)
+```
+
+```{r}
+plot(leverage,estandariz)
+abline(h=0, col=6)
+text(leverage[leverage>0.15],estandariz[leverage>0.15],id[leverage>0.15])
+text(leverage[estandariz>4],estandariz[estandariz>4],id[estandariz>4])
+```
+
+```{r}
+max(estandariz)
+max(leverage)
+```
+
+•	ii. Explique qué características hacen que el valor más extremo en Y sea extremo, y qué características hacen que el valor más extremo en X sea extremo.
+
+```{r}
+mean(prestamosnoviv)
+```
+
+--- el valor extremo en y se debe a que ese valor esta totalmente alejado del promedio de valores en y.
+
+----el valor extremo en x pasa porque este valor sobrepesa las demás variables predictoras, en todo, es ya sea bajo o alto.
+
+•	iii. Haga un gráfico de residuos estandarizados contra leverage, con burbujas ponderadas por los defeffit en valor absoluto. Escriba en el gráfico los números de identificador de los dos casos con los Dffit más altos (en valor absoluto). Y sabiendo la fórmula de los Dffit que se le suministra más abajo, explique si la magnitud de los Dffits más altos se debe al componente de residuo o al componente de leverage.
+```{r}
+estandariz=rstandard(mod2)
+leverage= hatvalues(mod2)
+dffits= dffits(mod2)
+```
+ 
+```{r}
+plot(leverage,estandariz,cex=0.3*abs(dffits)/mean(abs(dffits(mod2))))
+abline(h=0, col=6)
+text(leverage[leverage>0.15],estandariz[leverage>0.15],id[leverage>0.15])
+text(leverage[estandariz>4],estandariz[estandariz>4],id[estandariz>4],cex =0.5) 
+
+#Probar con limites estandarizados(-2,2)
+#y el limite de leverage a ver como queda  v
+```
+#El dffit 5555 alto se debe  a los leverage 
+#el dffit 6892 alto  se debe a los estandariazados
+#esquina superior derecha son deffits altos y se debe a los leverage y a los estandarizados.
+
+s)	En clase se dijo que la prueba de White es más robusta que la prueba de Breusch-Pagan para detectar homoscedasticidad cuando se viola el supuesto de normalidad. Para ello se propone la siguiente simulación. Diseñe un proceso para calcular la potencia de la prueba de Breusch Pagan y la prueba de White con las siguientes características:
+•	Tome un tamaño de muestra de 30.
+•	Simule dos variables X1 y X2 con distribución normal con media 0 y variancia 1.
+•	Simule una variable Z con distribución exponencial con rate=0.1 (Por definición, la variancia de una distribución exponencial cambia con su valor esperado, por lo que un error con distribución exponencial supone un modelo lineal con heteroscedasticidad).
+
+•	Cree una variable EE=Z−mean(z)sd(z)EE=Z−mean(z)sd(z).
+
+•	Cree una variable YY en función de X1 y X2 y con la variable EE definiendo el error (usted decide los valores de beta0, beta1 y beta2).
+
+•	Calcule la potencia de la prueba de Breusch Pagan y de White para un modelo de regresión lineal en que YY esté en función de X1 y X2, con una significancia del 5%.
+
+```{r}
+n=30
+p= c()
+
+for (i in 1:1000) {
+  
+x1=rnorm(n,0,1)
+x2=rnorm(n,0,1)
+z=rexp(n,0.1)
+ee=(z-mean(z))/sd(z)
+yy=-3+2*x1+4*x2+ee
+
+mod= lm(yy~x1+x2+ee)
+p=bptest(mod)
+
+}
+```
+
+
+```{r}
+EE= z-mean(z)
+```
+
+
+

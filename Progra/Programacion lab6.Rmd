@@ -1,0 +1,45 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#Lo hize en markdown en caso de cualquier incopatibilidad
+setwd("C:/Users/cesar/Downloads") ##utilizar la direccion del archivo
+df = read.csv("titanic.csv")
+print ("Digite 1 para ver un grafico de barras con la cantidad de personas que sobrevivieron y las que no.")
+print ("Digite 2 para ver un grafico pastel con la proporcion de pasajeros por sexo.")
+print ("Digite 3 para ver un histograma con las frecuencias de las edades de los pasajero.")
+
+menu = as.numeric( readline("Digite el el numero seleccionado: "))
+
+if (menu == 1){
+#1 Barplot con los sobrevivientes o no
+
+sobrevivientes = table(df$Survived)
+
+barplot(sobrevivientes, col = c("red4", "darkgreen" ),
+        names.arg = c("No ", "Si"),
+        xlab = "Sobrevivieron", ylab = "Conteo")
+} else if (menu ==2){
+#2 Pie con la proporcion de hombres y mujeres
+
+sexo = table(df$Sex)
+porcentaje = round(sexo/sum(sexo)*100,1)
+
+pie(sexo, col = c("deeppink3", "cornflowerblue"), 
+    main = "Pasajeros segun su sexo",
+    labels = paste0(porcentaje, "%") )
+
+}else if (menu ==3) {
+#3 histograma con las edades
+
+edades = table(df$Age)
+
+hist(edades, col = "olivedrab2", main = "Cantidad de pasajeros segun sus edades", 
+     xlab = "Edades", ylab = "Cantidad de pasajeros")
+} else {
+  print("El digito ingresado no es valido.")
+}
+```
+

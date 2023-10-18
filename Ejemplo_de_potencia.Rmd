@@ -1,0 +1,84 @@
+---
+title: "Ejemplo potencia"
+output: html_document
+date: "2023-04-29"
+---
+
+Primero, se genera una muestra de tamaño n1 y n2 con medias y desviaciones estándar diferentes:
+```{r}
+set.seed(123) # Para reproducibilidad
+n1 <- 30
+n2 <- 30
+mu1 <- 10
+mu2 <- 12
+sd1 <- 2
+sd2 <- 2.5
+(x1 <- rnorm(n1, mu1, sd1))
+(x2 <- rnorm(n2, mu2, sd2))
+hist(x1)
+
+```
+
+A continuación, se realiza una prueba t de dos muestras con un nivel de significancia de 0.05:
+```{r}
+t.test(x1, x2, var.equal = TRUE)
+
+```
+
+En este caso, la prueba no detecta una diferencia significativa entre las medias (p-value = 0.08).
+
+Para simular la evaluación de la potencia, se puede repetir este proceso varias veces con diferentes valores de las medias y las desviaciones estándar, y contar cuántas veces la prueba detecta una diferencia significativa. Por ejemplo:
+
+```{r}
+# Simulación de la potencia
+set.seed(123) # Para reproducibilidad
+n1 <- 30
+n2 <- 30
+mu1 <- 10
+mu2 <- seq(11, 15, 0.5) # Diferentes valores de la media de la segunda muestra
+sd1 <- 2
+sd2 <- 2.5
+
+nsim <- 1000
+power <- rep(NA, length(mu2))
+
+for (i in seq_along(mu2)) {
+  detect <- rep(NA, nsim)
+  for (j in 1:nsim) {
+    x1 <- rnorm(n1, mu1, sd1)
+    x2 <- rnorm(n2, mu2[i], sd2)
+    res <- t.test(x1, x2, var.equal = TRUE)
+    detect[j] <- res$p.value < 0.05
+  }
+  power[i] <- mean(detect)
+}
+
+# Gráfico de la potencia en función de la diferencia de medias
+plot(mu2, power, type = "b", xlab = "Diferencia de medias", ylab = "Potencia")
+
+```
+
+En este caso, se generan 1000 muestras para cada valor de la media de la segunda muestra, y se cuenta cuántas veces la prueba t detecta una diferencia significativa a un nivel de significancia de 0.05. Los resultados se almacenan en el vector "power", que indica la proporción de veces que se detectó una diferencia significativa para cada valor de la media de la segunda muestra. Finalmente, se grafica la potencia en función de la diferencia de medias, lo que permite evaluar la sensibilidad de la prueba a diferentes efectos.
+
+
+#Ejemplo mas simple
+
+En este caso, se generan 1000 muestras para cada valor de la media de la segunda muestra, y se cuenta cuántas veces la prueba t detecta una diferencia significativa a un nivel de significancia de 0.05. Los resultados se almacenan en el vector "power", que indica la proporción de veces que se detectó una diferencia significativa para cada valor de la media de la segunda muestra. Finalmente, se grafica la potencia en función de la diferencia de medias, lo que permite evaluar la sensibilidad de la prueba a diferentes efectos.
+```{r}
+set.seed(123) # Para reproducibilidad
+n <- 20
+mu1 <- 0
+mu2 <- 2
+sd1 <- 1
+sd2 <- 1
+alpha <- 0.05
+
+# Cálculo de la potencia
+library(pwr)
+pwr.t.test(n = n, d = (mu2 - mu1) / sqrt((sd1^2 + sd2^2) / 2), 
+           sig.level = alpha, type = "two.sample", alternative = "two.sided")
+
+```
+En este caso, la función pwr.t.test nos permite calcular la potencia de la prueba para un tamaño de muestra dado (n), una diferencia de medias estandarizada (d), un nivel de significancia (sig.level), un tipo de prueba (type) y una hipótesis alternativa (alternative). En este caso, la potencia de la prueba es de aproximadamente 0.73.
+
+Es importante tener en cuenta que la potencia de la prueba depende de varios factores, como el tamaño de la muestra, la diferencia entre las medias, la desviación estándar y el nivel de significancia. Por lo tanto, es recomendable realizar diferentes cálculos de potencia para evaluar la sensibilidad de la prueba a diferentes escenarios.

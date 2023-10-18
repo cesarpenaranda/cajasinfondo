@@ -1,0 +1,138 @@
+```{r}
+library(dplyr)
+library(PracTools)
+library(sampling)
+library(survey)
+```
+
+Pregunta 6
+En el país “El Cafetal” se quiere hacer una investigación para estudiar el número de acres destinadas a la
+siembra de café. Para realizar la medición se seleccionarán distritos del país y se registrará el número de
+acres dedicadas al cultivo de café. Para esto se decide seleccionar una muestra estratificada, creando los
+estratos de acuerdo a la ubicación del distrito en cuatro zonas administrativas en las que se divide el país:
+Noreste, Central Norte, Sur y Oeste.
+Como marco muestral se utilizará un censo realizado en 1982 en el que se registró el número de acres por
+distrito sembradas de café. Usando el archivo marco_cafe.Rdata:
+```{r}
+load("Bases/marco_cafetal.Rdata")
+#View(marco_cafetal)
+```
+a. Determine el número de distritos en cada estrato.
+```{r}
+Nh=table(marco_cafetal$region);Nh
+```
+
+b. Determine el promedio de acres sembradas de café en cada estrato en 1982 (4 puntos). Determine la
+desviación estándar del número de acres sembradas de café en cada estrato en 1982.
+```{r}
+N=nrow(marco_cafetal);N
+media.h=tapply(marco_cafetal$acres82,marco_cafetal$region,mean)
+sh2=tapply(marco_cafetal$acres82,marco_cafetal$region,var)
+sh=sqrt(sh2)
+wh=Nh/N
+h=cbind(Nh,wh,media.h,sh2,sh);h
+```
+
+c. Determine el tamaño de muestra necesario para obtener una variancia de la estimación del promedio
+de 15 000. Tenga en cuenta que se desea minimizar la variancia del estimador y que se estima que el
+costo de la recolección de datos entre estratos es similar.
+```{r}
+v=15000**2
+num=sum(wh*sh)**2
+deno=v+(1/N)*sum(wh*sh2)
+n=num/deno;ceiling(n)
+```
+
+d. Suponga que se decidió que se va seleccionar una muestra de 300 distritos. ¿Cuántos distritos deben
+escogerse en cada región si se desea minimizar la variancia del estimador? (asuma que los costos de
+recolección son iguales entre estratos).
+```{r}
+n=300
+n_ney= strAlloc(n.tot=n, Nh= Nh, Sh=sh, alloc= "neyman");n_ney
+nh=c(85,6,108,101);sum(nh);nh
+
+```
+El archivo cafe2022.Rdata contiene los resultados para la recolección de datos realizada en el país “El Cafetal”.
+```{r}
+load("Bases/cafe2022.Rdata")
+```
+
+a. ¿Cuántos distritos se seleccionaron en cada estrato?
+```{r}
+nh=table(cafe2022$region);nh
+```
+
+b. ¿Cuál es la fracción de muestreo para cada estrato? Tome en cuenta que el número de distritos en cada
+estrato en la población es: 1054 para la región Central Norte, 220 para la región Noreste, 422 para la
+región Oeste y 1382 para la región Sur.
+
+```{r}
+Nh=c(1054,220,422,1382); fh=nh/Nh;fh
+```
+
+c. ¿La muestra seleccionada es mesip?
+no porque para ser mesip todas las fraciones de muestreo tendrian que se iguales ya que eso indicaria igual prob de seleccion y este no es el caso
+
+d. Calcule el estimador necesario para realizar estimaciones con base en la muestra para cada estrato.
+```{r}
+1/fh
+CentralNorte=12.255814
+Noreste=36.666667
+Oeste=3.943925
+Sur=13.683168
+
+base= cafe2022%>%mutate(ponde=case_when(region=="CentralNorte"~CentralNorte,region=="Noreste"~Noreste,region=="Oeste"~Oeste,TRUE~Sur))
+#View(base)
+table(base$ponde,base$region)
+
+```
+
+e. Estime el total de acres dedicados a la siembra de café, su error estándar y su intervalo de confianza.
+```{r}
+diseno=svydesign(ids = ~1,strata = ~region,weights = ~ponde,data=base)
+```
+
+```{r}
+n=300
+h=4
+total=svytotal(~base$acres22,diseno);total
+confint(total,df=n-h)
+
+```
+
+f. ¿Cuál fue el porcentaje de ganancia en precisión al estimar el total del punto d. Usando una muestra
+estratificada?
+
+```{r}
+#a pie
+TOTAL=sum(marco_cafetal$acres82);TOTAL
+N=3078
+diseno.mia=svydesign(ids = ~1,data = base,fpc = rep(N,n))
+total2=svytotal(~base$acres22,diseno.mia);total2
+
+redus=49025473/88826858;redus
+
+ganancia=(1-redus)*100;cat("el % de ganacia es",ganancia)
+```
+```{r}
+#con funcion
+total <- svytotal(~acres22, diseno, deff=TRUE)
+deff <- survey::deff(total)
+deff
+ganancia <- (1-deff)*100;ganancia #f
+
+```
+
+g. Se desea comparar el promedio de acres sembradas por distrito en la zona Sur y la zona Noreste.
+Calcule el promedio de acres sembradas por distrito en cada una de las zonas, su error estándar y su
+intervalo de confianza.
+```{r}
+media.region <- svyby(~acres22, ~region, diseno, svymean);media.region
+confint(na.omit(media.region))
+```
+
+h. Basándose en los resultados del punto g. ¿Existe una diferencia estadísticamente significativa en el
+promedio de acres sembradas por distrito en las dos zonas?
+
+
+Sí, porque los intervalos de confianza no se traslapan

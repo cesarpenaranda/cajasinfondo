@@ -1,0 +1,86 @@
+---
+title: "LAB2 programacion"
+author: "CESAR"
+date: '2022-07-07'
+output: html_document
+---
+```{R}
+#install.packages("svDialogs", dependencies=TRUE) para que funciones los ventanas de dialogo
+#install.packages("primes",dependencies = TRUE) instala una funcion que cuenta numeros primos
+library(svDialogs)
+library(utils)
+menu.numeros = as.numeric(dlgInput(message="Digite un numero entre 1 y 3: ")$res)
+if (menu.numeros == 1) {
+  n = as.numeric(dlgInput(message="Wallis/ Digite el valor de n: ")$res)
+  
+  #Variables para la solución del problema
+  numerador = 2
+  denominador = 1
+  z = 1
+  resultado = 1
+  
+  while(z <= n) {
+    
+    resultado = resultado *( numerador / denominador )
+    
+    if( z %% 2 == 0 ){
+      numerador = numerador + 2
+    } else {
+      denominador = denominador + 2
+    }
+    
+    z = z + 1 
+  }
+  winDialog(type="ok",message=paste("El resultado es: ",(resultado * 2)))
+  
+} else 
+
+
+if (menu.numeros == 2) {
+  
+  primo = as.numeric(dlgInput(message ="Es primo o no/ Digite un numero: ")$res )
+  
+  variable = 2
+  
+  if(primo == 1){
+    winDialog(type="ok",message=paste("Ni primo ni compuesto"))
+    
+  }else if(primo < 1){
+    winDialog(type="ok",message=paste("No es primo"))
+    
+  }else if(primo == 2){
+    winDialog(type="ok",message=paste("Es numero primo"))
+
+  }else 
+  while (variable <= primo - 1) {
+    if (primo %% variable != 0) { 
+      variable = variable + 1
+      
+      if (variable == primo){
+      winDialog(type="ok",message=paste("Es numero primo"))
+      }
+    } else{
+      winDialog(type="ok",message=paste("No es numero primo"))
+      variable = primo 
+    }
+  }
+}else
+
+if (menu.numeros == 3) {
+  
+  require(primes)
+  a = as.numeric(dlgInput(message="Numeros primos en rango/ Ingrese el primer valor: ")$res )
+  b = as.numeric( dlgInput(message="Ingrese el segundo valor: ")$res )
+  
+ x=generate_primes(a,b)
+ print(x)
+ a = 0
+ result = " "
+for (a in 1:NROW(x)) {
+  result = paste(result, x[a])
+}
+ winDialog(type="ok",message=paste("El resultado es: ", result))
+  } else {
+  winDialog(type="ok",message=paste("Digite un valor adecuado"))
+}
+```

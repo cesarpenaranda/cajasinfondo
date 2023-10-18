@@ -1,0 +1,292 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+#Pregunta 3
+$E(X_{(1)})=\frac{\theta n+3}n$
+$E(X_{(1)})=\theta+\frac{3}n$
+ahora encontramos el $\hat{\theta}$
+$\hat{\theta}=X_{(1)}-\frac{3}n$
+$E(\hat{\theta})=E(X_{(1)}-\frac{3}n)$
+$E(\hat{\theta})=E(X_{(1)})-E(\frac{3}n)$
+$E(\hat{\theta})=\theta+\frac{3}n-\frac{3}n$
+$E(\hat{\theta})=\theta$
+#Pregunta 4
+Forma 1 de hacer la pregunta 1.4
+```{r}
+teta_n=3/20
+vectormin=NULL
+vectorteta=NULL
+vector= NULL
+for (y in 1:1000){
+  
+for (i in 1:20){
+  x=rexp(1,rate = 1/3)+2
+  vector[i]=x
+}
+  vectormin[y]=min(vector)
+  vectorteta[y]=(min(vector))-teta_n
+}
+m_min=round(mean(vectormin),4)
+var_min=round(var(vectormin),6)
+m_teta=round(mean(vectorteta),4)
+var_teta=round(var(vectorteta),6)
+
+hist(vectormin,breaks = 100,main=c("historgrama del minimo con media",m_min,"varianza",var_min))
+hist(vectorteta,breaks = 100,main=c("historgrama de teta sombrero con media",m_teta,"varianza",var_teta))
+```
+
+
+Forma 2 de hacer la pregunta 1.4, sugerida por el profe, siendo esta con una transforacion de la uniforme y la mas adecuada
+
+trasformacion aplicada
+$a=\lambda=\frac{1}3$
+$\theta=2$
+trasformacion realizada
+$F(x)=1-e^{\frac{2-x}3}$
+$h(x)=U=1-e^{\frac{2-x}3}$
+$e^{\frac{2-x}3}=1-U$
+$\frac{2-x}3=ln(1-U)$
+$2-x=\frac{ln(1-U)}3$
+$-x=\frac{ln(1-U)}3-2$
+$x=2-\frac{ln(1-U)}3$
+ejemplo con 100000
+```{r}
+d=2-(log(runif(100000,0,1))/3)
+hist(d,breaks = 100,main = "Histograma de una exponecial a partir de la U")
+```
+vemos que apartir de la uniforme logramos una exponencial dislocada que inicia en 2
+
+ahora el ejecicio completo de la parte 4 donde sacamos un tamaño de $n=20$ con $\theta=2$ un 
+esto lo hacemos $k=1000$ repeticiones de $n=20$ muestras, luego sacamos su $X_{(1)}$ y tetatecho para cada una de las sub-k muestras posterior contruimos un histograma del minimo y tetatecho muestral, calculamos sus medias y varianzas.
+```{r}
+B=1000
+vectormin=NULL
+vectorteta=NULL
+sesgo=3/20
+for(i in 1:B){
+  x=2-(log(runif(20,0,1))/3)
+  vectormin[i]=min(x)
+  vectorteta[i]=min(x)-sesgo
+}
+m_min=round(mean(vectormin),4)
+var_min=round(var(vectormin),6)
+m_teta=round(mean(vectorteta),4)
+var_teta=round(var(vectorteta),6)
+
+hist(vectormin,breaks = 100,main=c("historgrama del minimo con media",m_min,"varianza",var_min))
+hist(vectorteta,breaks = 100,main=c("historgrama de teta sombrero con media",m_teta,"varianza",var_teta))
+```
+como observamos la esperansa de nuestro $X_{(1)}$ es $E(X_{(1)})=\theta +\frac{3}{n}$ como vemos en la teoria, con los datos de la pregunta donde $n=20$ y $\theta=2$ la esperanza que deberiamos obtener de nuestro $X_{(1)}$muestral es $E(X_{(1)})=2 +\frac{3}{20}=2.15$ de manera teorica mientras que como observamos de manera empirica obtenemos una media de $\approx2.016$ viendo de esta manera como la teoria y lo empirico estan de la mano, ahora bien analizando la esperanza de $\hat{\theta}$ donde esta es igual a $E(\hat{\theta})=\theta$ vemos que esta es $\approx 1.87$ de manera empirica extraido de la simulacion y como suponemos que $\theta$ es desconocido no tenemos puebas suficientes para no aceptar dicho estimado ya que este supone ser insesgado. pero lo podemos comparar con el teorica suponiendo que no es desconocido donde $E(\hat{\theta})=2$ y como vemos son valores semejantes lo teorio a lo empirico
+
+Parte II. Comparación de intervalos de confianza (IC) utilizando la técnica de pivote vs la técnica bootstrap.
+
+Sea X una variable aleatoria que se distribuye como Exponencial, con parámetro θ, que describe la vida útil de los bombillos de 60 watts, es decir, su función de densidad es:
+
+                 f(x)=⎨1/θ*e^−1/θ*x, x≥0
+                        0, x<0.
+
+Queremos encontrar el intervalo de confianza del 95% para el parámetro θ, utilizando dos métodos: 
+1. la definición de pivote,
+2. el IC bootstrap utilizando una función disponible en CRAN.
+
+En adelante utilizaremos los siguientes términos:
+B = número de muestras de bootstrap
+S = número de simulaciones.
+n = tamaño de la muestra original.
+
+Este ejercicio consiste en llevar a cabo un pequeño estudio de simulación para comparar la cobertura del intervalo de confianza calculado utilizando el pivote con respecto a la cobertura de cualquier opción de bootstrap, a la luz del problema de la vida útil de los bombillos, arriba descrito.
+
+Estudio de simulación
+Debemos generar muestras de la distribución que estamos asumiendo como cierta, con un valor paramétrico fijado de antemano (para poder calcular coberturas). Entonces, en este caso, vamos a generar S=1000 muestras aleatorias de n=15 observaciones cada una, de una distribución exponencial con parámetro θ=900.
+
+```{r}
+set.seed(16)
+gen_fun <- function(nrep = 15, theta = 900) {
+  X <- rexp(nrep, rate = 1/theta)
+  return(X)
+}
+data <- replicate(n = 1000,gen_fun(), simplify = FALSE )
+```
+
+Ahora que tenemos una lista con S=1000 conjuntos de datos distintos (todos de la misma distribución y cada uno con n=15), vamos a calcular los dos tipos de intervalos con cada uno de ellos.
+
+Intervalo usando pivote U=∑ni=1X/θ:
+
+```{r}
+CI_pivote <- function(X){
+  n <- length(X)
+  IC1 <- c(0.95,sum(X)/qgamma(0.975,n,1), 
+          sum(X)/qgamma(0.025,n,1))
+  return(IC1)
+}
+```
+
+Intervalo IC bootstrap del CRAN
+De esta referencia: https://www.statmethods.net/advstats/bootstrapping.html podemos encontrar que una función del CRAN para encontrar IC usando boostrap es boot.ci. Para utilizarla, necesitamos generar un objeto bootstrap para la estimación puntual. Aquí, hay 5 tipos de intervalos: c(“norm”,“basic”, “stud”, “perc”, “bca”). En este proyecto solo vamos a usar “basic”, “bca” y “perc”, es decir, vamos a ignorar “norm” y “stud” por ahora.
+
+```{r}
+library(boot)
+CI_boot <- function(dat, type){
+mean_func <- function(data, indices){
+  a<-mean(data[indices], na.rm=TRUE)
+  return(a)}
+results <- boot(data=dat, statistic=mean_func,R=1000)
+return(boot.ci(results, type=type)[[4]][-c(2,3)])}
+```
+
+Utilice la función que utiliza el pivote y al menos 1 tipo de boostrap para calcular los intervalos, y a la vez calcular su cobertura:
+
+```{r}
+library(purrr) 
+
+cal_fun <- function(dat) {
+  CI1<-CI_pivote(dat)
+  CI2<-CI_boot(dat,"bca")
+  CI3<-CI_boot(dat,"basic")
+  CI4<-CI_boot(dat,"perc")
+  return(c(findInterval(vec=CI1[-1],x=900)==1,
+           findInterval(vec=CI2[-1],x=900)==1,
+           findInterval(vec=CI3[-1],x=900)==1,
+           findInterval(vec=CI4[-1],x=900)==1))
+}
+
+results <- map(data, cal_fun)
+```
+
+Cobertura de cada uno de los intervalos:
+La cobertura se refiere al porcentaje de intervalos que incluyen al verdadero parámetro.
+
+```{r}
+apply(do.call(rbind,results),2,sum)/1000
+```
+
+Los ejercicios de la parte II consisten en:
+
+1. Redacte de manera clara y concisa el objetivo del estudio de Monte Carlo (simulación), demostrando matemáticamente de dónde salió la fórmula del IC usando el pivote recomendado, y mecionando cuál(es) intervalos de confianza de bootstrap está utilizando, aunque estos últimos no necesitan una explicación. (2 puntos)
+
+El objetivo del estudio de Monte Carlo, también conocido como simulación de Monte Carlo, es utilizar técnicas estadísticas para generar y analizar múltiples simulaciones de eventos aleatorios. El propósito de estas simulaciones es evaluar la probabilidad de que ciertos resultados ocurran y analizar las posibles implicaciones de estos resultados en diferentes escenarios. 
+
+2. Presente los resultados de la simulación tal como está planteada en una tabla resumida, incluyendo medidas de variabilidad para cada estimación que esté haciendo. (1 punto). NOTA: Ud puede modificar la simulación, sin embargo, lo que pide esta pregunta es que utilice el código que ya está escrito para tratar de responder sus objetivos.
+
+```{r}
+(sd <- round(apply(do.call(rbind, results), 2, sd), 3))
+(var <- round(apply(do.call(rbind, results), 2, var), 3))
+(rango <- round(apply(do.call(rbind, results), 2, range), 3))
+```
+
+3. Compare la cobertura del IC obtenido mediante el método del pivote con al menos uno de bootstrap. ¿Difieren los resultados del 95% con el que se trabajó? ¿Cuál cobertura esperaba Ud para la opción construida con el pivote y por qué? En este caso estamos trabajando con una semilla de 16 (set.seed(16)), intente con varias semillas y note si el resultado de cobertura cambia. (2 puntos)
+
+```{r}
+set.seed(10)
+gen_fun <- function(nrep = 15, theta = 900) {
+  X <- rexp(nrep, rate = 1/theta)
+  return(X)
+}
+data <- replicate(n = 1000,gen_fun(), simplify = FALSE )
+
+CI_pivote <- function(X){
+  n <- length(X)
+  IC1 <- c(0.95,sum(X)/qgamma(0.975,n,1), 
+          sum(X)/qgamma(0.025,n,1))
+  return(IC1)
+}
+
+CI_boot <- function(dat, type){
+mean_func <- function(data, indices){
+  a<-mean(data[indices], na.rm=TRUE)
+  return(a)}
+results <- boot(data=dat, statistic=mean_func,R=1000)
+return(boot.ci(results, type=type)[[4]][-c(2,3)])}
+
+
+cal_fun <- function(dat) {
+  CI1<-CI_pivote(dat)
+ CI4<-CI_boot(dat,"perc")
+  return(c(findInterval(vec=CI1[-1],x=900)==1,
+           findInterval(vec=CI4[-1],x=900)==1))
+}
+
+results <- map(data, cal_fun)
+apply(do.call(rbind,results),2,sum)/1000
+```
+```{r}
+set.seed(20)
+gen_fun <- function(nrep = 15, theta = 900) {
+  X <- rexp(nrep, rate = 1/theta)
+  return(X)
+}
+data <- replicate(n = 1000,gen_fun(), simplify = FALSE )
+
+CI_pivote <- function(X){
+  n <- length(X)
+  IC1 <- c(0.95,sum(X)/qgamma(0.975,n,1), 
+          sum(X)/qgamma(0.025,n,1))
+  return(IC1)
+}
+
+CI_boot <- function(dat, type){
+mean_func <- function(data, indices){
+  a<-mean(data[indices], na.rm=TRUE)
+  return(a)}
+results <- boot(data=dat, statistic=mean_func,R=1000)
+return(boot.ci(results, type=type)[[4]][-c(2,3)])}
+
+
+cal_fun <- function(dat) {
+  CI1<-CI_pivote(dat)
+ CI4<-CI_boot(dat,"perc")
+  return(c(findInterval(vec=CI1[-1],x=900)==1,
+           findInterval(vec=CI4[-1],x=900)==1))
+}
+
+results <- map(data, cal_fun)
+apply(do.call(rbind,results),2,sum)/1000
+```
+```{r}
+set.seed(4)
+gen_fun <- function(nrep = 15, theta = 900) {
+  X <- rexp(nrep, rate = 1/theta)
+  return(X)
+}
+data <- replicate(n = 1000,gen_fun(), simplify = FALSE )
+
+CI_pivote <- function(X){
+  n <- length(X)
+  IC1 <- c(0.95,sum(X)/qgamma(0.975,n,1), 
+          sum(X)/qgamma(0.025,n,1))
+  return(IC1)
+}
+
+CI_boot <- function(dat, type){
+mean_func <- function(data, indices){
+  a<-mean(data[indices], na.rm=TRUE)
+  return(a)}
+results <- boot(data=dat, statistic=mean_func,R=1000)
+return(boot.ci(results, type=type)[[4]][-c(2,3)])}
+
+
+cal_fun <- function(dat) {
+  CI1<-CI_pivote(dat)
+ CI4<-CI_boot(dat,"perc")
+  return(c(findInterval(vec=CI1[-1],x=900)==1,
+           findInterval(vec=CI4[-1],x=900)==1))
+}
+
+results <- map(data, cal_fun)
+apply(do.call(rbind,results),2,sum)/1000
+```
+
+4. Describa brevemente cómo diseñaría una simulación que elabore de una manera más completa y con más evidencia su respuesta anterior (no hace falta llevarla a cabo, solo tiene que describir cómo la haría). (1 punto)
+
+
+
+
+
+
+
+
+
+

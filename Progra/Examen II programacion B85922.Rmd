@@ -1,0 +1,299 @@
+```{r}
+library(svDialogs)
+
+#Ventana de menu
+winDialog("ok","Menu de ejercicios:
+
+Digite 1 para:
+
+a) Tipo de muerte con mayor crecimiento porcentual 2001-2008.
+
+b) Mayor causa de muerte por año entre 2001-2008.
+
+c) Total de muertes de hombre y mujeres entre 2001-2008.
+
+d) Grafico pastel que muestra total de muertes de hombres y mujeres entre 2001-2005.
+
+Digite 2 para:
+
+a) Juego de piedra, papel o tijera
+Solicita al usuario cuántas veces desea jugar
+
+b) Presenta un gráfico, donde
+se muestre la cantidad de veces que se ganó, cada color
+
+c) representa (piedra, papel o tijera)")
+
+menu = dlg_input("Digite el ejercicio deceado:")$res
+
+setwd("C:/Users/cesar/Documents/") #Direccion del archivo
+COD = read.csv("CausesOfDeath_France_2001-2008.csv") #base de datos
+
+attach(COD)
+library(car)
+library(stringr)
+
+Value = str_replace_all(Value, " ", "")
+Value2 = as.numeric(Value)
+
+x1 = 2
+x2 = 926
+crecimiento.almacen = NULL
+
+if (menu == 1){
+  
+#--------------------------------------codigo del punto (a) --------------------
+  for (i in 1:131) {
+    porcentaje.crecimiento = (100 * Value2[x2] /
+                              Value2[x1]) - 100
+    x1 = x1 + 1
+    x2 = x2 + 1
+    crecimiento.almacen = c(crecimiento.almacen, porcentaje.crecimiento)
+  }
+  crecimiento.almacen = na.omit(crecimiento.almacen)
+  
+#--------------------------------Codigo para el punto (b) ----------------------
+  
+  contador.val = 0  
+  #Year 2001
+  for (i in 2:132) { 
+    year = Value[i]
+    if (year > contador.val  ){
+      x.uno = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0   
+  #Year 2002
+  for (i in 134:264) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.dos = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0   
+  #Year 2003
+  for (i in 266:396) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.tres = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0   
+  #Year 2004
+  for (i in 398:528) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.cuatro = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0 
+  #Year 2005
+  for (i in 530:660) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.cinco = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0    
+  #Year 2006
+  for (i in 662:792) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.seis = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0   
+  #Year 2007
+  for (i in 794:924) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.siete = i
+      contador.val = year
+    }
+    
+  }
+  
+  contador.val = 0   
+  #Year 2008
+  for (i in 926:1056) {  
+    year = Value[i]
+    if (year > contador.val  ){
+      x.ocho = i
+      contador.val = year
+    }
+    
+  }
+  
+#---------------------------------------Codigo de la (c)------------------------
+  
+  variable.sex = c(SEX[1], SEX[67], SEX[133],
+           SEX[199],SEX[265], SEX[331], 
+           SEX[397], SEX[463],SEX[529], 
+           SEX[595], SEX[661], SEX[727],
+           SEX[793], SEX[859], SEX[925], 
+           SEX[991])
+  
+  variable.cantidad = c(Value[1], Value[67], Value[133],
+           Value[199], Value[265], Value[331],
+           Value[397], Value[463], Value[529],
+           Value[595], Value[661], Value[727],
+           Value[793], Value[859], Value[925],
+           Value[991])
+  
+  variable.tiempo = c(TIME[1], TIME[67], TIME[133],
+         TIME[199], TIME[265], TIME[331], 
+         TIME[397], TIME[463], TIME[529],
+         TIME[595], TIME[661], TIME[727],
+         TIME[793], TIME[859], TIME[925],
+         TIME[991])
+  
+  dataframe = data.frame(variable.sex,variable.tiempo,variable.cantidad)
+  
+#------------------------------------Codigo de la (d)---------------------------
+  
+  
+  cant1 = c(Value2[1]+Value2[133]+Value2[265]+Value2[397]+Value2[529], Value2[67]+Value2[199]+Value2[331]+Value2[463]+Value2[595])
+  
+  Fem = cant1[2]
+  Mal = cant1[1]
+  
+  dataframe.2 = c(Mal,Fem)
+  
+  print0=print( paste0( "Tipo de muerte con mayor crecimiento porcentual: ", ICD10[63], " con un aumento del ", round(max(crecimiento.almacen), 2), "%")) #1.1
+  winDialog("ok",print0)
+  
+  # 2001
+  print1=print( paste0( "Mayor causa de muerte en 2001: ", ICD10[x.uno]))
+  winDialog("ok",print1)
+  
+  # 2002
+  print2=print( paste0( "Mayor causa de muerte en 2002: ", ICD10[x.dos])) 
+  winDialog("ok",print2)
+  
+  # 2003
+  print3=print( paste0( "Mayor causa de muerte en 2003: ", ICD10[x.tres]))  
+  winDialog("ok",print3)
+  
+  # 2004
+  print4=print( paste0( "Mayor causa de muerte en 2004: ", ICD10[x.cuatro]))  
+  winDialog("ok",print4)
+  
+  # 2005
+  print5=print( paste0( "Mayor causa de muerte en 2005: ", ICD10[x.cinco]))  
+  winDialog("ok",print5)
+  
+  # 2006
+  print6=print( paste0( "Mayor causa de muerte en 2006: ", ICD10[x.seis]))  
+  winDialog("ok",print6)
+  
+  # 2007
+  print7=print( paste0( "Mayor causa de muerte en 2007: ", ICD10[x.siete])) 
+  winDialog("ok",print7)
+  
+  # 2008
+  print8=print( paste0( "Mayor causa de muerte en 2008: ", ICD10[x.ocho]))  
+  winDialog("ok",print8)
+  winDialog("ok","Se abrira el data frame y se mostrara abajo el grafico")
+  
+  View(dataframe) #para el apartado del dataframe
+  
+ #Grafico
+pie(dataframe.2, col = c("darkslategray1", "#FF6A6A"),legend.text = colnames(dataframe.2),main = "Muertes totales entre 2001-2005",
+labels = c(Mal, Fem))# +legend("topright",c("Hombres", "Mujeres") , cex=0.65,fill=c("darkslategray1", "#FF6A6A" ))
+
+} else if (menu == 2){
+  TryGame <- dlgInput(message="Cuantas veces desea jugar: ")$res
+TryGame  <- as.integer(TryGame) # convert character into integer
+UserWin = 0
+PcWin = 0
+empate = 0
+wu.1=0
+wu.2=0
+wu.3=0
+wp.1=0
+wp.2=0
+wp.3=0
+#1 = Piedra 2 = Papel 3 = tijeras 
+
+for (i in 1:TryGame) {
+  Usuario = sample(1:3,1,replace=F) 
+  PC = sample(1:3,1,replace=F) 
+  #Posibilidades de ganar del usuario
+  if(Usuario == 1 && PC == 3 ) {
+    UserWin = UserWin + 1
+    wu.1 = wu.1 + 1
+  } else if (Usuario == 2 && PC == 1) {
+    UserWin = UserWin + 1
+    wu.2 = wu.2 + 1
+  } else if (Usuario == 3  && PC == 2) {
+    UserWin = UserWin + 1
+    wu.3=wu.3 + 1
+  }
+  #Posibilidades de ganar de la PC
+  if (PC  == 1 && Usuario == 3){
+    PcWin = PcWin + 1
+    wp.1=wp.1 + 1
+  }else if (PC == 2 && Usuario == 1) {
+    PcWin = PcWin + 1
+    wp.2=wp.2+1
+  } else if (PC == 3  && Usuario == 2) {
+    PcWin = PcWin + 1
+    wp.3 = wp.3 + 1
+  }
+  #Empates
+  if (Usuario==PC){
+    empate = empate + 1
+  }
+  print(paste("User Try: ", Usuario))
+  print(paste("PC Try: ", PC))
+  print("-----------------------")
+}
+
+winDialog("ok","Resultados de simulacion en consola y su respectivo grafico abajo ")
+printer=print(paste("Cantidad de victorias del usuario",UserWin))
+winDialog("ok",printer)
+printer2=print(paste("Cantidad de victorias del contricante",PcWin))
+winDialog("ok",printer2)
+printer3=print(paste("Cantidad de empates",empate))
+winDialog("ok",printer3)
+
+mi.tabla= matrix(c(wu.1,wu.2,wu.3,wp.1,wp.2,wp.3),nrow  = 3,byrow = F)
+colnames (mi.tabla) <- c ('Usuario', 'Contrincante')
+rownames (mi.tabla) <- c ('Piedra', 'Papel', 'Tijera')
+mi.tabla
+mi.tabla2=as.matrix(mi.tabla)
+barplot(mi.tabla2,
+        main = "Gráfico de victorias segun jugador",
+       xlab = "Usuario", ylab = "Frecuencia",
+        col = c("#FF6A6A", "#FFF68F", "#EE6AA7"),
+        legend.text = rownames(mi.tabla2),
+        beside = FALSE)
+
+}else {
+  #Ventana inicio
+  winDialog("ok","Por favor intente de nuevo")
+}
+
+
+```
+
+
+

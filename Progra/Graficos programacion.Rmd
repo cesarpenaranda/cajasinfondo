@@ -1,0 +1,73 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Lancemos una moneda 100 veces y hagamos una grafico de pie que muestra cuantas caras y cruz
+#pie
+```{r}
+lanz = sample(1:2,100,replace = T)
+pie(table(lanz), col=c("yellow","blue"), main="Ensayo", labels=c("Escudo","Corona"))
+```
+```{r}
+df=read.csv("misdatos.csv")
+```
+
+```{r}
+attach(df)
+```
+
+#baplot
+```{r}
+
+x1= table(Segment)
+x1
+grafico =barplot(x,main = "segmentos",xlab = "tipo",ylab = "cantidad", col = c("yellow","blue","red"))
+text(x= grafico,label=x1,pos=1)
+```
+#hist
+```{r}
+hist(Quantity,breaks = 10)
+```
+```{r}
+boxplot(Quantity~Segment,ylim=c(0,14))
+```
+
+```{r}
+edad = c(2,4,6,8,10)
+consumo= c(10,14,12,15,16)
+graduacion= c(12,13,11,12,10)
+
+x=c(edad,consumo)
+plot (edad,consumo,main="estudiantes",col="red", type="o", ylim=c(9,18), xlab = "id estudiantes", ylab="edad",pch=19) 
+lines(edad,graduacion)
+```
+
+```{r}
+edad = rnorm(120,15,4)
+x=c(min(edad)-2,max(edad)+2)
+hist(edad,xlim=x, ylim = c(0,0.11),
+     breaks = c(0,3,6,9,12,15,18,21,max(edad)+2),col="red")
+curve(dnorm(x,mean = 15,sd=4),from=5,to=25,add=TRUE )
+
+```
+
+Abriendo el data frame
+
+```{r}
+setwd("C:/Users/cesar/Desktop/UNIVERSIDAD/PROGRAMACION")
+df=read.csv("titanic.csv")
+```
+
+Hacemos el attach para trabajar sobre titanic unicamente
+
+```{r}
+attach(df)
+```
+
+```{r}
+cant=table(Pclass)
+grafico=barplot(table(Pclass),ylim = c(0,600),ylab = "can.pasajeros", xlab = "Clase", col = c("salmon","tomato")
+        ,names.arg = c("primera","media","baja"), main="pasajeros por clase")
+text(x=grafico,label=cant,pos=3)
+```
+

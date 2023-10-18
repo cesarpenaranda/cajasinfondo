@@ -1,0 +1,235 @@
+---
+title: "Untitled"
+output:
+  word_document: default
+  html_document: default
+date: "2023-05-04"
+---
+Cesar Peñaranda chaves - B85922
+James Araya cerdas - C10509
+Ashly Valerio - B98045
+
+##Ejercicio 1. (Peso en calificación: 30%)
+
+Un cliente les contrata para realizar un estudio sobre los museos de Costa Rica. El interés
+del cliente es conocer sobre el financiamiento que reciben los museos en el país y desea 
+seleccionar una muestra aleatoria de los mismos para estudiarlos. Es importante 
+he de mencionar que el cliente desea incluir todos los museos del país, no solamente los 
+administrados por el gobierno. De esta forma se establece que un museo es cualquier 
+establecimiento que cuente con las siguientes características: 1) Tener una instalación 
+física, 2) tener personal contratado en el sitio, 3) tener una o varias colecciones que se 
+ofrezcan al público y 4) que su actividad principal no sea la venta de algún bien o servicio. 
+Dado que no se cuenta con una lista de todas las instancias que entrarían dentro de esta 
+definición en el país, el primer paso es crear el marco muestral que se utilizará para 
+seleccionar la muestra. 
+Considerando lo anterior, propongan una estrategia para crear el marco muestral que se 
+utilizará en el estudio. Los detalles de las fuentes de información, y las estrategias para 
+compilación de estas deben estar bien detalladas. Además, deben indicar cuál sería el 
+producto final resultante de la estrategia implementada. La estrategia debe ser factible en 
+la práctica y no requerir el traslado de personas para recolección de datos. Una vez 
+realizada la propuesta, describa en detalle cuáles problemas tendría el marco muestral 
+propuesto y las implicaciones de cada error.
+
+Objetivos:
+*crear el marco muestral
+*Estrategia para crear el marco muestral 
+*Fuentes de información 
+*estrategias de compilación 
+*producto final obtenido de la estrategia 
+*estrategia factible sin necesidad de traslado físico
+*problemas del marco presentado e implicaciones de cada error
+
+
+
+características de clasificación como museo
+1) Tener una instalación física
+2) tener personal contratado en el sitio
+3) tener una o varias colecciones que se 
+ofrezcan al público 
+4) que su actividad principal no sea la venta de algún bien o servicio.
+
+
+Podemos comenzar a crear el marco a partir de búsquedas en internet de sitios especializados en el área digitando explícitamente “museos de costa rica” en el navegador y analizando los resultados obtenidos a partir de dichas buscadas por otra parte cuando digitamos lo anterior en el navegador de Google este mismo nos brinda una lista general de museos en la línea superior de los resultados, también la plataforma de Google maps inclusive waze es de ayuda muchas veces, podemos digitar en estos “museos” y ver los resultados ya que la gran mayoría de museos del pais están registrados en estas plataformas para mejorar la accesibilidad de ubicación de estos, además se pueden hacer búsquedas generales inclusive buscar en redes sociales digitando de igual manera “museos costa rica” ya que en general muchos museos públicos o privados poseen redes sociales para la publicación de información general, noticias o inclusive para publicidad de si mismos, además se puede consultar una guía telefónica digital y buscar los que contienen la palabra museo específicamente en su descripción, por otra parte se puede contactar a un experto en el área de museos e historia para consultar si en su área de trabajo ya se posee un marco o registro que sea de ayuda para el objetivo, una vez obtenida la lista principal de todos los museos a partir de las estrategias ya descritas, esperando que una de estas de resultados, esta lista estará en una condición sin depurar o clasificar, pero esto se hará posteriormente, luego de crear el marco principal en crudo, a partir de ahí podemos analizar cada una de las unidades para saber si cumple las características solicitadas por el contratista y conservar en el marco únicamente los que cumplen con lo solicitado quedando así solo unidades que cumplen lo siguiente; tienen una instalación física, tienen personal contratado en sus instalaciones, poseen varias colecciones de exposición al público por ultimo que su principal actividad no se base en la venta de bienes o servicios, esto predisponiendo a que no se lograba que el experto ya nos brinde un marco con dichas características o algún marco conseguido esta completo, de ser que se consigue alguno pero incompleto es cuestión de agregarlos con sus respectivos datos de interés al marco parcial posible, por otra parte podemos compilar los datos por conveniencia que nos brinden los mismos, inclusive se podría crear un Excel con los museos y a partir de ahí comenzar a seleccionar, depende del formato del archivo que se podría conseguir del experto también se podría trabajar, escogiendo el formato con el que se presente menor cantidad de problemas y nos solicita menos tiempo, ya aplicado todo lo anterior se tendría un marco principal con las características solicitadas por el contratista, sin asegurar de que este no fuera multietapico, ósea que se requiero de varias etapas y procesos para lograrlo, además suponemos que los museos ya están enlistados y de no ser el caso se procede a enlistarlos,  por ultimo se podrían tener problemas de marco como lo son los elementos faltantes, siendo estos los museos que no se logran enlistar por falta de cobertura o no se encontraron por ser muy nuevos o poco conocidos, o también los elementos extraños o blancos siendo estos los museos que a la hora de estudiarlos por algún motivo no existen o cambiaron su propósito ósea ya no son museos, los elementos extraños podemos prevenirlos corrigiendo el tamaño de la muestra a la hora de elegir del marco las unidades, hay que tener claro que según kish por lo general los marcos perfectos no existen, y tenemos esto claro ya que el proceso que se propone es imaginario hasta el momento siendo este un plan a seguir sin tener conocimiento conciso de lo que se va a conseguir siguiendo los pasos mencionados, para lograr un buen marco muestral que sea de utilidad para cumplir los objetivos que necesita el contratista.
+
+##Ejecicio 2
+
+Primeramente, hay que saber que la variancia del estimador del promedio es una medida de variabilidad de los valores que estamos estimando cuando sacamos muchas muestras de una misma población. Esto también hace referencia al concepto de la distribución muestral porque esta contiene y da forma a todas las estimaciones de cada una de las muestras aleatorias, en otras palabras, la distribución muestral es una distribución de probabilidad que nos da información de cómo se comportan todas las muestras seleccionadas.
+
+Entonces, calcular la variancia del estimador del promedio es importante porque nos da información de que tan preciso es un estimador y también si podemos o no confiar en la estimación. Si tenemos una variancia del estimador algo baja, podríamos pensar que los valores que estimamos se encuentran mas cercanos al valor real y, por el contrario, si la variancia del estimador es un poco alta, entonces podríamos pensar que la estimación no es tan buena y se alejan un poco más del valor real.
+
+Además, si no se calcula la esta variancia podrían haber algunas implicaciones como por ejemplo que no se tendría la precisión del estudio y entonces puede que las conclusiones finales no sean tan acertadas. También la variancia del estimador se utiliza para poder calcular intervalos de confianza en la población, no directamente, pero si es muy importante para calcular el error estándar y este error si es necesario para el cálculo de intervalos.
+
+##Ejercicio 3. (Peso en calificación: 20%)
+
+Una investigadora en biología quiere realizar una encuesta para estudiar personas con una cierta característica que se cree rara. Aunque no hay mucha información al respecto, la investigadora supone que la prevalencia de la característica es de aproximadamente 10%.
+
+1. ¿Qué tamaño de muestra se necesita para estimar la prevalencia de la característica
+con un margen de error de 0,02? Suponga que se asume como razonable que el riesgo
+de superar ese margen de error sea de 10%.
+
+Nos indican que la prevalencia es de 10& (0.10), lo cual es proporcion de la poblacion, además, nos brindan el margen de error (moe) el cual es de 0.02, asimismo nos dicen que el nicel de confianza es del 90%, o lo que s lo mismo, un riesgo de cometer error tipo I del 10%, lo cual es un indicio de que la formula a utilizar es la de los intervalos de confianza la cual es n0= Z^2 alfa/2*p*(1-p)/d^2
+
+```{r}
+library(PracTools)
+d= 0.02
+p=0.10
+alfa= 0.10
+z=1.645
+(no= ceiling(nProp(V0=(d/z)^2, pU=p)))
+#(n= (z^2*p*(1-p))/d^2)
+
+```
+Entonces concluimos que con un 90% de confianza, se espera que la muestra necesaria para estimar la prevalencia de la caracterítica en la poblacion sea de 609 personas.
+
+2. Con el tamaño de muestra encontrado en el punto 1. ¿Cuántas personas con la característica se esperan en la muestra?
+
+Para esto lo que se debe hacer es multiplicar el número de muestra encontrado con la proporcion de prevalencia brindada en el anunciado, así se obtiene la proporcion de prevalencia que se espera en la muestra.
+
+```{r}
+ceiling(no*p)
+```
+Con el tamaño de muestra obtenido, se espera que al menos 61 personas contengan la característica de estudio.
+
+3. Si se deseara realizar un estudio en la Gran Área Metropolitana (GAM) exclusivamente para las personas que presentan la característica de interés, con los mismos parámetros de precisión del punto 1, ¿cuántas personas deben seleccionarse del marco muestral para cumplir el objetivo?. Tome en cuenta que se estima que en la GAM residen 2.2 millones de personas.
+
+
+```{r}
+N= 2200000
+(n1= ceiling(nProp(V0=(d/z)^2, pU=p, N=N)))
+(n= ceiling(no/(1+no/N)))
+no/p
+```
+Con un 90% de confianza se espera que al menos 6090 personas deben seleccionarse del marco muestral que contengan la caracteristica estudiada en la GAM.
+
+##Ejercicio 4. (Peso en calificación: 30%)
+
+Lea el archivo sueno.Rdata. Este archivo contiene una muestra simple al azar, sin reemplazo, de personas de 50 años y más residentes de un cantón del país. Para el estudio se entrevistaron a 300 de las 5,000 en este grupo de edad en el cantón.
+El estudio consistió en una medición inicial de la duración en minutos del sueño por noche (antes) posterior a la cual se realizaron capacitaciones sobre la higiene del sueño. Finalmente, dos meses después de las capacitación se re-entrevistaron los participantes del estudió y se obtuvo una medición final de la duración del sueño (despues). 
+La primera ronda de entrevistas (variable antes) mostró que las personas dormían en promedio [A] minutos por noche. Está estimación tuvo un error estándar de [B] y su intervalo de confianza comprendió de [C] a [D] minutos. 
+Se observó que después de las charlas sobre la higiene mental (variable despues), las personas reportaron una duración promedio del sueño de [E], con un error estándar de [F]. Para esta estimación también se obtuvo el intervalo de confianza, que fue de [G] a [H].
+Para conocer si realmente las capacitaciones colaboraron en aumentar la duración del sueño, el equipo de investigación decidió examinar la diferencia de las medias entre las dos mediciones (dif= despues- antes). De esta forma encontraron que después de las capacitaciones, las personas reportaron dormir en promedio [I] minutos más que la medición inicial, con un error estándar de las diferencias de [J], y que su intervalo de confianza se encontró entre [K] y [L] minutos.
+
+```{r}
+load("sueno.Rdata")
+library(survey)
+diseno=svydesign(~1, data=sueno.2, fpc=rep(5000,300))
+media_antes <- round(svymean(~sueno.2$antes,diseno),2)
+media_antes
+round(confint(media_antes),2)
+ 
+ 
+media_despues <- round(svymean(~sueno.2$despues,diseno),2)
+media_despues
+round(confint(media_despues),2)
+ 
+dif <- media_despues-media_antes
+dif
+ 
+round(confint(dif),2)
+```
+#PRACTICA
+Una investigadora en biología quiere realizar una encuesta para estudiar personas con una cierta característica que se cree rara. Aunque no hay mucha información al respecto, la investigadora supone que la prevalencia de la característica es de aproximadamente 10%. 
+1. ¿Qué tamaño de muestra se necesita para estimar la prevalencia de la característica con un margen de error de 0,02? Suponga que se asume como razonable que el riesgo de superar ese margen de error sea de 10%.
+```{r}
+library(PracTools)
+
+```
+
+datos:
+```{r}
+p=0.10
+d=0.02
+alfa=0.10
+q=1-p
+z=qnorm(1-alfa/2)
+```
+
+Calculo de 𝑛0.
+```{r}
+n0=(z^2*p*q)/(d^2)
+ceiling(n0)
+```
+practools
+```{r}
+n0=nProp(V0=(d/z)^2,pU=p)
+ceiling(n0)
+```
+2. Con el tamaño de muestra encontrado en el punto 1. ¿Cuántas personas con la característica se esperan en la muestra?
+
+```{r}
+n=n0
+ceiling(n*p)
+```
+3. Si se deseara realizar un estudio en la Gran Área Metropolitana (GAM) exclusivamente para las personas que presentan la característica de interés, con los mismos parámetros de precisión del punto 1, ¿cuántas personas deben seleccionarse del marco muestral para cumplir el objetivo?. Tome en cuenta que se estima que en la GAM residen 2.2 millones de personas.  
+datos:
+```{r}
+p=0.10
+d=0.02
+alfa=0.10
+q=1-p
+z=qnorm(1-alfa/2)
+```
+practools
+```{r}
+n0=nProp(V0=(d/z)^2,pU=p)
+ceiling(n0)
+```
+```{r}
+n=n0;N=2200000
+f=n/N
+f>0.05
+```
+```{r}
+ceiling(n0/p)
+```
+Lea el archivo sueno.Rdata. Este archivo contiene una muestra simple al azar, sin reemplazo, de personas de 50 años y más residentes de un cantón del país. Para el estudio se entrevistaron a 300 de las 5,000 en este grupo de edad en el cantón. 
+
+El estudio consistió en una medición inicial de la duración en minutos del sueño por noche (antes) posterior a la cual se realizaron capacitaciones sobre la higiene del sueño. Finalmente, dos meses después de las capacitación se re-entrevistaron los participantes del estudió y se obtuvo una medición final de la duración del sueño (despues).
+
+La primera ronda de entrevistas (variable antes) mostró que las personas dormían en promedio [A] minutos por noche. Está estimación tuvo un error estándar de [B] y su intervalo de confianza comprendió de [C] a [D] minutos. 
+
+Se observó que después de las charlas sobre la higiene mental (variable despues), las personas reportaron una duración promedio del sueño de [E], con un error estándar de [F]. Para esta estimación también se obtuvo el intervalo de confianza, que fue de [G] a [H]. 
+Para conocer si realmente las capacitaciones colaboraron en aumentar la duración del sueño, el equipo de investigación decidió examinar la diferencia de las medias entre las dos mediciones (dif= despues- antes). De esta forma encontraron que después de las capacitaciones, las personas reportaron dormir en promedio [I] minutos más que la medición inicial, con un error estándar de las diferencias de [J], y que su intervalo de confianza se encontró entre [K] y [L] minutos.
+
+```{r}
+#Datos
+n=300;N=5000
+load("sueno.Rdata") ;View(sueno.2); str(sueno.2)
+```
+
+diseño
+```{r}
+diseno=svydesign(ids=~1,data=sueno.2,fpc=rep(N,n))
+```
+
+Promedio de antes [A] y error [B] intervalo [C]y[D]
+```{r}
+(A=svymean(~sueno.2$antes,diseno))
+confint(A,df=n-1)
+```
+A=383.93
+B=0.4404
+C=383.0626
+D=384.7958
+Promedio de despues [E] y error [F] intervalo [G]y[H]
+```{r}
+(E=svymean(~sueno.2$despues,diseno))
+confint(E,df=n-1)
+
+```
+E=399.92
+F=0.4437
+G=399.0425
+H=400.7889
+
+Promedio  [I] y error [J] intervalo [K]y[L]
+```{r}
+(cov(sueno.2$antes,sueno.2$despues))
+
+dif=sueno.2$despues-sueno.2$antes
+(m_dif=svymean(~dif,diseno))
+SE(m_dif)
+confint(m_dif)
+```
+
+

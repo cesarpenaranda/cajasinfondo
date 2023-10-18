@@ -1,0 +1,170 @@
+
+```{r}
+library(survey)
+library(PracTools)
+library(sampling)
+library(dplyr)
+```
+
+Ejercicio 1.  (Peso en calificación: 10%)
+*Explique por qué crear más estratos
+*Al seleccionar una muestra estratificada 
+*No necesariamente implica una reducción en la variancia del estimador de la media. 
+
+principalmente no es aconsejado un gran numero de estratos segun kish y cochran debe de rondar entre los 2 y 7, ademas depende del grado de homogenidad dentro de los estratos que tanto es esperado que disminuya la variabilidad, por otra parte entre mas se aumenta el numero de estratos mas el diseño tiende a un mia, perdiendo asi la eficiencia en la variabilidad a cierta cantidad de estratos. es necesario tambien a homogeneidad dentro de los estratos para asi asegurar una disminucion en la varianza, y esto es complicado cuando el numero de estratos es alto sin ninguna razon justificada, es por eso que hay que tener mas aspectos en cuenta como motivo para aumentar el numero de estratos, todo depende del diseño planteado, la variable estudiada y demas, pero por lo general mas estratos no es sinonimo de mejor variabilidad
+
+
+Ejercicio 2. (Peso en calificación: 30%)
+Se diseña una encuesta dirigida a hogares para estimar la proporción que posee ciertos atributos. Para las principales características de interés, el valor de la proporción se espera que oscile entre 0.3 y 0.7. 
+
+
+a)	¿De qué tamaño debe ser la muestra para obtener estimaciones con un error estándar que no exceda el 3%? Además, se estratificará el marco muestral para la selección en zona urbana y rural. Se sabe que el efecto del diseño en diseños similares con afijación proporcional produce una ganancia en la precisión de un 10%.
+```{r}
+p=0.5; q=1-p ; ee.p.esp=0.03 ; ganancia=0.10 ; ed=1-ganancia 
+n.mia=(p*q)/(ee.p.esp)**2; n.mia
+n.estrat=n.mia*ed;ceiling(n.estrat)
+
+```
+
+
+b)¿Cuál cree que sería la forma más adecuada de afijar la muestra a los estratos? Justifique su respuesta. 
+
+Esta pregunta es ambigua ya que no tiene en cuenta el objetivo de estudio, ni los costos, o si se desea comparar estratos, etc, para poder responderla se necesita un contexto mayor ademas unos objetivos de estudio definidos para asi saber cual es el diseño mas adecuado, pero dado que el estudio es para una zona urbana y otra es rural, sabemos de antemano que sus tamanos son distintos y no se nos ha mencionado nada sobre costos, entonces de momento la que parece mas adecuada es la proporcional, ya que divide la muestra de manera proporcional a los dos estratos siendo asi mas equilibrado el diseño dado la informacion suministrada
+
+Ejercicio 3. (Peso en calificación: 30%)
+
+En un barrio rural con 55 casas se desea conocer las prácticas de cultivos para autoconsumo,
+incluyendo el gasto en alimentos.
+
+Para esto, la asociación de desarrollo de la comunidad decide entrevistar a 10 viviendas de las 55.
+
+Como marco muestral, se cuenta con un mapa de la zona con las viviendas numeradas desde la 01 hasta la 55. 
+
+El mapa se actualizó recientemente para poder realizar el estudio. 
+
+a)	Si la selección de las viviendas se desea realizar utilizando muestreo sistemático, ¿Cuál sería el valor de k?
+```{r}
+N=55 ; n=10 
+k=N/n;k
+```
+b)	 Suponiendo que k=5,5 y que se quiere utilizar el procedimiento de intervalo fraccionario, brinde el identificador de las primeras 5 viviendas seleccionadas. Asuma que el arranque aleatorio fue 8.
+
+```{r}
+r=8 
+k_=k*10
+vector=c(8)
+for(i in 1:10){
+ vector[i]= max(vector)+k_
+}
+print(vector)
+k_
+
+h=c(8,6,11,17,22)
+length(h)
+```
+
+c)	En la siguiente tabla se encuentra la información del gasto en alimentos de los hogares seleccionados. Estime el promedio del gasto en alimentos y su intervalo de confianza. 
+```{r}
+hogar=c(rep(1:10))
+gasto=c(98383,74778,170007,119889,65312,97027,160859,183563,184057,92574)
+marco=cbind(hogar,gasto);marco=as.data.frame(marco);marco
+```
+
+```{r}
+library(survey)
+```
+
+```{r}
+N=55
+n=10
+diseno=svydesign(id=~1,data=marco,fpc = rep(N,n))
+media=svymean(~marco$gasto,diseno);media
+confint(media,df=n-1)
+```
+
+d)	Interprete los resultados del punto c. 
+con un nivel de confianza del 95% la media del gasto, esta contenida en el intervalo [95007,154282] esto en el barrio rural 
+
+Ejercicio 4. (Peso en calificación: 30%)
+
+```{r}
+load("Bases/zoos_data.Rdata")
+```
+
+Lea el archivo zoos_data.csv.
+
+El archivo corresponde a una muestra de 300 zoológicos en Estados Unidos.
+
+Los datos fueron recolectados como parte de una investigación que buscaba describir las ganancias anuales recolectadas por estas instituciones (variable Revenue) y el número de animales que se mantienen en cada una (variable Num_Animals).
+
+Los zoológicos fueron seleccionados mediante una muestra estratificada por la región del país: Mid-Atlantic, Midwest, Northeast, South y West (variable Region).
+
+En cada región del país se planeó seleccionar 65 zoológicos de forma sistemática y se visitaron para recolectar la información necesaria. 
+
+No obstante, en cada región se encontraron algunos zoológicos que no cumplían con los requisitos para participar del estudio, por lo que la muestra efectiva fue un poco más baja para algunas regiones. 
+
+La idea de seleccionar un número similar en cada región fue poder hacer comparaciones entre las regiones del país. 
+
+Dado que las regiones tienen un número distinto de zoológicos el porcentaje de selecciones fue distinto para cada región.
+
+Para la región Mid-Atlantic se selecionó el 20%,
+para la región Midwest se seleccionó un 32%,
+para la región Northeast fue un 10%, 
+para la South un 12,5%
+y para la West un 30%.
+
+La selección sistemática se realizó para facilitar el recorrido de las regiones en el campo, sin embargo; se sabe que dentro de cada región no hay un orden de los zoológicos relacionado a las variables de interés. 
+
+
+Usando el archivo que se brinda realice lo siguiente: 
+a)	¿Cuántos zoológicos hay en total en cada estrato?
+```{r}
+n=300
+p=c(0.20,0.32,0.10,0.125,0.30)
+nh=table(zoos_data$Region)
+Nh=nh/p;Nh
+```
+
+b)	¿Cuál es la fracción de muestreo para cada estrato?
+```{r}
+N=sum(Nh)
+f=nh/Nh;f
+```
+
+c)	¿Cuál es el ponderador necesario para la estimación en cada estrato? Inclúyalo en la base de datos brindada. 
+```{r}
+ponderador=1/f;ponderador
+```
+```{r}
+base=zoos_data %>%mutate(ponde=case_when(Region=="Mid-Atlantic"~5,Region=="Midwest"~3.125,Region=="Northeast"~10,Region=="South"~8,TRUE~3.33))
+```
+
+```{r}
+table(base$ponde,base$Region)
+```
+
+d)	Calcule la media nacional, su error estándar e intervalo de confianza de las ganancias anuales de los zoológicos Utilice un 90% de confianza para el cálculo del intervalo de confianza. 
+```{r}
+n=300
+N=sum(Nh)
+H=5
+diseno=svydesign(ids=~1,strata = ~Region, weights = ~ponde,data=base,fpc = rep(N,n))
+```
+
+```{r}
+media=svymean(~base$Revenue,diseno);media
+confint(media,df=n-H,level = 0.90)
+```
+
+e)	Calcule el total de animales en zoológicos en los Estados Unidos, su error estándar e intervalo de confianza. Utilice un 90% de confianza para el cálculo del intervalo de confianza.
+```{r}
+total=svytotal(~base$Num_Animals,diseno);total
+confint(total,df=n-H,level = 0.90)
+```
+
+f)	Determine si existe una diferencia estadísticamente significativa entre las regiones en la media de las ganancias anuales de los zoológicos. Use un alfa= 0.05 y una z en lugar de una t para obtener los intervalos de confianza.
+```{r}
+media_h=svyby(base$Revenue,by=base$Region,diseno,svymean)
+confint(media_h)
+```
+

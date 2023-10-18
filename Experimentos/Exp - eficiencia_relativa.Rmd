@@ -1,0 +1,36 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-22"
+---
+Otra forma
+Mariposas2$bloque= interaction(Mariposas2$sitio,Mariposas2$semana)
+```{r}
+Mariposas2$bloque=paste(Mariposas2$sitio,"-",Mariposas2$semana)
+
+mod=lm(Mariposas2$frec~Mariposas2$altura+Mariposas2$especie+Mariposas2$bloque+Mariposas2$altura*Mariposas2$especie)
+anova(mod)
+```
+```{r}
+cmbloc=4.629
+cmres_db=2.871
+fb=45
+fa=15+45;fa
+b_bloques=16
+n=64
+```
+
+```{r}
+num=(b_bloques-1)*cmbloc+(n-b_bloques)*cmres_db
+deno=n-1
+
+cmres_da=num/deno
+
+num=(fb+1)*(fa+3)*cmres_da
+deno=(fb+3)*(fa+1)*cmres_db
+
+err=num/deno;err
+```
+
+La EER me dio 1.1340
+

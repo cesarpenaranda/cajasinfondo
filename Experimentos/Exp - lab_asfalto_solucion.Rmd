@@ -1,0 +1,422 @@
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lattice)
+```
+
+# 6.3 Asfalto
+Se hizo un estudio cuyo objetivo era investigar si al implementar antioxidantes
+como aditivos para el mortero asfáltico (agregado + asfalto), se retarda el proceso
+de oxidación. Se utilizan dos variables como indicadores de este proceso: el módulo
+complejo (MegaPascales) y el ángulo de fase (grados). En el estudio se quieren
+comparar 2 antioxidantes (ácido ascórbico y orujo), donde cada uno de ellos se utiliza
+en tres diferentes concentraciones (1, 3 y 5%).
+Además de los factores de diseño, se sabe que los resultados de las variables críticas
+se miden a temperaturas y frecuencias determinadas, las cuales van a impactar estos
+resultados. Estas temperaturas y frecuencias también se obtienen para períodos de
+envejecimiento determinados (4, 8 y 16 años). Adicionalmente se tienen dos fuentes
+de donde proviene el agregado o piedra fina (Barranca y Guápiles). Si bien el conocer
+el efecto de la fuente de agregado no es el objetivo primordial del estudio, podría
+darse que la fuente introduzca variabilidad en los resultados.
+Puesto que las dos variables respuesta están altamente correlacionadas, el
+investigador decide concentrar su análisis en el módulo. Él considera que una
+diferencia de 10 MegaPascales entre dos promedios es bastante considerable. El
+antioxidante que tenga un módulo promedio menor se considera más apropiado.
+
+respuesta
+modulo - megapascales -> respuesta medida
+angulo fase - grados
+
+factor antioxidante -> factor de diseño 
+ * asido ascorbico 
+ * orujo
+
+factor concentracion 
+ * 1
+ * 3
+ * 5
+
+cov
+frecuencia - temperatura - tiempo(envejecimiento)
+
+tiempo(envejecimiento)
+*4
+*8
+*16
+
+cov
+agregados
+*barranca 
+*guapiles
+
+diferencia relevante 10 megapascales
+
+
+# 1. Preparación:
+## (a) Lectura:
+Para iniciar se van a considerar solo los
+datos para una concentración de 5% que corresponde al nivel alto en la
+variable concentración. Cambie los niveles de agregado a las iniciales de
+cada sitio para que sea más fácil de leer en los análisis. Haga una nueva
+base donde se filtren sólo los los datos que se requieren.
+```{r}
+load("Bases/asfalto.Rdata")
+str(base)
+
+```
+
+```{r}
+levels(base$agreg)
+```
+
+```{r}
+levels(base$agreg)=c("B","G")
+base2=subset(base,conc=="alto")
+```
+
+## (b) Factores de diseño y tratamientos:
+Hay un factor de diseño que es el tipo de antioxidante puesto que la
+concentración se ha fijado en el nivel alto. Hay 2 tratamientos en el diseño.
+
+conce.alto-antiox.or 
+conce.alto-antiox.or
+
+## (c) Repeticiones por tratamiento:
+```{r}
+table(base2$antiox)
+```
+Hay 180 observaciones por tratamiento.
+## (d) Combinaciones tratamiento-factor:
+Puesto que el envejecimiento y el agregado son dos factores que se
+controlan, se van a incluir en el análisis para reducir el ruido. Al incluir
+estos dos nuevos factores, ¿cuántas combinaciones tratamiento-factor se
+obtienen?
+
+Se obtienen 12 combinaciones (2x3x2).
+
+## (e) Repeticiones por combinación:
+```{r}
+with(base2,table(antiox,env,agreg))
+#variable respuesta / mis covariables envejecimiento, agregado 
+```
+Hay 30 repeticiones por combinación.
+
+# 2. Variabilidad de la respuesta:
+## (a) Variancia de la respuesta observada dentro de cada antioxidante:
+```{r}
+(v1=tapply(base2$mod,base2$antiox,var))
+#mod es mi variable respuesta 
+#antiox factor de diseño
+```
+
+```{r}
+mean(v1)
+```
+
+## (b) Variancia de la respuesta dentro de cada combinación:
+Obtenga la variancia de la respuesta dentro de cada combinación
+tratamiento-factor y la media de estas variancias. Compare esta medida
+de la variabilidad con la que había obtenido anteriormente
+```{r}
+(v2=with(base2,tapply(mod,list(antiox,env, agreg),var)))
+
+#esta funcion hace lo mismo que lo siguiente
+var(base2$mod[base2$env=="4"&base2$agreg=="B"&base2$antiox=="ASC"])
+#donde estamos viendo las varianzas dentro de cada combinacion
+```
+
+```{r}
+mean(v2)
+```
+Ahora se obtiene una variancia media de 2650,7 la cual es menor que la que se
+obtuvo anteriormente de 2752,7, sin embargo no es mucha la disminución que
+se logra.
+
+
+## (c) Visualización de la variabilidad:
+```{r}
+boxplot(mod~antiox,col=c(2,4),xlab="antioxidante",ylab="módulo",data=base2)
+boxplot(mod~antiox+agreg+env,col=c(2,4),cex.axis=0.5,las=2,
+xlab="antioxidante-fuente-envejecimiento",ylab="módulo",data=base2)
+```
+## (d) Discusión:
+Discuta si el haber agregado los factores controlados disminuyó la
+variabilidad, de tal forma que sea más evidente si uno de los antioxidantes
+es mejor que el otro en términos del promedio de módulo.
+
+En el gráfico de la izquierda en la Figura 6.6, se observa una gran
+variabilidad dentro de cada antioxidante y es difícil determinar si alguno de los
+antioxidantes produce un módulo promedio menor que el otro. Al considerar
+las combinaciones de antioxidante por fuente y envejecimiento (derecha), la
+variabilidad no se reduce mucho y sigue siendo difícil ver diferencias entre
+antioxidantes.
+
+# 3. Inclusión de covariable:
+Inclusión de covariable: ahora se tratará de visualizar la variabilidad de la
+respuesta tomando en cuenta una de las covariables. En este caso se tienen dos
+covariables (temperatura y frecuencia) que se incluyen porque se sabe que el
+módulo está asociado con la temperatura y con la frecuencia.
+## (a) Correlación entre respuesta y covariable:
+```{r}
+with(base2,cor(cbind(temp, frec),mod))
+```
+## (b) Correlación dentro de cada tratamiento:
+```{r}
+summarise(group_by(base2,antiox),cor(temp,mod))
+```
+```{r}
+summarise(group_by(base2,antiox),cor(frec,mod))
+```
+La correlación entre módulo y temperatura es bastante alta tanto en general
+como dentro de cada nivel de antioxidante, sin embargo, la correlación entre
+módulo y frecuencia no es tan alta.
+
+## (c) Líneas de regresión por antioxidante:
+```{r}
+xyplot(mod~temp|antiox,type=c("r","p"),data=base2)
+xyplot(mod~temp,groups=antiox,type=c("r","p"),data = base)
+```
+## (d) Variabilidad alrededor de la línea:
+La variabilidad que se observa alrededor de cada línea de regresión en la Figura
+6.7 corresponde a la variancia residual en un modelo de regresión y se podría
+estimar con el cuadrado medio residual.
+## (e) Variabilidad alrededor de la media por combinación:
+```{r}
+boxplot(mod~antiox,data=base2)
+boxplot(mod~antiox+agreg+env,cex.axis=0.5,las=2,data=base2)
+boxplot(mod~antiox+temp2,cex.axis=0.5,las=2,data=base2)
+```
+En la Figura 6.8 se observa claramente que la variabilidad se reduce cuando se
+incluye la temperatura (derecha).
+
+## (f) Modelo con la covariable:
+Para tomar en cuenta la variabilidad que está induciendo la temperatura,
+estime un modelo con el factor antioxidante y la covariable temperatura
+(use la temperatura continua original - temp). También estime un modelo
+donde sólo se tiene el factor de diseño antioxidante.
+```{r}
+mod1=lm(mod~antiox,data=base2) #modelo con el factor de diseño
+mod2=lm(mod~temp+antiox,data=base2) #modelo con el factor de diseño y la covariable
+anova(mod1)
+anova(mod2)
+```
+## (g) Cuadrado medio residual:
+```{r}
+cmr1=anova(mod1)[2,3]
+cmr2=anova(mod2)[3,3]
+c(cmr1,cmr2,mean(v1))
+```
+En el modelo donde solo se incluye el factor de diseño se obtiene una
+variancia residual de 2752,7, mientras que en el modelo donde se ha incluido la
+temperatura, la variancia residual se reduce a 519,19. Al incluir la temperatura
+se reduce la variabilidad residual. Cuando se consideraron los tratamientos
+según el factor de diseño se obtuvo una variancia promedio igual a la del
+modelo que tiene sólo el factor de diseño.
+
+# 4. Prueba formal:
+## (a) Efecto del antioxidante.
+ Haga la prueba de hipótesis correspondiente para determinar si alguno
+de los antioxidantes es mejor en términos de reducir el módulo promedio.
+Hágalo primero en un análisis de variancia que solo considere el factor
+de diseño, luego tome en cuenta la temperatura. Cuando se tienen
+covariables hay que tener cuidado con el uso de la función anova ya que
+cada línea representa el aporte marginal de cada variable. En este caso
+interesa analizar la variabilidad que explica el antioxidante una vez que
+se ha eliminado el ruido que introduce la temperatura, por esto, debe
+introducirse primero la temperatura y luego el antioxidante. En general es
+más recomendable usar la función drop1, indicando test="F", para evitar
+confusiones.
+```{r}
+mod1=lm(mod~antiox,data=base2)
+drop1(mod1,test="F")
+```
+```{r}
+mod2=lm(mod~temp+antiox,data=base2)
+drop1(mod2,test="F")
+```
+En el primer caso (sin incluir la temperatura) no se logra detectar una diferencia
+entre los promedios de módulo para los tres antioxidantes (p = 0,06). Cuando
+se introduce la temperatura las diferencias se hacen más evidentes (p < 0,001).
+Esto indica que dada una cierta temperatura, los promedios de módulo varían
+según el antioxidante.
+
+*en el modelo en el que solo incluimos la variable atiox sin la covariable temperatura, no logramos captar deferencias entre los promedios 
+de modulo para los tres antioxidantes ya que tenemos lo siguiente Pr(>F)=0.06118, mientras que al agregar la covariable temp 
+obtenemos una disminucion en la variabilidad asi obteniendo una diferencia en los promedios significativa o mas evidentes Pr(>F)=7.581e-05
+esto nos indica que dada cierta temperatura los promedios de modulo varian segun el antioxidante 
+
+## (b) Papel de la temperatura.
+En este caso el investigador no está interesado en analizar el impacto que tiene
+la temperatura sobre el módulo promedio, sino que se introduce en el análisis
+debido a que hay un enorme ruido en la variable respuesta que es debido a
+la temperatura. Al eliminar ese ruido o variabilidad, las diferencias entre los
+promedios para los dos antioxidantes se hacen más evidentes.
+
+# 5. Análisis completo:
+## (a) Prueba de interacción entre factor de diseño y covariables:
+ahora vamos a realizar el análisis tomando en cuenta todos
+los factores incluidos en el estudio. Para esto vemos que hay dos covariables
+(temperatura y frecuencia), y también se tienen el envejecimiento y el agregado
+además del factor de diseño (antioxidante). Para que las interpretaciones
+no sean tan complicadas es deseable que no exista interacción entre factor
+de diseño y las covariables continuas. El modelo inicial debe incluir estas
+interacciones para probar si el supuesto de no interacción se cumple. Además
+deben incluirse interacciones entre el factor de diseño y otros factores incluidos
+en el análisis.
+En el modelo se usa la siguiente notación: i para antioxidante, j para
+envejecimiento, k para agregado, \(X_1\) para temperatura y \(X_2\) para frecuencia.
+Se usa el término \(α^{(1)}_i\) para referirse a la interacción entre antioxidante
+y temperatura, y \(α^{(2)}_i\) para referirse a la interacción entre antioxidante y
+frecuencia. El modelo completo es el siguiente:
+$$\mu_{ijk,X1,X2} = β_0 +α_i +δ_j +τ_k +β_1X_1 +β_2X_2 + (αδ)_{ij} + (ατ)_{ik} +α^{(1)}_iX_1 +α^{(2)}_iX_2$$
+
+```{r}
+mod3=lm(mod~antiox*env+antiox*agreg+antiox*temp+antiox*frec,data=base2)
+mod4=lm(mod~antiox*env+antiox*agreg+temp+frec,data=base2)
+anova(mod4,mod3)
+```
+La hipótesis nula es que los dos modelos dan una misma explicación, lo que
+implica que \(\alpha^{(1)}_i = \alpha^{(2)}_i = 0.\) Al comparar los dos modelos se obtiene una
+probabilidad de error tipo I de 0,55, lo cual lleva a no rechazar la hipótesis nula
+y se puede asumir que ambos modelos explican lo mismo, es decir, que no existe
+interacción entre antioxidante y cada una de las covariables.
+
+## (b) Eliminación de interacciones:
+Ahora haga un proceso de selección hacia atrás para ir descartando
+interacciones entre el factor de diseño y los otros factores. Use la función
+drop1(mod,test="F"). En este caso debe empezar con el modelo donde ya
+se eliminaron las interacciones con las covariables.
+```{r}
+drop1(mod4,test="F")
+```
+La interacción que es menos significativa es entre antioxidante y agregado. Si
+se elimina esa interacción no se encuentra una diferencia significativa con el
+modelo anterior (p = 0,86). Ahora se elimina esa interacción y se continúa para
+ver si la otra interacción debe permanecer en el modelo.
+```{r}
+mod5=lm(mod~antiox+env+agreg+temp+frec+antiox:env,data=base2)
+drop1(mod5,test="F")
+
+```
+
+Se obtiene una probabilidad muy baja (p = 0,02) por lo que hay evidencia de
+interacción entre antioxidante y envejecimiento. De esta forma se concluye que
+el efecto del antioxidante no es el mismo en todos los niveles de envejecimiento.
+
+## (c) Visualización de interacción entre antioxidante y envejecimiento:
+```{r}
+library(ggplot2)
+ggplot(base, aes(x=env, y=mod, group = antiox)) +
+stat_summary(fun="mean", geom="line", aes(linetype = antiox))
+```
+En la Figura 6.9 se ilustra que existe interacción entre antioxidante y
+envejecimiento. Se observa que para 4 años, la diferencia entre ASC y OR es
+mayor que en los otros años, y se nota que cuando se llega a 16 años esa
+diferencia es muy poca. En todos los casos la media de módulo es mayor para
+ASC que para OR.
+
+## (d) Modelo resultante:
+El modelo incluye antioxidante, envejecimiento y agregado así como la
+interacción entre los dos primeros, además incluye las dos covariables
+temperatura y frecuencia:
+$$µ_{ijk,X1,X2} = β_0 +α_i +δ_j +τ_k +β_1X_1 +β_2X_2 + (αδ)_{ij}$$
+## (e) Niveles de referencia:
+```{r}
+contrasts(base2$antiox)
+```
+
+```{r}
+contrasts(base2$env)
+```
+## (f) Relaciones en diferencias de promedios:
+Se sabe que \(α1 = (αδ)11 = (αδ)12 = (αδ)13 = (αδ)21 = 0\)
+\(µ_{11} −µ_{21} = (β_0 +α_1 +δ_1 +τ_k +β_1X_1 +β_2X_2 + (αδ)_{11})\)
+\(−(β_0 +α_2 +δ_1 +τ_k +β_1X_1 +β_2X_2 + (αδ)_{21})\)
+\(= α_1 − α_2 + (αδ)_{11} −(αδ)_{21}\)
+\(= −α_2\)
+\(µ_{12} −µ_{22} = (β_0 +α_1 +δ_2 +τ_k +β_1X_1 +β_2X_2 + (αδ)_{12})\)
+\(−(β_0 +α_2 +δ_2 +τ_k +β_1X_1 +β_2X_2 + (αδ)_{22})\)
+\(= α_1 −α_2 + (αδ)_{12} −(αδ)_{22}\)
+\(= −α_2 −(αδ)_{22}\)
+\(µ_{13} −µ_{23} = (β_0 +α_1 +δ_3 +τ_k +β_1X_1 +β_2X_2 + (αδ)_{13})\)
+\(−(β_0 +α_2 +δ_3 +τ_k +β_1X_1 +β_2X_2 + (αδ)_{23})\)
+\(= α_1 −α_2 + (αδ)_{13} −(αδ)_{23}\)
+\(= −α_2 −(αδ)_{23}\)
+
+## (g) Planteamiento de contrastes:
+```{r}
+mod5$coef
+```
+
+```{r}
+c1=c(0,-1,0,0,0,0,0,0,0)
+c2=c(0,-1,0,0,0,0,0,-1,0)
+c3=c(0,-1,0,0,0,0,0,0,-1)
+
+```
+## (h) Cálculo de contrastes:
+```{r}
+beta=mod5$coef
+cont=cbind(c1,c2,c3)
+L=t(cont)%*%beta
+row.names(L)=c("ASC-OR,4años","ASC-OR,8años","ASC-OR,16años")
+L
+```
+## (i) Prueba de hipótesis relativas a los contrastes:
+Los contrastes para comparar las hipótesis que se quieren probar son:
+µ11 −µ21
+µ12 −µ22
+µ13 −µ23
+Tomando el vector de promedios
+(µ11,µ21,µ12,µ22,µ13,µ23)
+Los vectores para obtener los contrastes son:
+(1,−1,0,0,00)
+(0,0,1,−1,0,0)
+(0,0,0,0,1,−1)
+
+```{r}
+v1 = c(1,-1,0, 0,0,0)
+v2 = c(0, 0,1,-1,0, 0)
+v3 = c(0, 0,0, 0,1,-1)
+c(v1%*%v2, v1%*%v3, v2%*%v3)
+
+```
+
+Estos 3 vectores son ortogonales, por lo no que hay que hacer corrección.
+```{r}
+ee=sqrt(diag(t(cont)%*%vcov(mod5)%*%cont))
+t=L/ee
+anova(mod5)
+```
+
+```{r}
+p=pt(t,351,lower.tail=F)
+round(p,3)
+```
+Puesto que los contrastes son ortogonales, se comparan estas probabilidades
+contra α = 0,05, y se rechaza la hipótesis solo para los dos primeros contrastes,
+lo cual indica que efectivamente sólo para 4 y 8 años se obtiene un módulo
+promedio mayor para ASC que para OR, en cambio para 16 años no hay
+evidencia de que esto sea así.
+## (j) Cotas inferirores e interpretación:
+Para construir las cotas no se hace ningún ajuste porque los contrastes son
+ortogonales, y se usa 1−α
+
+```{r}
+t=qt(1-0.05,351)
+lim=L[1:2]-t*ee[1:2]
+names(lim)=row.names(L)[1:2]
+lim
+```
+
+Puesto que la diferencia que definió el investigador como relevante entre dos
+promedios era 10 MegaPascales, se tiene que para 4 años sí se ha demostrado
+que el antioxidante ASC es mayor que el OR, sin embargo, para 8 años, aunque
+esta diferencia es estadísticamente significativa, apenas se ha demostrado que es
+mayor que 52,43 MegaPascales por lo que no es un resultado definitivo y claro
+en cuanto a que haya una diferencia relevante. Se concluye que el antioxidante
+Orujo produce un módulo promedio menor que el Ácido Ascórbico cuando
+se tiene un envejecimiento de 4 años pero que conforme pasa el tiempo esa
+diferencia se va haciendo más pequeña a tal pundo que puede no ser muy
+relevante.
+

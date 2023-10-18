@@ -1,0 +1,67 @@
+```{r}
+load("Bases/leucemia.Rdata")
+```
+
+```{r}
+load("Bases/km10casos.Rdata")
+```
+
+```{r}
+library(survival)
+library(ggfortify)
+```
+
+
+```{r}
+km10=survfit(Surv(tiempo,falla)~1,stype = 1,data = km10casos)
+summary(km10)
+
+autoplot(km10)
+```
+```{r}
+quantile(km10,quantiles=c(0.25,0.50,0.75))
+```
+
+```{r}
+load("Bases/leucemia.Rdata")
+```
+
+```{r}
+kmleucemia=survfit(Surv(semanas,recaida2)~1,stype = 1,data = leucemia)
+summary(kmleucemia)
+```
+
+```{r}
+autoplot(kmleucemia)
+```
+estimacion de la mediana 
+```{r}
+quantile(kmleucemia,quantiles=c(0.25,0.50,0.75))
+```
+es igual a 12
+
+```{r}
+kmleucemia2=survfit(Surv(semanas,recaida2)~intervencion,stype = 1,data = leucemia)
+summary(kmleucemia2)
+```
+```{r}
+autoplot(kmleucemia2)
+```
+
+```{r}
+survdiff(Surv(semanas,recaida2)~intervencion,data = leucemia)
+```
+
+```{r}
+load("Bases/reincidencia.Rdata")
+```
+
+```{r}
+reincidencia.km1=survfit(Surv(week,arrest)~fin,stype = 1,data = reincidencia)
+autoplot(reincidencia.km1)
+```
+diferencia entre las dos curvas
+```{r}
+survdiff(Surv(week,arrest)~fin,data = reincidencia)
+```
+

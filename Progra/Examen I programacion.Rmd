@@ -1,0 +1,185 @@
+---
+title: "EXAMENPR"
+author: "CESAR"
+date: '2022-05-13'
+output: html_document
+---
+#El examen lo hice en markdown ya que me resulto mas facil probar uno por uno lo programado
+```{r}
+print("#1 Solicita un número de día y texto diciendo un mes,el programa devuelve la fecha siguiente")
+print("#2 Solicita un día e imprime todos los 365 días de ese año suponiendo que este no es bisiesto")
+print("#3 Ejercicio Fibonacci, debuelve la suma de los pares")
+  
+menu=as.numeric(readline("Digite el ejercicio del examen que desea ejecutar: "))
+
+if(menu==1){
+  #codigo para el primer ejercicio
+#El ejercicio no esta tomando en cuenta fechas invalidas ya que eso no fue solicitado en el mismo
+mesvector=c("ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE")
+print("Este programa indica el dia siguiente al que usted digite")
+dia=as.numeric(readline("Digite el dia (numerico): "))
+n=as.character(toupper(readline("Digite el mes (textual): ")))
+contador=1
+for (contador in 1:12) {
+  if(n == mesvector[contador]){
+    numero_mes = contador
+  }
+}
+
+if(dia==31 & (numero_mes==1|numero_mes==3|numero_mes==5|numero_mes==7|numero_mes==8|numero_mes==10)){
+   print(paste(1,"DE",mesvector[numero_mes+1]))
+} else if (dia==28 & numero_mes==2){
+  print(paste(1,"DE",mesvector[3]))
+} else if (dia==30 & (numero_mes==4|numero_mes==6|numero_mes==9|numero_mes==11)){
+  print(paste(1,"DE",mesvector[numero_mes+1]))
+} else if (dia==31 & numero_mes==12){
+print(paste(1,"DE","ENERO"))
+}else {
+  print(paste(dia+1,"DE",mesvector[numero_mes]))
+}
+} else 
+  if (menu==2){
+    #codigo del ejercicio 2 solicita un día e imprime todos los 365 días de ese año suponiendo que este no es bisiesto
+diavector=c("LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO","DOMINGO")
+n=as.character(toupper(readline("Digite el día: ")))
+for (contador in 1:7) {
+  if(n == diavector[contador]){
+    numero_dia = contador
+  }
+}
+
+for (Mes in 1:12) {
+  if(Mes == 1){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," Enero"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 2){
+    for (Dia in 1:28){
+      print (paste(diavector[numero_dia], Dia," de "," FEBRERO"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 3){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," MARZO"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 4){
+    for (Dia in 1:30){
+      print (paste(diavector[numero_dia], Dia," de "," ABRIL"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 5){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," MAYO"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 6){
+    for (Dia in 1:30){
+      print (paste(diavector[numero_dia], Dia," de "," JUNIO"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 7){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," JULIO"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 8){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," AGOSTO"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 9){
+    for (Dia in 1:30){
+      print (paste(diavector[numero_dia], Dia," de "," SETIEMBRE"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 10){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," OCTUBRE"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 11){
+    for (Dia in 1:30){
+      print (paste(diavector[numero_dia], Dia," de "," NOVIEMBRE"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+  if(Mes == 12){
+    for (Dia in 1:31){
+      print (paste(diavector[numero_dia], Dia," de "," DICIEMBRE"))
+      numero_dia = numero_dia + 1
+      if(numero_dia == 8){
+        numero_dia = 1
+      }
+    }
+  }
+}
+} else 
+  if (menu==3){
+    #codigo del ejercicio 3 ejercicio Fibonacci, debuelve la suma de los pares, el ejercicio 3 no lo entendi muy bien, estoy fue lo     que pense que se solicitava en dicho ejercicio 
+     numero = 33 
+    x = 0
+    x2 = 1
+    suma = 0
+    c=c()
+    for (i in 1:numero) {
+        tmp = x2
+        x2 = x
+        x = x + tmp
+        c = c(c, x)
+        if(x%%2==0){
+          suma = suma + x
+        }
+    }
+print(c)
+print(paste("La sumatoria es: ", suma))
+
+} else {
+  print("Digite un valor adecuado")
+}
+```
+

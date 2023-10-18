@@ -1,0 +1,199 @@
+```{r}
+library(survey)
+library(dplyr)
+```
+
+#Pregunta 1. 
+Una empresa que produce sopas enlatadas acaba de registrar una fuga de aceite de una 
+de sus máquinas empacadoras. Debido a la emergencia, la gerencia desea saber cuál es 
+la proporción de latas contaminadas, para poder determinar si debe de realizar un 
+callback de los lotes afectados. Le contratan a usted para seleccionar una muestra que 
+permita determinar la proporción de latas afectadas. 
+El archivo mm_latas.Rdata contiene el registro de los lotes que pasaron por la máquina 
+antes de detectarse la fuga. Usando este archivo como el marco muestra obtenga los 
+siguientes datos:
+```{r}
+load("Bases/mm_latas.Rdata")
+```
+
+a. ¿Cuántas latas pasaron por la máquina antes de detectarse la fuga? (1 punto)
+```{r}
+length(lotes)
+```
+
+b. ¿Cuántos lotes pasaron por la máquina antes de detectarse la fuga? (1 punto)
+```{r}
+A=length(unique(lotes$lotes));A
+```
+
+c. ¿Cuál es el tamaño de los lotes? (1 punto)
+```{r}
+B=2500
+```
+
+d. Usted decide que por la naturaleza del proceso de producción la mejor forma de 
+estimar el porcentaje de latas afectadas es seleccionando una muestra de 
+conglomerados (lotes), realizando un mia de 15 lotes. Seleccione los lotes que 
+serán examinados y brinde el número de identificación de los primeros 5 lotes. 
+(Nota: utilice el comando set.seed(130522) antes de la selección). (5 puntos).
+```{r}
+a=15
+library(sampling)
+lotes= as.data.frame(lotes)
+set.seed(130522)
+ids=sampling::cluster(data=lotes,clustername =c("lotes") ,size = a,method = "srswor") #srsword=simple random sampling whithout replacement
+unique(ids$lotes)
+```
+
+e. ¿Cuál es la fracción de muestreo en la primera etapa? (1 punto)
+```{r}
+f1=a/A;f1
+```
+
+f. Escriba la fórmula de selección del diseño. (1 puntos)
+
+**f=a/A * B/B**
+
+Pregunta 2. 
+Con la identificación de los lotes de la muestra seleccionada se visitaron los locales en 
+los que se habían colocado los mismos. El archivo contaminados_muestra.Rdata
+contiene la muestra seleccionada para la inspección de las latas de sopa en la muestra 
+seleccionada. 
+a. Usando este archivo complete la siguiente tabla (8puntos): 
+```{r}
+load("Bases/contaminados_muestra.Rdata")
+```
+
+
+Proporción de latas 
+contaminadas
+```{r}
+n=a*B
+diseno=svydesign(ids=~lote,data=muestra1,fpc=rep(A,n))
+summary(diseno)
+```
+
+
+*Estimación puntual
+```{r}
+table(muestra1$contaminado)
+pro=svymean(~muestra1$contaminado,diseno,deff=T);pro
+```
+
+*Error estándar de la estimación puntual
+
+**SE->0.0029308**
+
+*Intervalo de confianza (95%)
+```{r}
+confint(pro,df=degf(diseno))
+```
+
+*Efecto del diseño
+**DEff->1.6321**
+
+
+Total de latas 
+contaminadas
+
+*Estimación puntual
+```{r}
+tot1=svytotal(~muestra1$contaminado,diseno,deff=T);tot1
+
+```
+
+*Error estándar de la estimación puntual
+**SE->549.53**
+
+*Intervalo de confianza (95%)
+```{r}
+confint(tot1,df=degf(diseno))
+```
+
+*Efecto del diseño
+
+**DEff->1.6321**
+
+## practica crime 
+Lea el archivo crimen.Rdata. Los datos en el archivo corresponden a una muestra de 
+estratificada de conglomerados desiguales sin submuestreo en el país El Peligro. Las 
+variables de diseño son: estrato que representa los estratos, upm que identifica los 
+conglomerados y ponderador que identifica el ponderador para cada caso. Usando estos 
+datos, conteste lo siguiente:
+```{r}
+load("Bases/crimen.Rdata")
+```
+
+1. ¿Cuántos estratos se construyeron para la selección de la muestra?
+```{r}
+table(crimen$estrato)
+length(unique(crimen$estrato))
+```
+**hay 143 estratos**
+2. ¿Cuántas UPM se seleccionaron por estrato?
+```{r}
+table(crimen$upm)
+length(unique(crimen$upm))
+```
+**hay dos ump por estrato**
+3. Calcule el porcentaje de personas que reportaron ser víctimas de al menos un 
+crimen violento (variable violento, ocupa recodificación) y su intervalo de confianza.
+```{r}
+crimen=crimen%>%mutate(violento2= case_when(violento==0~0,TRUE~1))
+table(crimen$violento2)
+table(crimen$violento)
+```
+diseno
+```{r}
+diseno2=svydesign(ids=~upm,strata =~estrato,weights =~ponderador ,data =crimen ,nest = T )
+```
+porcentaje de personas 
+```{r}
+porcen1=svymean(~violento2,diseno2,deff=T);porcen1
+porcen1*100
+```
+intervalo a casa
+```{r}
+confint(porcen1,df=degf(diseno2))*100
+```
+
+4. Calcule el porcentaje de personas que han sufrido alguna lesión resultado de 
+un crimen (variable lesion, ocupa recodificación) y su intervalo de confianza
+```{r}
+crimen=crimen%>%mutate(lesion2=case_when(lesion==0~0,TRUE~1))
+table(crimen$lesion2)
+```
+porncentaje personas lesion 
+```{r}
+porcen2=svymean(~crimen$lesion2,diseno2,deff=T);porcen2
+porcen2*100
+confint(porcen2,deff=degf(diseno2))*100
+```
+
+5. Estime el gasto promedio en colones en servicios de salud relacionados a una 
+lesión de un crimen (variable gasto) y su intervalo de confianza para aquellas personas 
+que sufrieron una lesión.
+```{r}
+by1= svyby(crimen$gasto,by=~crimen$lesion2,diseno2,svymean);by1
+confint(by1,df=degf(diseno2))
+```
+
+6. Calcule el número promedio de incidentes criminales por persona (variable 
+numinc) y su intervalo de confianza.
+```{r}
+prom1=svymean(~numinc,diseno2,deff=T);prom1
+confint(prom1,df=degf(diseno2))
+```
+
+7. Estime el total de personas que reportaron ser víctimas de robo (variable robo) 
+según su condición de empleo (variable empleo) y su intervalo de confianza. ¿Hay una 
+diferencia estadísticamente significativa en el número de personas que 
+experimentaron un robo de acuerdo a la condición de empleo? 
+```{r}
+by4=svyby(~robo,by=~empleo,diseno2,svytotal);by4
+confint(by4,df=degf(diseno2))
+```
+
+¿Hay una diferencia estadísticamente significativa en el número de personas que 
+experimentaron un robo de acuerdo a la condición de empleo? 
+**si hay una diferencia significatica, esto puesto que los intervalos no se traslapan**

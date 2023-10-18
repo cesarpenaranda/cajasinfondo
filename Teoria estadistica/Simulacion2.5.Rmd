@@ -1,0 +1,200 @@
+---
+title: "Simulacion"
+output: html_document
+date: "2023-06-28"
+---
+
+```{r librerias y paquetes}
+#install.packages("nortest")
+#install.packages("carData")
+library(nortest)
+library(carData)
+library(car)
+#citation("carData") citas
+set.seed(123)
+#install.packages("car")
+```
+
+para evaluar la normalidad de una muestra
+Prueba de Shapiro-Wilk: Esta prueba se utiliza para evaluar si una muestra proviene de una población normalmente distribuida. La hipótesis nula de la prueba es que la muestra proviene de una población normal. Si el valor p es menor que el nivel de significancia (por ejemplo, 0.05), se rechaza la hipótesis nula y se concluye que la muestra no proviene de una población normal.
+
+Prueba de Anderson-Darling: Al igual que la prueba de Shapiro-Wilk, esta prueba se utiliza para evaluar si una muestra proviene de una población normalmente distribuida. La hipótesis nula y el procedimiento para tomar una decisión son los mismos que para la prueba de Shapiro-Wilk.
+
+
+para evaluar si varias muestras provienen de poblaciones con la misma varianza.
+Prueba de Bartlett: Esta prueba se utiliza para evaluar si k muestras provienen de poblaciones con la misma varianza. La hipótesis nula de la prueba es que todas las poblaciones tienen la misma varianza. Si el valor p es menor que el nivel de significancia, se rechaza la hipótesis nula y se concluye que al menos una de las poblaciones tiene una varianza diferente a las demás.
+
+Prueba de Levene: Al igual que la prueba de Bartlett, esta prueba se utiliza para evaluar si k muestras provienen de poblaciones con la misma varianza. La hipótesis nula y el procedimiento para tomar una decisión son los mismos que para la prueba de Bartlett.
+
+```{r}
+
+norm <- function(r, s1, s2) {
+  prom <- c(5.4025, 6.1625, 5.3525, 6.2425, 5.4475, 6.2650)
+  k <- length(prom)
+  n <- k * r
+  mu1 <- rep(prom, each = r)
+  
+  p_values <- matrix(0, nrow = 1000, ncol = 4)
+  
+  for (i in seq_len(1000)) {
+    y1 <- rnorm(n, mean = mu1, sd = s1)
+    y2 <- rnorm(n, mean = mu1, sd = s2)
+    factorA <- as.factor(c(rep(rep(1:3), r)))
+    factorB <- factor(c(rep(rep(1:2), r)))
+    datos1 <- data.frame(y1, factorA, factorB)
+    datos2 <- data.frame(y2, factorA, factorB)
+    options(contrasts = c("contr.sum", "contr.poly"))
+    mod1 <- lm(y1 ~ factorA * factorB, datos1)
+    mod2 <- lm(y2 ~ factorA * factorB, datos2)
+    
+    res1 <- mod1$res
+    res2 <- mod2$res
+    
+    # Test de Shapiro
+    i1 = shapiro.test(res1)$p.value
+    i2 = shapiro.test(res2)$p.value
+    
+    # Test de Anderson-Darling
+    i3 = ad.test(res1)$p.value
+    i4 = ad.test(res2)$p.value
+    
+   
+    p_values[i, ] <- c(i1, i2, i3, i4)
+  }
+  
+  colnames(p_values) <- c("Shapiro_1", "Shapiro_2:","AD_1", "AD_2")
+  
+   return(p_values)
+}
+
+```                                    
+
+```{r}
+hom <- function(r, s1, s2 ) {
+  prom <- c(5.4025, 6.1625, 5.3525, 6.2425, 5.4475, 6.2650)
+  k <- length(prom)
+  n <- k * r
+  mu1 <- rep(prom, each = r)
+  
+  p_values <- matrix(0, nrow = 1000, ncol = 4)
+  
+  for (i in seq_len(1000)) {
+    y1 <- rnorm(n, mean = mu1, sd = s1)
+    y2 <- rnorm(n, mean = mu1, sd = s2)
+    factorA <- as.factor(c(rep(rep(1:3), r)))
+    factorB <- factor(c(rep(rep(1:2), r)))
+    datos1 <- data.frame(y1, factorA, factorB)
+    datos2 <- data.frame(y2, factorA, factorB)
+    options(contrasts = c("contr.sum", "contr.poly"))
+    mod1 <- lm(y1 ~ factorA * factorB, datos1)
+    mod2 <- lm(y2 ~ factorA * factorB, datos2)
+    
+    res1 <- mod1$res
+    res2 <- mod2$res
+
+    # Test de Bartlet
+    j1 = bartlett.test(datos1$y1 ~ interaction(datos1$factorA, datos1$factorB))$p.value
+    j2 = bartlett.test(datos2$y2 ~ interaction(datos2$factorA, datos2$factorB))$p.value
+    
+    # Test de Levene
+j3 = leveneTest(y1 ~ interaction(factorA, factorB), data = datos1)$'Pr(>F)'[1]
+j4 = leveneTest(y2 ~ interaction(factorA, factorB), data = datos2)$'Pr(>F)'[1]
+
+    p_values[i, ] <- c(j1, j2, j3, j4)
+  }
+  
+  colnames(p_values) <- c("Bartlett_1", "Bartlett_2", "Levene_1", "Levene_2")
+  
+  return(p_values)
+}
+
+#hom(6, 0.2, 9,10)
+
+```
+
+
+```{r}
+p_values_norm <- norm(6, 0.2, 9)
+
+par(mfrow = c(2, 4))
+for (i in seq_len(ncol(p_values_norm))) {
+  boxplot(p_values_norm[, i], main = colnames(p_values_norm)[i], ylab = "Valor p")
+}
+
+p_values_hom <- hom(6, 0.2, 9)
+
+for (i in seq_len(ncol(p_values_hom))) {
+  boxplot(p_values_hom[, i], main = colnames(p_values_hom)[i], ylab = "Valor p")
+  
+}
+
+```
+
+```{r}
+prop_norm <- colMeans(p_values_norm < 0.05) #promedio
+
+colSums(p_values_norm < 0.05)
+
+bp1 <- barplot(prop_norm , main = "Proporción de valores p < 0.05", 
+        ylab = "Proporción",xlab="Pruebas",
+        las = 2,
+        ylim = c(0,1))
+
+text(x = bp1, y = prop_norm, label = paste0(round(prop_norm*100), "%"), pos = 3, cex = 0.8)
+
+prop_hom <- colMeans(p_values_hom < 0.05)
+
+bp2 <- barplot(prop_hom , main = "Proporción de valores p < 0.05", 
+        ylab = "Proporción",xlab="Pruebas",
+        las = 2,
+        ylim = c(0,1))
+
+text(x = bp2, y = prop_hom, label = paste0(round(prop_hom*100), "%"), pos = 3, cex = 0.8)
+```
+
+
+```{r grafico}
+#p_values <- simu(6, 0.2, 9)
+grafico <- function(r, s1, s2){
+  prom <- c(5.4025, 6.1625, 5.3525, 6.2425, 5.4475, 6.2650)
+  k <- length(prom)
+  n <- k * r
+  mu1 <- rep(prom, each = r)
+  y1 <- rnorm(n, mean = mu1, sd = s1)
+  y2 <- rnorm(n, mean = mu1, sd = s2)
+  factorA <- as.factor(c(rep(rep(1:3), 6)))
+  factorB <- factor(c(rep(rep(1:2), 6)))
+  datos1 <- data.frame(y1, factorA, factorB)
+  datos2 <- data.frame(y2, factorA, factorB)
+  options(contrasts = c("contr.sum", "contr.poly"))
+  mod1 <- lm(y1 ~ factorA * factorB, datos1)
+  mod2 <- lm(y2 ~ factorA * factorB, datos2)
+  res1 <- mod1$res
+  res2 <- mod2$res
+  
+  qqnorm(res1, main = paste("Desviacion baja de",s1,"y", r,
+                                      "repeticiones","y con una n =", n),
+                   ylim=c(-4,4), xlim=c(-4,4))
+  
+  qqline(res1)
+  
+  qqnorm(res2, main = paste("Desviacion alta de",s2,"y", r,
+                                     "repeticiones","y con una n =", n),
+                  ylim=c(-4,4), xlim=c(-4,4))
+  
+  qqline(res2)
+
+  h1 = car::qqPlot(res1, main = paste("Desviacion baja de",s1,"y", r,
+                                      "repeticiones","y con una n =", n))
+  
+  h2= car::qqPlot(res2, main = paste("Desviacion alta de",s2,"y", r,
+                                     "repeticiones","y con una n =", n))
+  
+  return(list(h1,h2))
+}
+
+graficos <- grafico(6,0.2,9)
+
+```
+
+

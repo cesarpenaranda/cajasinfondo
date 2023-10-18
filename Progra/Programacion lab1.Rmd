@@ -1,0 +1,80 @@
+---
+title: "LAB1 programacion"
+author: "CESAR"
+date: '2022-07-07'
+output: html_document
+---
+
+```{r}
+#Laboratorios de R 
+
+#install.packages("svDialogs",dependencies=TRUE) # Para instalar el paquete (Esto se ejecuta solamente en caso donde no se haya instalado anteriormete en el IDE de programación)
+library(svDialogs)            # Para usar el paquete
+library(utils)                # Para usar el paquete
+
+menu = as.numeric (dlgInput(message="Digite un numero del uno al cuatro: ")$res)
+if (menu == 1){
+  a = as.numeric(dlgInput(message="Digite el valor de A: ")$res)
+  b = as.numeric(dlgInput(message="Digite el valor de B: ")$res)
+  c = as.numeric(dlgInput(message="Digite el valor de C: ")$res)
+  if (b^2 - 4*a*c >= 0) {
+    X1 = (-b + sqrt (b^2-4*a*c))/(2*a)
+    X2 = (-b - sqrt (b^2-4*a*c))/(2*a)
+  } else {
+    X2 = (-b + sqrt(as.complex(b^2 - 4*a*c)))/(2*a)
+    X1 = (-b - sqrt(as.complex(b^2 - 4*a*c)))/(2*a)
+  }
+  winDialog(type="ok", message=paste("X1 =",X1)) #imprime mensajes en alertas flotantes winDialog(type="ok", message="TuMensaje")
+  winDialog(type="ok", message=paste("X2 =",X2))
+} else if (menu==2){
+  a = as.numeric(dlgInput(message="digite un numero con decimales: ")$res)
+  b = as.numeric(dlgInput(message="digite un numero mas con decimales: ")$res)
+  c = as.numeric(dlgInput(message="digite uno mas con decimales: ")$res)
+  if(a+c<b) { 
+    winDialog(type="ok", message="No es triangulo")
+  }else if(b+a<c) { 
+    winDialog(type="ok", message="No es triangulo")
+  }else if(c+b<a){ 
+    winDialog(type="ok", message="No es triangulo")
+  }else{
+    winDialog(type="ok", message="Es triangulo")
+  }
+} else if (menu==3) {
+  a = as.numeric(dlgInput(message="Digite un año: ")$res)
+  if(a %% 4 == 0){
+    if(a %% 100 == 0){
+      if(a %% 400 ==0) {
+        winDialog(type="ok", message="el año es biciesto")
+      } else {
+        winDialog(type="ok", message="el año no es biciesto")
+      }
+    }else{
+      winDialog(type="ok", message="el año es biciesto")
+    }
+  }else{
+    winDialog(type="ok", message="el año no es biciesto")
+  }
+} else {
+  hora = as.numeric(dlgInput(message="digite la hora: ")$res)
+  minuto = as.numeric(dlgInput(message="digite los minutos: ")$res)
+  segundo = as.numeric(dlgInput(message="digite los segundos: ")$res)
+  minutocero = 0
+  segundocero = 0
+  horacero = 0
+  
+  if (segundo < 59) {
+    winDialog(type="ok", message=paste("La hora es: ", hora,":",minuto,":",segundo+1))
+  } 
+  if (minuto < 59 & segundo == 59) { 
+    winDialog(type="ok", message=paste("La hora es: ", hora,":",minuto+1,":",segundocero))
+  }
+  if (hora < 23 & minuto == 59 & segundo == 59) { 
+    winDialog(type="ok", message=paste("La hora es: ", hora+1,":",minutocero,":",segundocero))
+  } 
+  if (hora == 23 & minuto == 59 & segundo == 59) { 
+    winDialog(type="ok", message=paste("La hora es: ", horacero,":",minutocero,":",segundocero))
+  } 
+}
+
+```
+

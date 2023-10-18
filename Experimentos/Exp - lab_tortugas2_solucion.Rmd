@@ -1,0 +1,407 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-20"
+---
+#3.3 Tortugas 2
+
+Se desea determinar si la falta de alimento afecta el nivel de proteínas en sangre en
+tortugas de las especies Kinosternum scorpioides (de agua dulce) y Chelonia midas
+(de agua salada), y si el efecto es diferente de una especie a otra.
+Se escogen 12 ejemplares de cada especie y se les asigna aleatoriamente a cada tortuga
+una de las siguientes condiciones: 1) dieta estricta, 2) dieta balanceada y 3) alimento
+en abundancia. Se registra el nivel de proteína en gramos por decilitro.
+
+#1. Preparación:
+##(a) Lectura:
+```{r}
+base=read.csv("Bases/tortugas2.csv")
+base$cond=factor(base$cond)
+levels(base$cond)=c("estricta","balanceada","abundancia")
+base$especie=factor(base$especie)
+```
+
+##(b) Factores:
+Hay dos factores: el que se está investigando es la condición de alimento y se
+tiene otro que es la especie de tortuga.
+
+##(c) Enfoque del análisis:
+Interesa ver primero si el efecto que tiene la condición de alimento es el mismo
+en ambas especies. Si el efecto es el mismo en ambas especies entonces puede
+darse una conclusión general sobre el efecto que tiene cada condición en la
+proteína promedio en sangre sin diferenciar esta conclusión por especie, de lo
+contrario, debe cuantificarse ese efecto por separado en cada especie.
+
+#2. Efectos:
+##(a) Media general:
+```{r}
+(medgen=mean(base$proteina))
+```
+
+##(b) Efectos simples de condición:
+```{r}
+(alfa=tapply(base$proteina,base$cond,mean)-medgen)
+```
+##(c) Efectos simples de especie:
+```{r}
+(beta=tapply(base$proteina,base$especie,mean)-medgen)
+```
+
+##(d) Promedios observados:
+```{r}
+(med=tapply(base$proteina,list(base$cond,base$especie),mean))
+```
+
+##(e) Promedios estimados bajo el modelo sin interacción:
+```{r}
+m11=medgen+alfa[1]+beta[1]
+m21=medgen+alfa[2]+beta[1]
+m31=medgen+alfa[3]+beta[1]
+m12=medgen+alfa[1]+beta[2]
+m22=medgen+alfa[2]+beta[2]
+m32=medgen+alfa[3]+beta[2]
+(mest=matrix(c(m11,m21,m31,m12,m22,m32),nrow=3,
+dimnames=list(c("estricta","balanceada","abundancia"),
+c("chelonia","kynosternon"))))
+```
+
+##(f) Gráfico de interacción entre condición y especie:
+```{r}
+library(ggplot2)
+ggplot(base, aes(x=especie, y=proteina, group = cond)) +
+stat_summary(fun="mean", geom="line", aes(linetype = cond))
+```
+
+En la Figura 3.4 se observa que la distancia entre la media de proteína en sangre
+cuando se proporciona dieta estricta con respecto a la media cuando se tiene
+dieta balanceada para chelonia es mucho mayor a esta distancia en el caso
+de kynosternon. Esto es una fuerte indicación de que existe interacción entre
+condición y especie.
+
+##(g) Comparación entre promedios observados y promedios estimados:
+```{r}
+(efint=med-mest)
+```
+Estas cantidades deben restarse al promedio observado para obtener la
+estimación que asegura que no haya interacción. Por ejemplo, en el caso de
+estricta para chelonia debería sumarse 0,88, en el caso de balanceada debería
+restarse 2,63 y en el caso de abundancia debería sumarse 1,75, de esta forma
+los promedios distarían una cantidad idéntica a la que se obtendría en el
+caso correspondiente para kynosternon. Estas cantidades se llaman efectos de
+interacción.
+
+##(h) Efectos simples y de interacción:
+```{r}
+mod1=aov(proteina~cond*especie,data=base)
+model.tables(mod1)
+```
+
+##(i) Comparación:
+Se obtienen los mismos efectos simples (alfa y beta), así como los mismos efectos
+de interacción.
+
+#3. Variancia del error:
+##(a) Boxplot:
+```{r}
+boxplot(proteina~cond+especie,ylab="proteína",xlab="condición:especie",data=base)
+```
+En la Figura 3.5 se observa mayor variabilidad en el tratamiento de estricta
+para chelonia, mientras que hay mucho menos variabilidad en el tratamiento
+de abundancia para kynosternon. Se puede esperar que las distribuciones de
+los 6 tratamientos no tengan la misma variabilidad. Por otra parte, se nota que
+para chelonia, el tratamiento con dieta balanceada produce un mayor promedio
+de proteína que para las otras condiciones, mientras que para kynosternon la
+diferencia es muy pequeña, por lo que se confirma que sí se espera que haya
+interacción entre condición y especie.
+
+##(b) Variancias por tratamiento:
+```{r}
+(v=tapply(base$proteina,list(base$cond,base$especie),var))
+```
+
+##(c) Supuesto de homocedasticidad:
+```{r}
+bartlett.test(base$proteina~interaction(base$cond,base$especie))
+```
+
+Ante la hipótesis de homocedasticidad se obtiene una probabilidad asociada
+de 0,39, por lo que se decide no rechazarla, con lo cual no se tiene evidencia
+de heteroscedasticidad. Cuando se calcularon las variancias en los diferentes
+tratamientos se ven grandes diferencias ya que la menor es 0,25 y la mayor 4,91,
+sin embargo, la prueba no logra demostrar que las variancias son diferentes
+seguramente por la poca cantidad de réplicas en cada tratamiento. Se continúa
+suponiendo que los datos provienen de poblaciones cuyas variancias son
+iguales.
+
+##(d) Variabilidad del error:
+```{r}
+mean(v)
+```
+
+#4. Estimaciones bajo el modelo con interacción:
+##(a) Modelo con interacción:
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod2=lm(proteina~cond*especie,data=base)
+```
+##(b) Matriz de estructura:
+```{r}
+contrasts(base$cond)
+contrasts(base$especie)
+model.matrix(mod2)
+```
+La matriz de estructura tiene dos columnas para condición con códigos 0, 1 y -1,
+puesto que el factor condición tiene 3 niveles. Similarmente una columna para
+especie con códigos 1 y -1, puesto que el factor especie tiene dos niveles. El -1
+corresponde siempre al nivel que no aparece que es kynosternon o abundancia.
+La columna de interacción es el producto de las otras dos columnas. Así, por
+ejemplo, las filas 1 a 4 corresponden a las tortugas de la especie chelonia
+(especie1 = 1) con condición estricta (cond1 =1 y cond2 = 0), las filas 21 a
+24 corresponden a las tortugas de la especie kynosternon (especie1 = -1) con
+condición abundancia (cond1 = -1 y cond2= -1).
+
+##(c) Efectos obtenidos con los coeficientes del modelo:
+```{r}
+mod2$coef
+```
+El efecto de cond1 (estricta) es −3,38, el de cond2 (dieta regulada) es 2,38. El
+de cond3 (abudancia) se obtiene a partir de los otros dos por la restricción de
+suma nula como: −(−3,38 + 2,38) = 1. El efecto de especie1 (chelonia) es 1 y el
+de especie2 (kynosternon) es -1.
+El efecto de interacción para cond1:especie1 es −0,88, por lo que para
+cond1:especie2 es 0,88. El efecto de interacción para cond2:especie1 es 2,63,
+por lo que para cond2:especie2 es −2,63. El efecto de interacción para
+cond3:especie1 se obtiene a partir de cond1:especie1 y cond2:especie1, para que
+los 3 sumen cero: −(−0,88+2,63) = −1,75. A partir de este se obtiene el último
+efecto de interacción para cond3:especie2 que es 1,75.
+
+##(d) Promedio de chelonia-estricta:
+El vector para el cálculo del promedio del tratamiento chelonia-estricta es
+[1,1,0,1,1,0]T
+el cual se multiplica por el vector de coeficientes estimados del
+modelo:
+```{r}
+coef=mod2$coef
+c(1,1,0,1,1,0)%*%coef
+```
+
+##(e) Promedio para todos los otros tratamientos:
+A continuación se dan los vectores necesarios para obtener los promedios de los
+diferentes tratamientos:
+
+Chelonia-balanceada: [1, 0, 1, 1, 0, 1]T
+Chelonia-abundancia: [1,−1,−1, 1,−1,−1]T
+Kynostenron-estricta: [1, 1, 0,−1,−1, 0]T
+Kynostenron-balanceada: [1, 0, 1,−1, 0,−1]T
+Kynostenron-abundancia: [1,−1,−1,−1, 1, 1]T
+
+```{r}
+ch.e = c(1,1,0,1,1,0)
+ch.b = c(1,0,1,1,0,1)
+ch.a = c(1,-1,-1,1,-1,-1)
+ky.e = c(1,1,0,-1,-1,0)
+ky.b = c(1,0,1,-1,0,-1)
+ky.a = c(1,-1,-1,-1,1,1)
+h = cbind(ch.e,ch.b,ch.a,ky.e,ky.b,ky.a)
+
+```
+
+```{r}
+(L = t(h)%*%coef)
+
+```
+
+#5. Hipótesis de independencia:
+##(a) Tabla de análisis de variancia:
+```{r}
+anova(mod2)
+```
+
+##(b) Hipótesis nula:
+HO : (αβ)i j = 0
+Esta hipótesis dice que el efecto de la condición de alimento sobre la proteína
+promedio en sangre no depende de la especie, es decir, es el mismo en cualquiera
+de las dos especies.
+
+##(c) Cuadrado medio residual:
+```{r}
+anova(mod2)[4,3]
+```
+Este valor coincide con la media de las variancias obtenida anteriormente y es
+una medida de la variabilidad de la respuesta dentro de cada tratamiento.
+
+##(d) Grados de libertad:
+Para condición hay 2 grados de libertad porque son tres condiciones, mientras
+que para especie hay un grado de libertad porque son 2 especies. Para la
+interacción entre condición y especie hay 2 grados de libertad que se obtiene
+del producto de los grados de libertad de cada uno de los factores.
+
+##(e) Cuadrado medio de condición y cuadrado medio de especie:
+```{r}
+anova(mod2)[1:2,3]
+```
+El cuadrado medio de condición es 72,13, el cual es una medida de la distancia
+entre las medias de las tres condiciones. Similarmente el cuadrado medio de
+especie es 24, el cual es una medida de la distancia entre las medias de las dos
+especies.
+
+##(f) Cálculo de cuadrados medios:
+```{r}
+table(base$cond)
+table(base$especie)
+c(sum(8*alfa^2)/2, sum(12*beta^2)/1)
+```
+
+##(g) Suma de cuadrados de interacción:
+```{r}
+table(base$cond,base$especie)
+sum(4*efint^2)
+```
+
+##(h) Cuadrado medio de interacción:
+El cuadrado medio de interacción es 42,88, el cual mide la magnitud general
+de los efectos de interacción. Si esta magnitud tiende a ser pequeña se tiene un
+caso con poca interacción, lo que sería una evidencia débil de interacción entre
+condición y especie. En caso contrario, si esta magnitud tiende a ser grande, hay
+más evidencia de presencia de interacción.
+##(i) Conclusión:
+```{r}
+(f=42.88/2.56)
+(pf(f,2,18,lower.tail=F))
+```
+Se tiene que la variabilidad de los efectos de interacción es sumamente alta con
+respecto a la variabilidad residual. Al ser la primera casi 17 veces la segunda,
+se tiene una probabilidad asociada bajísima (p < 0,001), con lo cual se rechaza
+la hipótesis de no interacción. Se concluye que el efecto de la condición de
+alimento no es el mismo cuando se trata de Chelonia midas que en el caso de
+Kynosternum scorpioides.
+
+#6. Comparaciones bajo el modelo con interacción:
+
+##(a) Modelo con interacción y contrastes:
+
+El modelo es
+µi j = µ+αi +βj + (αβ)i j
+El primer subíndice indica la condición y el segundo la especie. Como el
+factor de interés es la condición, debe fijarse la especie y comparar para
+diferentes condiciones dada cada especie. Para tener estimaciones positivas de
+las diferencias de promedios, se crean los contrastes de tal forma que el contraste
+estimado sea positivo, es decir, se pone primero aquella media cuya estimación
+sea mayor.
+
+Se tienen los contrastes para chelonia:
+µ21 −µ11
+µ21 −µ31
+µ31 −µ11
+
+Los contrastes para kynosternon son:
+µ22 −µ12
+µ32 −µ22
+µ32 −µ12
+
+##(b) Ortogonalidad:
+Tomando el vector de promedios
+(µ11,µ21,µ31,µ12,µ22,µ32)
+
+Los vectores para obtener el primer grupo de hipótesis (chelonia) son:
+(−1,1,0,0,0,0)
+(0,1,−1,0,0,0)
+(1,0,−1,0,0,0)
+
+```{r}
+v1 = c(-1,1, 0,0,0,0)
+v2 = c( 0,1,-1,0,0,0)
+v3 = c( 1,0,-1,0,0,0)
+c(v1%*%v2, v1%*%v3, v2%*%v3)
+```
+
+Estos 3 vectores no son ortogonales, por lo que hay que hacer corrección.
+De forma similar sucede para el segundo grupo de hipótesis (kynosternon):
+
+(0,0,0,−1,1,0)
+(0,0,0,0,−1,1)
+(0,0,0,−1,0,1)
+
+```{r}
+v4 = c(0,0,0,-1, 1,0)
+v5 = c(0,0,0, 0,-1,1)
+v6 = c(0,0,0,-1, 0,1)
+c(v4%*%v5, v4%*%v6, v5%*%v6)
+```
+
+Estos 3 vectores tampoco son ortogonales.
+##Ahora comparamos los dos bloques entre sí:
+```{r}
+c(v1%*%v4, v1%*%v5, v1%*%v6, v2%*%v4, v2%*%v5, v2%*%v6, v3%*%v4, v3%*%v5, v3%*%v6)
+```
+El primer grupo de vectores sí es ortogonal con respecto al segundo grupo
+de vectores. Por lo que dentro de cada grupo de hipóteis debe hacerse la
+corrección de Bonferroni, pero cada grupo de hipótesis se puede probar de
+forma independiente al otro grupo. Por lo tanto, se debe usar corrección de
+Bonferroni tomando en cuenta que en cada caso son 3 hipótesis.
+
+##(c) Matriz de contrastes:
+Para hacer el cálculo de los contrastes se deben restar los dos vectores que
+producen cada una de las medias del contraste:
+```{r}
+ch.be = ch.b-ch.e
+ch.ba = ch.b-ch.a
+ch.ae = ch.a-ch.e
+ky.be = ky.b-ky.e
+ky.ab = ky.a-ky.b
+ky.ae = ky.a-ky.e
+(h=cbind(ch.be,ch.ba,ch.ae,ky.be,ky.ab,ky.ae))
+```
+
+#(d) Estimación del contraste y variancia:
+```{r}
+(L=t(h)%*%coef)
+```
+
+```{r}
+(var=diag(t(h)%*%vcov(mod2)%*%h))
+```
+Todas las variancias son iguales porque es un diseño balanceado
+
+##(e) Prueba simultánea de las hipótesis:
+```{r}
+ee=sqrt(var)
+t=L/ee
+row.names(t)=row.names(L)
+p=pt(t,18,lower.tail = F)
+row.names(p)=row.names(L)
+p
+```
+Las probabilidades deben compararse contra α/3 = 0.017. Todas las hipótesis
+se rechazan, con excepción de una. Se concluye que en cada especie el nivel
+promedio de proteína en sangre es diferente en casi todas las condiciones,
+excepto para kynosternon, donde no se ha encontrado que la dieta balanceada
+produzca un nivel promedio de proteína en sangre más alto que la dieta estricta.
+
+##(f) Cálculo de cotas inferiores:
+```{r}
+tc1=qt(1-0.05/3,18)
+tc2=qt(1-0.05/2,18)
+lim1=L[1:3]-tc1*ee[1:3]
+lim2=L[5:6]-tc2*ee[5:6]
+names(lim1)=row.names(L)[1:3]
+names(lim2)=row.names(L)[5:6]
+lim1
+lim2
+```
+
+##(g) Conclusión:
+Se concluye, con 95% de confianza, que el nivel promedio de proteína en sangre
+para chelonia es al menos 6,88 gr/ml mayor con dieta balanceada que con dieta
+estricta y al menos 3,38 gr/ml mayor con dieta balanceada que con abundancia.
+Para kynosternon, el alimento en abundancia aventaja a la dieta estricta en
+al menos 2,65 gr/ml. Las otras dos diferencias son pequeñas, por lo que es
+importante contrastar sus magnitudes con la diferencia mínima que establezca
+un investigador para determinar si son relevantes.
+
+
+
+
+
+
+

@@ -1,0 +1,398 @@
+---
+title: "MUES. Ejercicios"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+date: "2023-04-23"
+---
+
+#Ejercicio 2.1
+cargar base
+```{r}
+load("X2_EJERCICIO_2_1.Rdata")
+base=X2_EJERCICIO_2_1
+```
+
+
+
+```{r}
+names(base)=c("num_fam","num_miem","ingre")
+```
+
+definir el diseño
+```{r}
+library(survey)
+diseno_mia= svydesign(ids=~1,data=base,fpc=rep(900,33))
+```
+
+
+
+
+1. ¿Cuál es el promedio de miembros del hogar?
+```{r}
+(mu_num_fam = svymean(~base$num_miem,diseno_mia))
+```
+
+
+
+
+
+2. Pruebe la H0 de que el número de miembros es 
+de 2 por hogar (95% de confianza)
+
+Especificar la hipótesis nula y alternativa
+H0 <- x_bar == 2
+H1 <- x_bar != 2
+```{r}
+t.test(base$num_miem, mu = 2)
+```
+como rechazamos la H0 podemos decir que el promedio de miembros no es 2
+
+
+
+
+
+
+3. Calcule el IC para el promedio de miembros del 
+hogar (95% de confianza)
+```{r}
+(mu_mie= svymean(~base$num_miem,diseno_mia))
+(ds_mie= sqrt(svyvar(~base$num_miem,diseno_mia)))
+(n=length(base$num_miem))
+alfa=0.05
+
+t=qt(1-alfa/2,n-1)
+
+up=mu_mie+t*(ds_mie/sqrt(n))
+low=mu_mie-t*(ds_mie/sqrt(n))
+cat("El intervalo de confianza del", (1-alfa)*100, "% es [", low, ",", up, "].")
+```
+Metodo directo
+
+```{r}
+confint(mu_mie,df=32)#df=n-1
+```
+si repitieramos la muestra 100 veces en 95 de ellas
+el intervalo va a contener el valor promedio poblacional
+
+como 2 es mi media y mi intervalo es del 95 % es [ 3.186076 , 4.26847 ]
+y este no incluye el 2, podemos afirmar con un 95% que rechazamos la H0 osea el
+promedio es diferente de 2
+
+
+
+
+
+4. Si se aplicó una fracción de muestreo de 
+f=33/900 a esa comunidad ¿cuál es el total de 
+miembros de la comunidad?
+
+$f=\frac{n}{N}$
+$Y(total)=N\bar{Y}$
+```{r}
+(total= svytotal(~base$num_miem, diseno_mia))
+(x1=900*svymean(~base$num_miem,diseno_mia))
+```
+
+5. Calcule el IC para ese total (95% de confianza)
+x1 ± t_(n-1, α/2) * (s / sqrt(n))
+```{r}
+(mu_mie= svymean(~base$num_miem,diseno_mia))
+(ds_mie= sqrt(svyvar(~base$num_miem,diseno_mia)))
+(n=length(base$num_miem))
+alfa=0.05
+
+t=qt(1-alfa/2,n-1)
+
+up=total+t*(ds_mie/sqrt(n))
+low=total-t*(ds_mie/sqrt(n))
+cat("El intervalo de confianza del", (1-alfa)*100, "% es [", low, ",", up, "].")
+
+```
+
+
+6. HAGA EXACTAMENTE LO MISMO PARA EL 
+INGRESO DEL HOGAR. En la pregunta 2 asuma 
+que el ingreso promedio es de 60.
+
+1. ¿Cuál es el promedio de ingreso?
+
+```{r}
+(mu_ingre= svymean(~base$ingre,diseno_mia))
+```
+
+
+
+
+
+2. Pruebe la H0 de que el ingreso es 
+de 60 por hogar (95% de confianza)
+
+Especificar la hipótesis nula y alternativa
+H0 <- x_bar == 60
+H1 <- x_bar != 60
+
+```{r}
+t.test(base$ingre, mu = 60)
+```
+
+
+
+
+
+3. Calcule el IC para el promedio de ingreso del 
+hogar (95% de confianza)
+
+x1 ± t_(n-1, α/2) * (s / sqrt(n))
+
+```{r}
+(mu_ingre= svymean(~base$ingre,diseno_mia))
+(ds_ingre= sqrt(svyvar(~base$ingre,diseno_mia)))
+(n=length(base$ingre))
+alfa=0.05
+
+t=qt(1-alfa/2,n-1)
+
+up=mu_ingre+t*(ds_ingre/sqrt(n))
+low=mu_ingre-t*(ds_ingre/sqrt(n))
+cat("El intervalo de confianza del", (1-alfa)*100, "% es [", low, ",", up, "].")
+```
+
+```{r}
+confint(mu_ingre,df=n-1)
+```
+
+
+#EJERCICIO 2.2
+```{r}
+load("X2_EJERCICIO_2_2.Rdata")
+base=X2_EJERCICIO_2_2
+```
+
+1. Pruebe si el costo de los 
+alimentos para las familias varió 
+entre el 2011 y el 2012 con una 
+confianza del 95%.
+
+Nota: las familias entrevistadas 
+fueron las mismas en ambos 
+años.
+
+
+#Ejercicio 2.3
+```{r}
+load("X2_EJERCICIO_2_3.Rdata")
+base=X2_EJERCICIO_2_3
+```
+
+1. Determine el monto que 
+representan los gastos en 
+alimentación del ingreso total 
+de los hogares
+
+2. Interprete ese resultado
+
+3. Calcule un IC para ese monto 
+con una confianza del 95%
+
+#Ejercicio 2.4
+```{r}
+load("proporcion.Rdata")
+```
+Asuma que la muestra de 33 familias fue 
+seleccionada de una comunidad de 500 
+familias.
+
+#1. Estime un IC para la proporción de familias 
+que tiene un ingreso de 70 o más.
+
+
+Definimos el diseño
+```{r}
+diseno <- svydesign(ids = ~ 1, data=proporcion, fpc=rep(500,33))
+```
+
+
+
+
+```{r}
+##4 codificar la variable ingreso a 0 ; 1
+proporcion$ingresomayora70 <- ifelse(proporcion$Ingreso >=70, proporcion$ingresomayora70 <- 1, proporcion$ingresomayora70<-0)
+
+##5 calcular proporcion
+media <- svymean(~proporcion$ingresomayora70 ,diseno)
+media
+
+##6 IC
+confint(media,df=32)
+```
+
+Con un 95% de confianza la proporcion de familias con un ingreso de 70 o más,
+se encuentra entre 0.28 y 0.62.
+
+#2. Estime un IC para el total de familias que tiene un ingreso de 70 o más en la comunidad.
+
+##El total de familias 
+```{r}
+total= svytotal(~proporcion$ingresomayora70, diseno)
+```
+
+cuantas de esas 500 familias tienen ingreso de 70 o más. Aproximadamente 227 hogares
+tienen un ingreso de 70 o más.
+
+#ic
+```{r}
+confint(total, df=32)
+```
+
+
+
+##3.¿Cuál es la proporcion de hogares con ingreso >= 70 por tamaño de la familia (<=3 vs >3)?
+
+#1. recodificar el numero de miembros
+```{r}
+proporcion$Numero.de.miembros.mayor3 <- ifelse(proporcion$Numero.de.miembros <=3,proporcion$Numero.de.miembros.mayor3 == 1,proporcion$Numero.de.miembros.mayor3 == 0)
+
+x1=svyby(formula = proporcion$ingresomayora70,by=proporcion$Numero.de.miembros.mayor3,design = diseno,FUN = svymean)
+
+confint(x1, df=32)
+```
+
+
+como los intervalos se traslapan, no hay suficiente evidencia estadistica para afirmar
+que hay diferencias en la proporcion de familias que tienen ingreso mayor a 70 entre los grupos
+de familias pequeñas y familias grandes
+
+
+#Ejercicio de manzanas
+
+```{r}
+razon <- read.csv("C:/Users/cesar/OneDrive/Escritorio/Universidad/MUESTREO/Presentaciones/CAPÍTULO 2-20230315/razon.csv", sep=";")
+```
+
+
+como no tenemos N no necesitamos en fpc
+```{r}
+diseno <- svydesign(ids = ~ 1, data=razon)
+x=svyratio(~razon$manzanas,~razon$naranjas,design = diseno)
+confint(x,df=40)
+```
+
+por cada 100 kilos de naranjas se produccen aprox 83 kilos de manzanas al mes
+con un 95% de confianza se estima que la razon de kilos producidos mensualmente entre narajnas y manzanas 
+este entre  0.7502437 y 0.9206424
+en este caso prosperan de mejor manera las naranjas
+
+
+#EXAMEN II
+Se seleccionó una muestra mia estratificada en 
+zonas montañosas, de cuidad y en las costas, 
+para cuantificar el número de miembros por 
+vivienda que padeció dengue en los últimos 12 
+meses. La información recolectada aparece en la 
+siguiente tabla.
+
+```{r}
+options(scipen = 999) #quitar notacion cientifica
+x=c(135000,105000,60000,0.45,0.35,0.20,30,30,30)
+h=matrix(x,nrow =3,byrow = T)
+colnames(h)=c("montaña","ciudad","costas")
+rownames(h)=c("Nvivh","Wh","nh");h
+
+```
+
+```{r}
+load("X1_EJERCICIO_ESTRATIFICADO_MIA_ESTUDIANTES_2021.RData")
+base=X1_EJERCICIO_ESTRATIFICADO_MIA_ESTUDIANTES_2021
+base=base[-32,]
+```
+
+Se le solicita lo siguiente:
+1. Calcule el promedio de personas por 
+vivienda que ha padecido dengue en los 
+últimos 12 meses en las tres zonas.
+```{r}
+Montaña=sum(base2$Montaña)/30
+Ciudad=sum(base2$Ciudad)/30
+Costas=sum(base2$Costas)/30
+
+cbind(Montaña,Ciudad,Costas)
+```
+
+2. Calcule el intervalo de confianza para la 
+estimación anterior.
+```{r}
+nh=30
+base2=na.omit(base)
+f1=h[3,1]/h[1,1]
+f2=h[3,2]/h[1,2]
+f3=h[3,3]/h[1,3]
+var1=var(base2$Montaña)
+var2=var(base2$Ciudad)
+var3=var(base2$Costas)
+
+sh2=c(var1,var2,var3)/30;sh2
+var.mu.montaña=(0.45)^2*(1-f1)*var1/30
+var.mu.ciudad=(0.35)^2*(1-f2)*var2/30
+var.mu.costas=(0.2)^2*(1-f3)*var3/30
+varbarrah=c(var.mu.montaña,var.mu.ciudad,var.mu.costas);varbarrah
+
+varybarra=sum(var.mu.montaña,var.mu.ciudad,var.mu.costas);varybarra
+eeybarra=sqrt(varybarra);eeybarra
+ybarra= 0.45*0.8666667+0.35*1.933333+0.2*3.6
+z=qnorm(1-0.05/2)
+
+l=ybarra+c(1,-1)*z*eeybarra
+names(l)=c("ls","li");round(l,2)
+```
+sh2 montaña = 0.671264368
+3. Calcule el total de personas que ha padecido 
+dengue en las tres zonas.
+```{r}
+Nvivh=c(135000,105000,60000)
+ybarh=cbind(Montaña,Ciudad,Costas)
+total=sum(Nvivh*ybarh);total
+```
+
+4. Calcule el intervalo de confianza para la 
+estimación anterior.
+```{r}
+var1=var(base2$Montaña)
+var2=var(base2$Ciudad)
+var3=var(base2$Costas)
+
+sh2=c(var1,var2,var3)/30;sh2
+Nvivh=c(135000,105000,60000)
+Nvivh^2*sh2
+vartotal=sum(Nvivh^2*sh2);vartotal
+
+l=total+c(1,-1)*z*sqrt(vartotal)
+names(l)=c("ls","li");round(l)
+
+
+```
+
+5. ¿Existe diferencia entre el promedio de 
+personas por vivienda con dengue entre las 
+costas y las montañas?
+```{r}
+ybarra= 0.45*0.8666667+0.35*1.933333+0.2*3.6
+nh=c(30,30,30.0)
+yh=c(sum(base2$Montaña),sum(base2$Ciudad),sum(base2$Costas))
+
+ybar_h=yh/nh;ybar_h
+sh2=(c(var(base2$Montaña),var(base2$Ciudad),var(base2$Costas)));sh2
+var.bar_h=sh2/nh;var.bar_h
+
+ee=sqrt(var.bar_h);ee
+
+montaña=ybar_h[1]+c(1,-1)*z*ee[1]
+costas=ybar_h[3]+c(1,-1)*z*ee[3]
+h=cbind(montaña,costas);h=t(h)
+colnames(h)=c("ls","li");h
+```
+
+6. ¿Qué otra estimación de interés podría 
+realizarse con la información recolectada?
+Hágala.

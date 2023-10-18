@@ -1,0 +1,71 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+library(ggplot2)
+library(survival)
+library(ggfortify)
+```
+
+```{r}
+load("Bases/asignacion2grafico.Rdata")
+```
+
+
+```{r}
+ggplot(data = Libro1, aes(x = edad)) +
+  geom_line(aes(y = hombre), color = "blue") +
+  geom_line(aes(y = mujeres), color = "red")+ labs(title = "Grafico de nqx ", x = "Edad",y="nqx")+ annotate("text", x = Inf, y = -Inf, label = "*azul hombre *rojo mujer", hjust = 1.5, vjust = -1, size = 3, color = "black")
+```
+Breve comentario: 
+vemos las diferencias en las probabilidades de morir del grupo masculino con respecto al femenino, es notable como este tiene mayor nqx a lo largo de su vida, pero más notoriamente a partir de los 50 años, puede tomarse como prueba de que el hombre tiene una mortalidad diferente a la de la mujer a lo largo de su vida, además se observa como alrededor de los 80 años tiene una concentración más alta (pico) mientras que la curva de las mujeres se observa mas uniforme a lo largo de su vida.
+
+
+
+3. Utilizando los datos sobre reincidencia en el archivo asignación2 calcule las curvas de sobrevivencia según distintos niveles de educación. Calcule la mediana de los tiempos de sobrevivencia. Evalúe las diferencias entre las curvas y escriba un breve comentario.
+```{r}
+load("Bases/reincidencia.Rdata")
+```
+
+curvas de sobrevivencia según distintos niveles de educación
+```{r}
+kmreincidencia=survfit(Surv(week,arrest)~educ,stype = 1,data = reincidencia)
+autoplot(kmreincidencia)
+```
+```{r}
+#con aclaracion del profesor
+reincidencia$educnuevo = ifelse(reincidencia$educ==2 | reincidencia$educ==3,1, ifelse(reincidencia$educ==4, 2,3))
+sobrevivencia = survfit(Surv(week,arrest)~educnuevo,stype = 1,data=reincidencia)
+summary(sobrevivencia)
+autoplot(sobrevivencia)
+```
+
+mediana de los tiempos de sobrevivencia
+```{r}
+quantile(kmreincidencia,quantiles=c(0.25,0.50,0.75))
+```
+Breve comentario: 
+Para el calculo de las medianas se necesita el cuantil 50 de las curvas, pero en la mayoría de estas con respecto a los niveles de educación no hay  fallas de al menos la mitad de los individuos en observación, por lo que no se puede calcular la mediana del tiempo, por como funciona el cuantil necesita los datos que no tenemos al momento del análisis, por lo que no podemos calcular la mediana para ninguna de las curvas
+
+
+Evalúe las diferencias entre las curvas 
+```{r}
+survdiff(Surv(week,arrest)~educ,data = reincidencia)
+```
+Breve comentario: 
+Podemos ver como en la prueba, p (con un alfa de 0,05) nos indica la diferencia entre curvas, con un alfa de 0.05 se rechaza H0 de igualdad de curvas por lo que hay diferencia en alguna de estas, además con el análisis grafico teníamos una pincelada de como se comportaban las curvas de manera distinta, la prueba formal nos lo confirma o nos argumenta que hay suficiente evidencia estadística para rechazar la igualdad de las curvas.
+
+
+4. Utilizando los datos fechas de observación en el archivo asignacion2 calcule la curva de sobrevivencia según el método Kaplan-Meier. El archivo contiene los tiempos de observación de 24 personas, entradaobs se refiere a el momento en que empieza la observación, terminoobs se refiere al término de observación de las personas que tuvieron un evento (falla),entrevista es la fecha de la entrevista al final del estudio.
+
+```{r}
+load("Bases/asignacion224.Rdata")
+```
+
+```{r}
+km24=survfit(Surv(semanas,falla)~1,stype = 1,data = X24pacientes)
+autoplot(km24)
+```
+El tiempo esta en semanas. 

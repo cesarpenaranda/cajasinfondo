@@ -1,0 +1,61 @@
+---
+title: "LAB4.programacion"
+author: "CESAR"
+date: '2022-05-29'
+output: html_document
+---
+EL FORMATO DE ESTE LABORATORIO ES RMARKDOWN
+Espero no haya problema por ser un RMarkdow, lo hice con el RMarkdow ya que como no se solicita 
+un menu en este laboratorio, una manera facil de analizar el codigo elaborado y sus preguntas seria 
+con este respectivo formato. 
+
+
+1.- Solicite un número N y cree una matriz de nxn números aleatorios. Los números aleatorios pueden estar entre 0 y 9. Luego cree una nueva, siendo esta nueva la matriz transpuesta de la original.
+```{r}
+n=as.numeric(readline("DIGITE EL NUMERO N DEL NXN DE LA MATRIS: "))
+
+m1=matrix(sample(0:9,n*n,TRUE),nrow = n,ncol = n, byrow = FALSE)
+print(m1)
+```
+
+La transpuesta de la original es la siguiente
+```{r}
+m2=t(m1)
+print("LA TRANSPUESTA DE LA MATRIS NXN ES:")
+print(m2)
+```
+
+2.- Solicite número n y cree una matriz de nxn números aleatorios entre 0 y 9. Luego solicite un número b y encuentre la submatriz de bxb cuya suma de elementos es la mayor. Según lo visto en clase. 
+```{r}
+n=as.numeric(readline("DIGITE EL NUMERO N DEL NXN DE LA MATRIS: "))
+
+m1=matrix(sample(0:9,n*n,TRUE),nrow = n,ncol = n, byrow = FALSE)
+print(m1)
+
+b=as.numeric(readline("DIGITE EL NUMERO FILASXCOLUMNAS DE LA SUBMATRIS: "))
+
+mayor = 0
+for (i in 1:(n-b+1)) {
+    for (j in 1:(n-b+1)) {
+      
+    suma = sum( m[i:(i + b - 1), j:(j + b - 1)])
+      
+      if ( suma > mayor){
+        mayor = suma
+        
+        fila.i =  i
+        fila.f = (i+b-1)
+        col.i = j
+        col.f = (j+b-1)
+      }
+      
+    }
+    
+  } 
+  
+print( paste0( "LA SUBMATRIS ", b, "x", b,  " CON EL MAYOR NUMERO AL SUMAR SUS ELEMENTOS ES FILA ",fila.i, " HASTA FILA", fila.f, " Y COLUMNA ", col.i, " HASTA COLUMNA ", col.f   ))
+  
+  print(paste0( "LA SUBMATRIS ", b, "x", b, " DA COMO RESULTADO ", mayor, " AL SUMAR SUS ELEMENTOS"))
+```
+
+

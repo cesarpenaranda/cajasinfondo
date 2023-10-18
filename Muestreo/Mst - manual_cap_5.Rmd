@@ -1,0 +1,821 @@
+```{r}
+library(survey)
+library(PracTools)
+library(sampling)
+library(dplyr)
+```
+
+
+#1. Estratificación implícita del marco muestral para una selección sistemática de viviendas.
+Se realizará una encuesta nacional en "Tiquicia" para conocer sobre los gastos familiares en los hogares. El marco muestral disponible contiene datos actualizados de las viviendas particulares y sus residentes. La variable de estudio es el ingreso percápita del hogar (ingresoph) y la variable relacionada para hacer la estraticación implícita del marco es nivelsoc, una aproximación al nivel socioeconómico de los hogares (1=bajo, 2=medio, 3=alto).
+
+##a. Lea el archivo del marco muestral marco5a.
+```{r}
+load("Bases/marco5a.Rdata")
+str(marco5a)
+```
+
+##b. Calcule estadísticos descriptivos para nivelsoc (table()) y el ingresoph (summary()).
+```{r}
+N=nrow(marco5a)
+summary(marco5a$ingresoph)
+
+
+table(marco5a$nivelsoc)
+
+
+h=(table(marco5a$nivelsoc)/N)*100
+names(h)=c("%bajo","%medio","%alto");h
+```
+
+
+##c. Para realizar una estratificación implícita del marco, éste debe ordenarse de acuerdo con alguna variable adecuada.
+En este caso podría usarse ingresoph, que es la variable de estudio o la variable ideal y está en el archivo de datos. No obstante, por lo general, en la práctica esta situación no es común y debe buscarse una variable relacionada. Por este motivo, el archivo contiene nivelsoc, una variable que representa el nivel socioeconómico de los hogares (1=bajo, 2=medio, 3=alto) y que está relacionada con el ingreso percápita de los hogares. Por este motivo, se solicita que ordene el marco de acuerdo con nivelsoc usando la función order() y guarde el archivo con nombre marco5a.ord.
+```{r}
+marco5a.ord=marco5a[order(marco5a$nivelsoc),]
+```
+
+```{r}
+#save(marco5a.ord,file="marco5a.ord.Rdata")
+```
+
+##d. Para tener un marco muestral con menos variables, seleccione en el mismo archivo
+las siguientes: region, zona, anosescolari, ingresoph, pobrezah, educa y nivelsoc. Guarde el archivo con el mismo nombre.
+```{r}
+load("Bases/marco5a.ord.Rdata")
+```
+
+```{r}
+marco5a.ord=cbind(marco5a.ord$region, marco5a.ord$zona, marco5a.ord$anosescolari, marco5a.ord$ingresoph, marco5a.ord$pobrezah, marco5a.ord$educa,marco5a.ord$nivelsoc)
+
+colnames(marco5a.ord)=c("region", "zona", "anosescolari", "ingresoph", "pobrezah", "educa","nivelsoc")
+marco5a.ord=as.data.frame(marco5a.ord)
+```
+
+#2. Probabilidades en una muestra sistemática de viviendas y otros detalles de interés. 
+Para seleccionar una muestra sistemática de $n= 540$ viviendas, responda las siguientes preguntas:
+
+##a. ¿Cuál es la probabilidad de selección de las viviendas (elementos)?
+```{r}
+n=540
+N=nrow(marco5a.ord)
+f=n/N
+
+cbind(n,N,f)
+```
+
+##b. ¿Cuánto es el factor de corrección para poblaciones finitas? 
+```{r}
+1-f
+```
+
+
+##c. ¿Cuánto es la fracción de muestreo?
+La fracción de muestreo es 𝑓 = 1/𝑘 = 1/20.94.
+```{r}
+f
+```
+
+##d. ¿Cuánto es el espaciamiento que debe aplicar con la selección sistemática?
+```{r}
+k=N/n;k
+```
+#3. Selección de una muestra de viviendas con muestreo sistemático. 
+Seleccione una muestra sistemática de $n= 540$ viviendas de marco5a.ord.
+
+##a. Antes de seleccionar la muestra debe especificar en el marco que todos los elementos tendrán la misma probabilidad de ser seleccionados.
+Como se trata de un muestreo sistemático de elementos mesip, debe agregar una columna con el código 1 al archivo de datos. Use la función rep() para crear la variable mesip y anote, para cada vivienda, el código 1. Guarde el archivo con el mismo nombre para conservar la variable mesip y corrobore con table() que se construyó la variable adecuadamente.
+
+```{r}
+mesip=rep(1,N)
+marco5a.ord$mesip=mesip
+table(marco5a.ord$mesip)
+```
+
+##b. Seleccione una muestra sistemática de $n= 540$ viviendas. 
+Use la función UPsystematic() de la librería sampling(). Previo a la selección de la muestra, anote la función set.seed(123) y guarde la muestra final con el nombre muestra5a en un data.frame().
+
+```{r}
+n=540
+set.seed(123)
+seleccion1<-UPsystematic(pik=inclusionprobabilities(marco5a.ord$mesip,540))
+muestra0 <- getdata(marco5a.ord,seleccion1)
+muestra5a<- as.data.frame(muestra0)
+```
+
+#4. Estimación de la media y el error estándar de la media asumiendo un mia de viviendas (elementos).Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+Para calcular el intervalo de confianza debe calcularse, además de la media que se obtiene 
+de la manera usual, el error estándar de la media. Sea $y_i$la medición de la variable $y$
+(variable de estudio) en el $i−enecimo$ caso de la muestra, el error estándar de la media en un 
+mia es:
+$s_{\bar{y}}=\sqrt{var(\bar{y})}=(1-f)\frac{s_y}{\sqrt{n}}$
+
+$s_y=\sqrt{var(y)}$
+el interavalo de confianza es
+
+$\bar{y}+-z_{a/2}*s_{\bar{y}}$}
+
+##b. Desarrolle un procedimiento para calcular  el intervalo de confianza del ingresoph
+asumiendo un mia de viviendas (elementos). Compare con el valor poblacional.
+
+```{r}
+#!!! con survey
+diseno = svydesign(ids = ~1, data = muestra5a, fpc = rep(N,n))
+media=svymean(~muestra5a$ingresoph,diseno);media
+confint(media,df=n-1)
+```
+```{r}
+#procedimiento del manual
+MEDIA=mean(marco5a.ord$ingresoph)
+media=mean(muestra5a$ingresoph)
+n=nrow(muestra5a)
+desvmed=sd(muestra5a$ingresoph)/sqrt(n)
+Li=media-1.96*sqrt(1-f)*desvmed
+Ls=media+1.96*sqrt(1-f)*desvmed
+mia=c(N, MEDIA, n, media, desvmed, Li, Ls)
+names(mia)=c("N", "MEDIA", "n", "media", "desvmed", "Li", "Ls"); round(mia)
+
+```
+
+
+#5. Estimación de la media y el error estándar de la media asumiendo un estratificado proporcional de viviendas (elementos).
+Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza del ingresoph,
+asumiendo un muestreo estratificado proporcional de viviendas (elementos). Utilice la función summarise(). Compare con el resultado anterior.
+
+```{r}
+#!!! con survey
+diseno = svydesign(ids = ~1, strata = ~nivelsoc,data = muestra5a, weights=~mesip)
+media=svymean(~muestra5a$ingresoph,diseno);media
+confint(media,df=n-1)
+```
+
+```{r}
+n=nrow(muestra5a)
+N=nrow(marco5a.ord)
+f=n/N
+tabla_pro=summarise(group_by(muestra5a,nivelsoc),
+ nh=n(),
+ sh=sd(ingresoph),
+ nhsh2=nh*sh^2)
+media=mean(muestra5a$ingresoph)
+desvmed=sqrt(((1-f)/n^2)*(sum(tabla_pro$nhsh2)))
+Li=round(media-1.96*desvmed,0)
+Ls=round(media+1.96*desvmed,0)
+propor=c(N, MEDIA, n, media, desvmed, Li, Ls)
+res=rbind(mia, propor)
+rownames(res)=c("MIA","PROPOR") 
+colnames(res)=c("N", "MEDIA", "n", "media", "desvmed", "Li", "Ls"); res
+
+reduccion=res[2,5]/res[1,5];reduccion
+```
+#6. Estimación de la media y el error estándar de la media asumiendo un modelo de selecciones pareadas Cálculo del intervalo de confianza. 
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Construya un procedimiento para calcular el intervalo de confianza (95%) de la media
+del ingreso percápita del hogar usando selecciones pareadas y compare con el resultado anterior. Observe que en este caso, el número de viviendas seleccionadas constituye un número par.
+```{r}
+muestra5a$y=c(muestra5a$ingresoph)
+y=muestra5a$y
+dif2=c()
+h=1; i=1
+while (i < n) {
+ dif2[h]=(y[i]-y[i+1])^2
+ h=h+1
+ i=i+2
+ }
+sumadif2=sum(dif2)
+vary=(1-f)*sumadif2/n^2
+dey=round(sqrt(vary),0)
+media=round(mean(y),0)
+Li=round(media-1.96*dey,0)
+Ls=round(media+1.96*dey,0)
+par.par=c(N, MEDIA, n, media, dey, Li, Ls)
+res=rbind(mia, propor, par.par)
+rownames(res)=c("MIA", "PROPORCIONAL", "PAREADA") 
+colnames(res)=c("N", "MEDIA", "n", "media", "desvmed", "Li", "Ls"); res
+```
+
+#7. Estimación de la media y el error estándar de la media asumiendo un modelo de diferencias sucesivas. 
+Cálculo del intervalo de confianza. 
+
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza (95%) 
+del ingreso percápita medio de los hogares usando el modelo de selecciones sucesivas y compare con los resultados anteriores (use el archivo de muestra original, que es muestra5a).
+```{r}
+muestra5a$y=c(muestra5a$ingresoph)
+y=muestra5a$y
+n=nrow(muestra5a)
+N=nrow(marco5a.ord)
+dif2=c() 
+f=n/N
+h=1; i=1
+while (i < n) {
+ dif2[h]=(y[i]-y[i+1])^2
+ h=h+1
+ i=i+1
+ }
+sumadif2=sum(dif2)
+vary=round((1-f)/(2*n*(n-1))*sumadif2,0)
+dey=round(sqrt(vary),0)
+media=round(mean(y),0)
+Li=round(media-1.96*dey,0)
+Ls=round(media+1.96*dey,0)
+suces=c(N, MEDIA, n, media, dey, Li, Ls)
+res=rbind(mia, propor, par.par, suces)
+rownames(res)=c("MIA","PROPORCIONAL", "PAREADA", "SUCESIVAS") 
+colnames(res)=c("N", "MEDIA", "n", "media", "desvmed", "Li", "Ls"); res
+```
+
+##8. Probabilidades de selección en una muestra replicada de viviendas y otros detalles de interés.
+Suponga que desea seleccionarse una muestra de $n= 540$ viviendas, con $c= 5$ réplicas. Responda lo siguiente.
+
+##a. Lea el archivo marco5a.ord.
+```{r}
+#save(marco5a.ord,file="marco5a.ord2.Rdata")
+```
+
+```{r}
+load("Bases/marco5a.ord2.Rdata")
+```
+
+##b. ¿Cuál es la probabilidad de selección de una vivienda en la muestra?
+```{r}
+N=nrow(marco5a.ord)
+n=540
+c=5
+f=n/N;f
+k=N/n;k
+1/k
+```
+
+
+##c. ¿Cuál es la probabilidad de selección de una vivienda en una réplica?
+```{r}
+c=5
+nr=n/c
+fr=nr/N
+1/fr
+
+k2=c*k
+1/k2
+```
+##d. ¿Cuánto es la fracción de muestreo total?
+```{r}
+1/k
+```
+
+
+##e. ¿Cuál es la fracción de muestreo de cada réplica?
+```{r}
+1/k2
+```
+
+##f. ¿De qué tamaño será cada réplica?
+```{r}
+nr
+```
+
+
+##g. ¿Cuál será el intervalo de selección en cada una de las réplicas?
+```{r}
+c*k
+```
+#9. Selección de una muestra de viviendas con muestreo replicado.
+Desarrolle un procedimiento para seleccionar una muestra de $n=540$ viviendas en $c=5$ réplicas de tamaño $nr= 108$. Guarde el archivo de la muestra con el nombre de muestra_rf (muestra replicada final).
+
+```{r}
+c=5
+nr=108
+d=dim(marco5a.ord)[2]+2
+muestra_rf=matrix(nrow = n, ncol = d)
+colnames(muestra_rf)=c("id", "region","zona", "anosescolari", "ingresoph", 
+"pobrezah", "educa", "nivelsoc", "mesip","replica") 
+for (a in 1:c) {
+ set.seed(a)
+ seleccion <- UPsystematic(pik=inclusionprobabilities(marco5a.ord$mesip,round(nr,0)))
+ muestra0 <- getdata(marco5a.ord,seleccion)
+ muestra_r <- as.data.frame(muestra0)
+ muestra_r$replica=rep(a,round(nr,0))
+ ci=round(nr,0)*(a-1)+1
+ cj=round(nr,0)*a
+ h=0
+ for (i in ci:cj){
+ h=h+1
+ for(j in 1:d) { 
+ muestra_rf[i,j]=muestra_r[h,j]
+ }
+ }
+}
+muestra_rf <- as.data.frame(muestra_rf)
+table(muestra_rf$replica)
+```
+```{r}
+#save(muestra_rf,file="muestra_rf.Rdata")
+```
+
+#10. Intervalo de confianza para la media en muestreo replicado.
+Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza del ingreso percápita del hogar con muestreo replicado 
+y compare con los resultados anteriores. Use la librería dplyr y la función summarise(). Compare con los resultados anteriores.
+
+```{r}
+muestra_rf$y=muestra_rf$ingresoph
+media=round(mean(muestra_rf$y),0)
+n=nrow(muestra_rf)
+tabla=summarise(group_by(muestra_rf,replica),
+ n_r=n(),
+ media_xr=mean(y))
+media_r=round(mean(tabla$media_xr),0)
+desvmedia_r=round(sqrt(1-f)*sd(tabla$media_xr)/sqrt(c),0)
+p=0.05
+if (c<30){
+ zt=qt(p, df=c-1, lower.tail = FALSE)
+} else if (c>=30){
+ zt=qnorm(p, lower.tail = FALSE)
+}
+Li=round(media_r-zt*desvmedia_r,0)
+Ls=round(media_r+zt*desvmedia_r,0)
+rep=c(N, MEDIA, n, media, desvmedia_r, Li, Ls)
+res=rbind(mia, propor, par.par, suces, rep)
+rownames(res)=c("MIA","PROPORCIONAL", "PAREADA", "SUCESIVAS", "REPLICAS") 
+colnames(res)=c("N", "MEDIA", "n", "media", "desvmed", "Li", "Ls"); res
+```
+#11. Separación de la muestra en grupos aleatorios a partir de la selección de una muestra sistemática de viviendas.
+Seleccione una muestra sistemática de n=540 viviendas de marco5a.ord. Nombre el archivo de la muestra como muestra_ga.
+
+```{r}
+load("Bases/marco5a.ord2.Rdata")
+n=540
+set.seed(123)
+seleccion1<-UPsystematic(pik=inclusionprobabilities(marco5a.ord$mesip,n)) 
+muestra0 <- getdata(marco5a.ord,seleccion1)
+muestra_ga<- as.data.frame(muestra0)
+n=nrow(muestra_ga); n
+```
+#12. Procedimiento de separación de la muestra en grupos aleatorios. 
+Desarrolle un procedimiento para ejecutar la separación de la muestra de $n= 540$ viviendas en $c= 5$ grupos aleatorios (réplicas) de tamaño $nr= 108$ viviendas.
+```{r}
+c=5
+i=1;h=1
+while (h<n) {
+ re=sample(1:c,c,replace=FALSE)
+ for (j in 1:c) {
+ muestra_ga$replica[i]=re[j]
+ i=i+1
+ }
+ h=h+c
+ }
+muestra_fga<-muestra_ga[order(muestra_ga$replica),] #ordena el archivo de datos
+table(muestra_fga$replica)
+```
+#13. Intervalo de confianza para la media usando el procedimiento de separación de la muestra en grupos aleatorios. Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular un intervalo de confianza para el ingresoph usando el procedimiento de separación de la muestra en grupos aleatorios.
+Compare con los resultados anteriores y con el valor poblacional.Use la librería dplyr y la función summarise().
+```{r}
+muestra_fga$y=muestra_fga$ingresoph
+N=nrow(marco5a.ord)
+n=nrow(muestra_fga)
+f=n/N
+tabla=summarise(group_by(muestra_fga,replica),
+ n_r=n(),
+ media_xr=mean(y))
+media_r=round(mean(tabla$media_xr),0)
+desvmedia_r=round(sqrt(1-f)*sd(tabla$media_xr)/sqrt(c),0)
+p=0.05
+if (c<30){
+ zt=qt(p, df=c-1, lower.tail = FALSE)
+} else if (c>=30){
+ zt=qnorm(p, lower.tail = FALSE)
+}
+Li=round(media_r-zt*desvmedia_r,0)
+Ls=round(media_r+zt*desvmedia_r,0)
+ga=c(N, MEDIA, n, media_r, desvmedia_r, Li, Ls)
+res=rbind(mia, propor, par.par, suces, rep, ga)
+rownames(res)=c("MIA", "PROPORCIONAL", "PAREADA", "SUCESIVAS", "REPLICAS", 
+"GRUPOS.AL") 
+colnames(res)=c("N", "MEDIA", "n", "media", "desvmed", "Li", "Ls"); res
+
+```
+#14. Estratificación implícita del marco muestral para una selección sistemática de fincas ganaderas.
+Se realizará una encuesta nacional en "Tiquicia" para estimar el número de cabezas de ganado en el país (hato ganadero). El marco muestral disponible contiene datos de las fincas de hace aproximadamente dos años. La variable de estudio es el número de cabezas de ganado (hatototal) y la variable relacionada para hacer una estratificación implícita del marco es tamano, la que funciona como una aproximación al número de cabezas de ganado por finca.
+
+##a. Lea el archivo del marco muestral marco5b.
+```{r}
+load("Bases/marco5b.Rdata")
+```
+
+##b. Calcule estadísticos descriptivos para tamano (table()) y el hatototal (summary()).
+```{r}
+N=nrow(marco5b)
+str(marco5b)
+table(marco5b$tamano)
+summary(marco5b$hatototal)
+
+porcen=(table(marco5b$tamano)/N)*100;names(porcen)=c("pequena%","mediana%","grande%");porcen
+```
+
+
+##c. Para realizar una estratificación implícita del marco, éste debe ordenarse de acuerdo con alguna variable adecuada.
+En este caso podría usarse hatototal, que es la variable de estudio o la variable ideal y está en el archivo de datos. No obstante, por lo general, esta situación no es común en la práctica y debe buscarse una variable relacionada. Por este motivo, el archivo contiene tamano, una variable que representa el tamaño de las fincas (1=pequeñas, 2=medianas, 3=grandes) y está relacionada con el número de cabezas de ganado por finca. Por este motivo, se solicita que ordene el marco de acuerdo con tamano usando la función order() y guarde el archivo con nombre marco5b.ord.
+```{r}
+marco5b.ord=marco5b[order(marco5b$tamano),]
+#save(marco5b.ord,file="marco5b.ord")
+```
+
+```{r}
+#load("marco5b.ord")
+```
+
+
+##d. Para disminuir el número de variables en el marco seleccione en el mismo archivo las siguientes: finca, hatototal y tamano.
+```{r}
+marco5b.ord=cbind(marco5b.ord$finca,marco5b.ord$hatototal,marco5b.ord$tamano)
+marco5b.ord=as.data.frame(marco5b.ord)
+colnames(marco5b.ord)=c("finca","hatototal","tamano")
+```
+
+#15. Probabilidades en una muestra sistemática de fincas y otros detalles de interés. 
+Para seleccionar una muestra sistemática de $n= 300$ fincas, responda lo siguiente:
+
+##a. ¿Cuál es la probabilidad de selección de las fincas (elementos)?
+```{r}
+n=300
+N=nrow(marco5b.ord)
+k=N/n
+1/k
+```
+
+##b. ¿Cuánto es el factor de corrección para poblaciones finitas? 
+```{r}
+1-1/k
+```
+
+
+##c. ¿Cuánto es la fracción de muestreo?
+```{r}
+1/k
+```
+
+
+##d. ¿Cuál es el espaciamiento que debe aplicar la selección sistemática?
+```{r}
+k
+```
+#16. Selección de una muestra de fincas con muestreo sistemático. Seleccione una muestra sistemática de $n= 300$ fincas de marco5b.ord.
+
+##a. Antes de seleccionar la muestra debe especificar en el marco que todos los elementos tendrán la misma probabilidad de ser seleccionados. 
+Como se trata de un muestreo sistemático de elementos mesip, debe agregar una columna con el código 1 al archivo de datos. Use la función rep() para crear la variable mesip y anote, para todas las fincas, el código 1. Guarde el archivo con el mismo nombre para conservar la variable mesip y corrobore con table() que se construyó la variable adecuadamente.
+```{r}
+marco5b.ord$mesip=rep(1,N)
+#save(marco5b.ord,file="marco5b.ord.Rdata")
+```
+
+
+##b. Seleccione una muestra sistemática de $n=300$ fincas. Use la función UPsystematic() de la librería sampling(). 
+Previo a la selección de la muestra.anote la función set.seed(123) y guarde la muestra final con el nombre muestra5b en un data.frame().
+```{r}
+n=300
+set.seed(123)
+seleccion1<-UPsystematic(pik=inclusionprobabilities(marco5b.ord$mesip,n)) 
+muestra0 <- getdata(marco5b.ord,seleccion1)
+muestra5b<- as.data.frame(muestra0)
+#save(muestra5b,file="muestra5b.Rdata")
+```
+
+#17. Estimación el total de cabezas de ganado y el error estándar del total asumiendo un mia de fincas (elementos). 
+Cálculo del intervalo de confianza. 
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza del hatototal, asumiendo un mia de fincas (elementos). Compare con el valor poblacional.
+```{r}
+#!!! con survey
+n=300
+N=nrow(marco5b.ord)
+diseno=svydesign(ids = ~1,data = muestra5b,fpc = rep(N,n))
+```
+
+```{r}
+stotal=svytotal(~muestra5b$hatototal,diseno);stotal
+confint(stotal,df= n-3)
+```
+
+```{r}
+TOTAL=sum(marco5b.ord$hatototal)
+N=nrow(marco5b.ord)
+n=nrow(muestra5b)
+f=N/n
+total=f*sum(muestra5b$hatototal)
+f=n/N
+desvtotal=round(N*sd(muestra5b$hatototal)/sqrt(n),0)
+Li=round(total-1.96*sqrt(1-f)*desvtotal,0)
+Ls=round(total+1.96*sqrt(1-f)*desvtotal,0)
+mia=c(N, TOTAL, n, total, desvtotal, Li, Ls)
+names(mia)=c("N", "TOTAL", "n", "total", "desvtotal", "Li", "Ls");round(mia)
+```
+#18. Estimación del total y el error estándar del total de cabezas de ganado asumiendo unestratificado proporcional  de fincas (elementos).
+Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza delhatototal, 
+asumiendo un estratificado proporcional de fincas (elementos). Utilice la función summarise(). Compare con el resultado anterior.
+
+```{r}
+#??? porque no sirve sacar el total asumiento estratos proporcionales
+#!!! con survey
+diseno = svydesign(ids = ~1,strata = ~tamano,data = muestra5b,weights = ~mesip)
+stotal=svytotal(~hatototal,diseno);stotal
+confint(stotal,df=n-3)
+```
+
+```{r}
+#con summarise
+n=nrow(muestra5b)
+N=nrow(marco5b.ord)
+f=n/N
+tabla_pro=summarise(group_by(muestra5b,tamano),
+ nh=n(),
+ sh2=sd(hatototal)^2,
+ nhsh2=nh*sh2)
+total=N*mean(muestra5b$hatototal)
+desvmed_tot=sqrt(N^2*(1-f)*sum(tabla_pro$nhsh2)/n^2)
+Li=round(total-1.96*desvmed_tot,0)
+Ls=round(total+1.96*desvmed_tot,0)
+propor=c(N, TOTAL, n, total, desvmed_tot, Li, Ls)
+res=rbind(mia, propor)
+rownames(res)=c("MIA","PROPOR") 
+colnames(res)=c("N", "TOTAL", "n", "total", "desvmed_tot", "Li", "Ls"); res
+
+```
+```{r}
+#sin summarise
+n=nrow(muestra5b)
+N=nrow(marco5b.ord)
+f=n/N
+tabla_pro
+tamano=c(1,2,3)
+nh=table(muestra5b$tamano)
+sh2=tapply(muestra5b$hatototal,muestra5b$tamano,var)
+nhsh2=nh*sh2
+tabla_pro=cbind(tamano,nh,sh2,nhsh2);tabla_pro=as.data.frame(tabla_pro)
+total=N*mean(muestra5b$hatototal)
+desvmed_tot=sqrt(N^2*(1-f)*sum(tabla_pro$nhsh2)/n^2)
+Li=round(total-1.96*desvmed_tot,0)
+Ls=round(total+1.96*desvmed_tot,0)
+propor=c(N, TOTAL, n, total, desvmed_tot, Li, Ls)
+res=rbind(mia, propor)
+rownames(res)=c("MIA","PROPOR") 
+colnames(res)=c("N", "TOTAL", "n", "total", "desvmed_tot", "Li", "Ls"); res
+
+```
+
+#19. Estimación del total y el error estándar del total de cabezas de ganado asumiendo un modelo de selecciones pareadas. Cálculo del intervalo de confianza. 
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Construya un procedimiento para calcular el intervalo de confianza (95%) del total de cabezas de ganado 
+usando selecciones pareadas y compare con el resultado anterior. Observe que, en este caso, el número de fincas seleccionadas es un número par.
+```{r}
+muestra5b$y=c(muestra5b$hatototal)
+y=muestra5b$hatototal
+dif2=c()
+h=1; i=1
+while (i < n) {
+ dif2[h]=(y[i]-y[i+1])^2
+ h=h+1
+ i=i+2
+ }
+sumadif2=sum(dif2); sumadif2
+vart=(1-f)*N^2*sumadif2/n^2; vart
+det=round(sqrt(vart),0); det
+total=N*mean(y)
+Li=round(total-1.96*det,0)
+Ls=round(total+1.96*det,0)
+par.par=c(N, TOTAL, n, total, det, Li, Ls)
+res=rbind(mia, propor, par.par)
+rownames(res)=c("MIA", "PROPORCIONAL", "PAREADA") 
+colnames(res)=c("N", "TOTAL", "n", "total", "desvmed_tot", "Li", "Ls"); res
+
+reduccion=res[3,5]/res[1,5];reduccion
+
+```
+
+#20. Estimación del total y el error estándar del total asumiendo un modelo de diferencias sucesivas Cálculo del intervalo de confianza. 
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza (95%) del total de cabezas de ganado
+usando el modelo de selecciones sucesivas y compare con los resultados anteriores (use el archivo de muestra original, que es muestra5b).
+```{r}
+n=nrow(muestra5b)
+N=nrow(marco5b.ord)
+dif2=c() 
+f=n/N; f
+h=1; i=1
+while (i < n) {
+ dif2[h]=(y[i]-y[i+1])^2
+ h=h+1
+ i=i+1
+ }
+sumadif2=sum(dif2)
+vart=(1-f)/(2*n*(n-1))*N^2*sumadif2
+det=round(sqrt(vart),0)
+total=round(N/n*sum(y),0); total
+Li=round(total-1.96*det,0)
+Ls=round(total+1.96*det,0)
+suc=c(N, TOTAL, n, total, det, Li, Ls)
+res=rbind(mia, propor, par.par, suc)
+rownames(res)=c("MIA","PROPORCIONAL","PAREADA", "SUCESIVAS") 
+colnames(res)=c("N", "TOTAL", "n", "total", "desvmed_tot", "Li", "Ls"); res
+```
+#21. Probabilidades de selección en una muestra replicada de fincas y otros detalles de interés. 
+Suponga que desea seleccionarse una muestra de $n= 300$ fincas, con $c= 10$ réplicas. Responda lo siguiente.
+
+##a. Lea el archivo marco5b.ord.
+```{r}
+load("Bases/marco5b.ord.Rdata")
+```
+
+##b. ¿Cuál es la probabilidad de selección de una finca en la muestra?
+```{r}
+N=nrow(marco5b.ord)
+n=300
+c=10
+k=N/n
+f=1/k
+f
+```
+
+##c. ¿Cuál es la probabilidad de selección de una finca en una réplica?
+```{r}
+k2=c*k
+nr=n/c
+fr=nr/N;fr
+1/k2
+
+```
+
+
+##d. ¿Cuánto es la fracción de muestreo total?
+```{r}
+1/k
+```
+
+
+##e. ¿Cuánto es la fracción de muestreo para cada réplica?
+```{r}
+1/k2
+```
+
+
+##f. ¿De qué tamaño será cada réplica?
+```{r}
+n_y
+```
+
+
+##g. ¿Cuál será el intervalo de selección en cada una de las réplicas?
+```{r}
+k2
+```
+
+#22. Selección de una muestra de fincas con muestreo replicado. 
+Desarrolle un procedimiento para seleccionar una muestra de $n=300$ fincas en $c=10$ réplicas de tamaño $nr=30$. Guarde el archivo de la muestra con el nombre de muestra_rf (muestra replicada final).
+```{r}
+nr=30
+n=300
+c=10
+d=dim(marco5b.ord)[2]+2
+muestra_rf=matrix(nrow = n, ncol = d)
+colnames(muestra_rf)=c("id", "finca","hatototal", "tamano", "mesip", 
+"replica") 
+for (a in 1:c) {
+ set.seed(a)
+ seleccion<- UPsystematic(pik=inclusionprobabilities(marco5b.ord$mesip,round(nr,0)))
+ muestra0 <- getdata(marco5b.ord,seleccion)
+ muestra_r <- as.data.frame(muestra0)
+ muestra_r$replica=rep(a,round(nr,0))
+ ci=round(nr,0)*(a-1)+1
+ cj=round(nr,0)*a
+ h=0
+ for (i in ci:cj){
+ h=h+1
+ for(j in 1:d) { 
+ muestra_rf[i,j]=muestra_r[h,j]
+ }
+ }
+}
+muestra_rf <- as.data.frame(muestra_rf)
+table(muestra_rf$replica)
+```
+#23. Intervalo de confianza para el total de cabezas de ganado en muestreo replicado. Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+##b. Desarrolle un procedimiento para calcular el intervalo de confianza del total de cabezas de ganado con muestreo replicado 
+y compare con los resultados anteriores. Use la librería dplyr y la función summarise().
+```{r}
+TOTAL=sum(marco5b.ord$hatototal)
+f=1/k
+muestra_rf$y=muestra_rf$hatototal
+n=nrow(muestra_rf)
+tabla=summarise(group_by(muestra_rf,replica),
+ n_r=n(),
+ total_xr=N/nr*sum(y))
+total_r=round(mean(tabla$total_xr,0))
+desvtotal_r=round(sqrt(1-f)*sd(tabla$total_xr)/sqrt(c),0)
+p=0.05
+if (c<30){
+ zt=qt(p, df=c-1, lower.tail = FALSE)
+} else if (c>=30){
+ zt=qnorm(p, lower.tail = FALSE)
+}
+Li=round(total_r-zt*desvtotal_r,0)
+Ls=round(total_r+zt*desvtotal_r,0)
+rep=c(N, TOTAL, n, total_r, desvtotal_r, Li, Ls)
+res=rbind(mia, propor, par.par, suc, rep)
+rownames(res)=c("MIA","PROPORCIONAL", "PAREADA", "SUCESIVAS", "REPLICAS") 
+colnames(res)=c("N", "TOTAL", "n", "total", "desvmed_tot", "Li", "Ls"); res
+
+```
+#24. Separación de la muestra en grupos aleatorios a partir de la selección de una muestra sistemática de fincas.
+Seleccione una muestra sistemática de n=300 fincas de marco5b.ord. Nombre el archivo de la muestra como muestra_ga.
+```{r}
+n=300
+set.seed(123)
+seleccion1<-UPsystematic(pik=inclusionprobabilities(marco5b.ord$mesip,n)) 
+muestra0 <- getdata(marco5b.ord,seleccion1)
+muestra_ga<- as.data.frame(muestra0)
+n=nrow(muestra_ga)
+n
+```
+
+#25. Procedimiento de separación de la muestra en grupos aleatorios. 
+Desarrolle un procedimiento para ejecutar la separación de la muestra de $n= 300$ fincas en $c= 10$ grupos aleatorios (réplicas) de tamaño $nr=30$ fincas.
+```{r}
+N=nrow(marco5b.ord)
+c=10
+k=N/n
+ck=c*k
+nr=N/ck
+i=1;h=1
+while (h<n) {
+ re=sample(1:c,c,replace= FALSE)
+ for (j in 1:c) {
+ muestra_ga$replica[i]=re[j]
+ i=i+1
+ }
+ h=h+c
+}
+muestra_fga<-muestra_ga[order(muestra_ga$replica),] 
+table(muestra_fga$replica)
+
+```
+
+#26. Intervalo de confianza para la media usando el procedimiento de separación de la muestra en grupos aleatorios. Cálculo del intervalo de confianza.
+
+##a. ¿Cuál es la fórmula que debe utilizar para calcular el intervalo de confianza?
+
+
+##b. Desarrolle un procedimiento para calcular un intervalo de confianza para el total de cabezas de ganado usando el procedimiento de separación de la muestra en grupos aleatorios.
+Compare con los resultados anteriores y con el valor poblacional. Use la librería dplyr y la función summarise().
+```{r}
+muestra_fga$y=muestra_fga$hatototal
+n=nrow(muestra_fga)
+f=n/N
+tabla=summarise(group_by(muestra_fga,replica),
+ n_r=n(),
+ total_xr=N/nr*sum(y))
+total_r=round(mean(tabla$total_xr,0))
+desvtotal_r=round(sqrt(1-f)*sd(tabla$total_xr)/sqrt(c),0)
+p=0.05
+if (c<30){
+ zt=qt(p, df=c-1, lower.tail = FALSE)
+} else if (c>=30){
+ zt=qnorm(p, lower.tail = FALSE)
+}
+Li=round(total_r-zt*desvtotal_r,0)
+Ls=round(total_r+zt*desvtotal_r,0)
+ga=c(N, TOTAL, n, total_r, desvtotal_r, Li, Ls)
+res=rbind(mia, propor, par.par, suc, rep, ga);res
+
+```
+
+

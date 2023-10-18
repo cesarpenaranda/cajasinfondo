@@ -1,0 +1,442 @@
+---
+title: "Tarea Bootstrap"
+author: "Miriam Calvo, César Peñaranda, Keyla Zúñiga"
+date: '2022-06-24'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+#Librerías necesarias
+```{r}
+
+library(pander)
+library(ggplot2)
+library(boot)
+library(car)
+library(kableExtra)
+library(huxtable)
+library(dplyr)
+
+```
+#Cargando el archivo de datos
+
+```{r}
+setwd("C:/Users/cesar/Documents/")
+load(file="marco4a.Rdata")
+```
+
+#Creación del nuevo data frame 
+
+Dentro de las combinaciones posibles a elegir, se decidió escoger la combinación correspondiente a: region=="HNorte" & zona=="Rural.
+
+```{r}
+df= subset(marco4a, region=="HNorte" & zona=="Rural")
+attach(df)
+```
+
+
+#Medidas descriptivas 
+
+El objetivo es analizar la asociación entre el ingreso y la escolaridad en el país Tiquicia.
+Primero se calculan medidas descriptivas para las variables "ingresoph" y "educa".
+
+```{r}
+summary(ingresoph)
+summary(educa)
+```
+
+```{r}
+mp= hux(
+ 
+  Medidas.de.posición= c("Mínimo", "Primer cuartil", "Mediana","Promedio","Tercer cuartil", "Máximo"),
+  Valor = c("0","70243","127387","220119","229052","5580727"),
+  add_colnames = T
+)
+right_padding(mp) = 10
+left_padding(mp) = 10
+bold(mp)[1,]= T
+bottom_border(mp)[1,]=2
+bottom_border(mp)[7,]=2
+top_border(mp)[1,]=2
+caption(mp)= "Cuadro 1. Medidas de posición de la variable Ingreso"
+add_footnote(mp,".")
+position(mp)="center"
+
+```
+
+
+
+##Diagrama de cajas
+```{r}
+correct <- mutate(df, income = round(ingresoph/1000000 , 6))
+plot(educa, correct$income, ylab= "Ingreso mensual per cápita del hogar
+     (en millones de colones)", cex.lab=0.6, cex.axis=0.6,
+     xlab = "Nivel de escolaridad", main = "Gráfico 1. Diagrama de caja para el ingreso 
+     mensual per cápita del hogar según nivel de escolaridad", cex.main =1,
+      col=c("cadetblue1", "#FFC125","pink3"))
+```
+
+
+
+
+```{r}
+porcentaje=c(74.11,20.06,5.83)
+etiq=c("Primaria o menos","Secundaria","Universidad")
+w= round((porcentaje/sum(porcentaje)*100), 2)
+etiq= paste(w)
+etiq=paste(etiq,"%", sep="")
+```
+
+
+
+```{r}
+pie(porcentaje,clockwise=T, border = T, labels = etiq, main = "Gráfico 2. Nivel de escolaridad de las personas en la región huetar norte, zona rural de Tiquicia", col=c("steelblue","gray", "salmon1"))
+legend("topright",c("Primaria o menos","Secundaria","Universidad"), cex=0.8, fill=c("steelblue","gray", "salmon1"))
+```
+
+##Cuadros resumen
+
+```{r}
+xd= hux(
+ 
+  Educación= c("Primaria o menos", "Secundaria", "Universidad","Total"),
+  Ingreso.bajo = c(265/618*100,47/618*100, 5/618*100,51.3),
+  Ingreso.medio = c(174/618*100,64/618*100, 15/618*100,40.94),
+  Ingreso.alto= c(19/618*100,13/618*100, 16/618*100,7.76),
+  add_colnames = T
+)
+right_padding(xd) = 10
+left_padding(xd) = 10
+bold(xd)[1,]= T
+bottom_border(xd)[1,]=2
+bottom_border(xd)[5,]=2
+top_border(xd)[1,]=2
+caption(xd)= "Cuadro 2. Cantidad de personas según nivel de educación en la región huetar norte zona rural, de Tiquicia"
+add_footnote(xd,"*Los datos se presentan en términos porcentuales")
+position(xd)="center"
+
+```
+
+
+
+```{r}
+xd= hux(
+ 
+  Educación= c("Primaria o menos", "Secundaria", "Universidad","Total"),
+  Ingreso.bajo = c(265/618*100,47/618*100, 5/618*100,51.3),
+  Ingreso.medio = c(174/618*100,64/618*100, 15/618*100,40.94),
+  Ingreso.alto= c(19/618*100,13/618*100, 16/618*100,7.76),
+  add_colnames = T
+)
+right_padding(xd) = 10
+left_padding(xd) = 10
+bold(xd)[1,]= T
+bottom_border(xd)[1,]=2
+bottom_border(xd)[5,]=2
+top_border(xd)[1,]=2
+caption(xd)= "Cuadro 3. Cantidad de personas según nivel de educación en la región huetar norte zona rural, de Tiquicia"
+add_footnote(xd,"*Los datos se presentan en términos porcentuales")
+position(xd)="center"
+```
+
+
+
+
+```{r}
+nivel.escolaridad <-  (car::recode(educa, "'Primaria o menos' = 1; 'Secundaria' = 2;
+'Universidad' = 3"))
+nivel.escolaridad <- as.numeric(nivel.escolaridad)
+```
+
+
+
+#Análisis del supuesto de normalidad de las variables
+ 
+##Prueba de Shapiro 
+```{r}
+shapiro.test(nivel.escolaridad)
+shapiro.test(ingresoph)
+```
+
+
+##Gráficos QQ 
+
+```{r}
+qqPlot(nivel.escolaridad, ylab = "Escolaridad", xlab ="Cuantilos de la distribución normal",
+  main = "Gráfico 3. Gráfico Q-Q para el análisis de normalidad de la variable
+  Nivel de Escolaridad")
+```
+
+
+
+
+```{r}
+qqPlot(correct$income, ylab="Ingreso (en millones de colones)", 
+       xlab ="Cuantilos de la distribución normal",
+       main = "Gráfico 4. Gráfico Q-Q para el análisis de normalidad de la variable Ingreso")
+```
+
+
+A partir del análisis gráfico por medio de los QQ-Plots; para la variable "Nivel de Escolaridad" se logra apreciar, en el gráfico 3, que la gran mayoría de los puntos se salen de la línea de normalidad, debido a que esta variable sólo puede tomar 3 valores: 1, 2 o 3. Por lo que no se puede suponer normalidad.
+
+Caso similar sucede para la variable "Ingreso". En el gráfico 4, se observa que un porcentaje considerable de los puntos se salen de la línea de normalidad, además hay presencia de valores extremos, por lo que no se puede suponer normalidad.
+
+El análisis gráfico se complementa con la prueba de Shapiro- Wilks, donde se llega a la misma conclusión de que no se puede suponer normalidad para ninguna de las variables. Esto debido a que ambos p-values son muy cercanos a 0.
+
+Por medio de las conclusiones obtenidas anteriormente; para analizar la correlación entre las variables "Ingreso" y "Nivel de Escolaridad" se opta por usar medidas de asociación no paramétricas, dado que no se puede suponer normalidad. Además, el tipo de escala de medición de ambas variables admite el uso del coeficiente de correlación r de Spearman y el tau de Kendall, por lo que se decidió calcular dichas medidas.
+
+
+#Análisis de la asociación entre las variables Ingreso y Nivel de escolaridad
+
+
+```{r}
+
+
+
+spe=cor(nivel.escolaridad, ingresoph, use = "pairwise.complete.obs", method = "spearman")
+
+ken=cor(nivel.escolaridad, ingresoph, use = "pairwise.complete.obs", method = "kendall")
+
+spe1=round(spe,4)
+ken1=round(ken,4)
+
+
+xd= hux(
+ 
+  Medida= c("Coeficiente R de Spearman", "Coeficiente Tao de Kendall"),
+  Grado.de.asociación = c(spe1, ken1),
+  add_colnames = T
+)
+right_padding(xd) = 10
+left_padding(xd) = 10
+bold(xd)[1,]= T
+bottom_border(xd)[1,]=2
+bottom_border(xd)[3,]=2
+top_border(xd)[1,]=2
+caption(xd)= "Cuadro 4. Medidas de asociación entre las variables ingreso y nivel de escolaridad"
+add_footnote(xd,".")
+position(xd)="center"
+
+
+
+```
+
+Se interpreta para el coeficiente de correlación de rangos de Spearman y Tau de Kendall, que la asociación entre las variables Ingreso y Nivel de Escolaridad en la zona rural de la región Huetar Norte de Tiquicia es positiva, por lo que, en promedio, a mayor escolaridad de los miembros del hogar, se percibirá un mayor ingreso en el mismo. Dicha asociación puede considerarse de moderada a baja.
+
+
+
+##Prueba de hipótesis para la correlación R de Spearman y Tao de Kendall
+```{r}
+cor.test(nivel.escolaridad, ingresoph, use = "pairwise.complete.obs", method = "spearman")
+
+cor.test(nivel.escolaridad, ingresoph, use = "pairwise.complete.obs", method = "kendall")
+```
+
+
+Para analizar la asociación de las variables Ingreso y Nivel de Escolaridad a nivel poblacional, para la zona rural de la región Huetar Norte de Tiquicia, se realizó un contraste de hipótesis para los coeficientes de correlación calculados anteriormente. Por lo que, para ambos casos, hay suficiente evidencia estadística para rechazar la hipótesis nula de que ambos coeficientes sean iguales a 0. Por lo tanto, se puede asumir asociación de las variables analizadas a nivel poblacional.
+
+
+
+
+#Uso de Bootstrap para la generación de intervalos de confianza no paramétricos para el coeficiente de correlación r de Spearman y Tau de Kendall
+
+
+
+##Remuestreos para simular la distribución muestral de los coeficientes de correlación
+```{r}
+
+xy <- data.frame(cbind(ingresoph, nivel.escolaridad))
+
+
+k <- function(x, d){
+  return(cor(x$ingresoph[d], x$nivel.escolaridad[d], 
+             use = "pairwise.complete.obs", method = "kendall"))
+  
+}
+
+
+s <- function(x, d){
+  return(cor(x$ingresoph[d], x$nivel.escolaridad[d],
+             use = "pairwise.complete.obs",  method = "spearman"))
+}
+
+#Estimación de bootstrap para la correlación de tau de Kendall para 999 remuestreos:
+
+btp.k <- boot(xy, k, R=999 )
+print(btp.k)
+
+
+#Estimación de bootstrap para la correlación de r de Spearman para 999 remuestreos:
+
+btp.s <- boot(xy, s, R=999)
+print(btp.s)
+
+```
+
+
+##Intervalos de confianza no paramétricos
+Intervalos de confianza para la correlación de Spearman y Tau de Kendall
+```{r}
+ci.k <-  boot.ci(btp.k, type="perc")
+print(ci.k)
+
+ci.s <- boot.ci(btp.s, type = "perc")
+print(ci.s)
+```
+
+##Simulación de las distribuciones muestrales de los coeficientes calculados
+
+###Simulación para el R de Spearman
+```{r}
+
+plot(btp.s)
+
+```
+
+
+###Simulación para el Tau de Kendall
+
+```{r}
+plot(btp.k)
+
+```
+
+A partir de los gráficos anteriores, se puede asumir que la distribución muestral de los coeficientes r de Spearman y Tau de Kendall es aproximadamente normal, debido a la mayoría de puntos están sobre la línea de normalidad. 
+
+
+#Recodificación de la variable Ingreso 
+
+Posteriormente, se procede a recodificar la variable ingreso, para convertirla en variable
+cualitativa ordinal.
+
+```{r}
+
+income_ord <- (car::recode(ingresoph, "0:130000='Ingreso bajo'; 130000:500000='Ingreso medio'; 
+                     500000:20000000= 'Ingreso alto'"))
+
+income_ord <- as.factor(income_ord)
+
+otro.recode <- (car::recode(ingresoph, "0:130000='1'; 130000:500000='2'; 
+                     500000:20000000= '3'"))
+
+otro.recode <- as.numeric(otro.recode)
+ 
+vab <-  table(income_ord, educa)[3:1,3:1]
+
+
+```
+
+
+```{r}
+
+income <-  factor(income_ord, levels = c('Ingreso bajo', 'Ingreso medio', 'Ingreso alto'))
+
+
+```
+
+
+##Gráfico de barras comparativas para el ingreso y nivel de escolaridad
+```{r}
+
+barplot (vab, beside= T, horiz = T,legend= T, col=c("turquoise", "thistle", "slateblue3"), 
+         main="Gráfico 5. Cantidad de personas según nivel de ingreso en la región huetar norte, zona rural de Tiquicia",
+         xlab= "Cantidad de personas", ylab="Nivel de escolaridad", border= T, xlim=c(0,370))
+
+```
+
+
+
+##Gráfico de barras 
+
+```{r}
+
+
+ggplot(df, aes(x= income))+geom_bar(fill="cyan3")+ coord_flip()+ theme_light()+labs(y="Cantidad de personas", x= " Nivel de ingreso per cápita del hogar", title="Gráfico 6. Cantidad de personas según nivel de ingreso, en la región huetar norte zona rural")
+
+
+```
+
+
+
+
+## Uso del coeficiente de correlación R de Spearman para dos variables cualitativas ordinales
+
+```{r}
+
+cor.test(nivel.escolaridad, otro.recode, method = "spearman")
+
+```
+
+
+
+```{r}
+spe2=round(0.2746857 ,4)
+
+sp= hux(
+ 
+  Medida= c("Spearman"),
+  Nivel = c(spe2),
+  add_colnames = T
+)
+right_padding(sp) = 10
+left_padding(sp) = 10
+bold(sp)[1,]= T
+bottom_border(sp)[1,]=2
+bottom_border(sp)[2,]=2
+top_border(sp)[1,]=2
+caption(sp)= "Medida de asociación recodificada"
+add_footnote(sp,".")
+position(sp)="center"
+```
+
+
+
+
+```{r}
+xy2 <- data.frame(cbind(otro.recode, nivel.escolaridad))
+
+
+
+s2 <- function(x, d){
+  return(cor(x$otro.recode[d], x$nivel.escolaridad[d],
+             use = "pairwise.complete.obs",  method = "spearman"))
+}
+
+#Estimación de bootstrap para la correlación de R de Spearman para 999 remuestreos:
+
+bi <- boot(xy2, s2, R=999 )
+print(bi)
+
+
+
+```
+
+
+
+
+```{r}
+plot(bi)
+```
+
+
+
+
+```{r}
+
+qq <-  boot.ci(bi, type="perc")
+print(ci.k)
+
+print(bi)
+
+
+```
+
+
+#Comparación de los Intervalos de Confianza Obtenidos
+
+Los resultados generados a partir del bootstrap no paramétrico indican que el coeficiente R de Spearman cuenta con el error estándar más pequeño.  Cabe resaltar que, entre más pequeño sea el error estándar de bootstrap, los intervalos de confianza estimarán de mejor manera los límites a los que puede converger los parámetros analizados a nivel poblacional. 
+
+Además, es preferible usar el coeficiente R de Spearman cuando se tienen muchos empates ante la Tau de Kendall después de recodificar el ingreso, y este tome únicamente tres valores. Por ende, se elige dicha medida de asociación después de cambiar la escala de medición de la variable ingreso a cualitativa ordinal.
+
+Por otra parte, analizando los intervalos de confianza, a un 5% de significancia, se logra apreciar que el intervalo con mayor amplitud lo tiene la R de Spearman (después de recodificar la variable ingreso). Esto hace que el intervalo de confianza estimado sea menos preciso. Por lo que una de las posibles consecuencias de recodificar el ingreso es la presencia de muchos empates. 

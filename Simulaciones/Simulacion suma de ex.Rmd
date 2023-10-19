@@ -1,0 +1,27 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-31"
+---
+```{r}
+B=1000000
+vector=NULL
+vector2=NULL
+for(i in 1:B){
+  x=rexp(10,rate = 1)
+  vector[i]=sum(x)
+}
+hist(vector,breaks = 1000)
+
+```
+```{r}
+vector=NULL
+B=10000
+for(i in 1:B){
+  x=rexp(100,rate = 1)
+  x2=sample(x,1)
+  vector[i]=x2
+}
+hist(vector,breaks = 1000)
+```
+

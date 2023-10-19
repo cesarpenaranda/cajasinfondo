@@ -1,0 +1,254 @@
+---
+title: "Tarea Simulaciones"
+author: "Miriam Calvo, César Peñaranda, Keyla Zúñiga"
+date: '2022-07-13'
+output: html_document
+---
+
+
+```{r}
+library(MultiRNG)
+library(moments)
+library(car)
+library(ggplot2)
+```
+
+
+#Para datos simulados a partir de la distribución normal bivariada
+
+```{r}
+
+cuadro.resumen <- cbind(c(rep(NA,10)),c(rep(NA,10)), c(rep(NA,10)),
+                        c(rep(NA,10)), c(rep(NA,10)), c(rep(NA,10)))
+
+summary.potencia.1 <- cbind(c(rep(NA,10)),c(rep(NA,10)))
+
+rho <- c(0.05,0.17,0.30,0.50, 0.70, 0.95)
+
+x <- sample(rho,1)
+
+matriz.corr <- as.matrix(rbind(c(1,x), c(x,1)))
+
+muestras <- c(20, 80, 150,300, 350, 500, 620, 700, 850, 1000)
+
+D = 0.15
+
+coef_var = function(x) {
+  (sd(x) / mean(x))*100 
+}
+
+coef_asimetria = function(x){
+  skewness(x) 
+}
+
+kurto = function(x){
+  kurtosis(x) 
+}
+
+for (j in 1:10) {
+  
+  almacen.wilcox.potencia <- rep(NA,5000)
+  almacen.t.potencia <- rep(NA,5000)
+  
+  almacen.wilcox.desc <- rep(NA,5000)
+  almacen.t.desc <- rep(NA,5000)
+  
+  
+  for (i in 1:5000){
+    
+    vector.medias <- c(0,0)
+    
+    numeros.norm <- draw.d.variate.normal(no.row=muestras[j],d=2,
+                    mean.vec=vector.medias,cov.mat=matriz.corr) 
+    
+    var.norm1 <- round(numeros.norm[,1],2)
+    var.norm2 <- round(numeros.norm[,2],2)+D
+    
+    wilcoxon <- suppressWarnings(wilcox.test(var.norm1,
+                                var.norm2,paired=TRUE))
+    
+    almacen.wilcox.desc[i] <- c(wilcoxon$statistic)
+   
+    prueba.t<- t.test(var.norm1,var.norm2, paired = TRUE)
+    
+    almacen.t.desc[i] <- c(prueba.t$statistic)
+    
+    almacen.wilcox.potencia[i] <- 1*(wilcoxon$p.value<0.05)
+    
+    almacen.t.potencia[i] <- 1*(prueba.t$p.value<0.05)
+    
+    
+  }
+  
+  cuadro.resumen[j,1] <- coef_asimetria(almacen.t.desc)
+  cuadro.resumen[j,2] <- coef_asimetria(almacen.wilcox.desc)
+  cuadro.resumen[j,3] <- coef_var(almacen.t.desc)
+  cuadro.resumen[j,4] <- coef_var(almacen.wilcox.desc)
+  cuadro.resumen[j,5] <- kurto(almacen.wilcox.desc)
+  cuadro.resumen[j,6] <- kurto(almacen.t.desc)
+  
+  summary.potencia.1[j,1] <- mean(almacen.wilcox.potencia)
+  summary.potencia.1[j,2] <- mean(almacen.t.potencia)
+  
+}
+
+rownames(cuadro.resumen) <- c("20", "80", "150","300", "350", "500", 
+                              "620", "700", "850", "1000")
+
+colnames(cuadro.resumen) <- c("Asimetría W","Asimetría t", 
+              "Coef.var t", "coef.var W", 
+              "kurtosis W", "kurtosis t")
+
+
+rownames(summary.potencia.1) <- c("20", "80", "150","300", "350", "500", 
+                              "620", "700", "850", "1000")
+
+colnames(summary.potencia.1) <- c("Wilcoxon", "t")
+
+cuadro.resumen
+summary.potencia.1
+print(matriz.corr)
+
+
+
+```
+
+
+#Para datos simulados a partir de una distribución Wishart
+
+
+```{r}
+
+
+cuadro.resumen <- cbind(c(rep(NA,10)),c(rep(NA,10)), c(rep(NA,10)),
+                        c(rep(NA,10)), c(rep(NA,10)), c(rep(NA,10)))
+
+summary.potencia.2 <- cbind(c(rep(NA,10)),c(rep(NA,10)))
+
+rho <- c(0.05,0.17,0.30,0.50, 0.70, 0.95)
+
+x <- sample(rho,1)
+
+matriz.corr <- as.matrix(rbind(c(1,x), c(x,1)))
+
+muestras <- c(20, 80, 150,300, 350, 500, 620, 700, 850, 1000)
+
+D = 0.15
+
+coef_var = function(x) {
+  (sd(x) / mean(x))*100 
+}
+
+coef_asimetria = function(x){
+  skewness(x) 
+}
+
+kurto = function(x){
+  kurtosis(x) 
+}
+
+for (j in 1:10) {
+  
+  almacen.wilcox.potencia <- rep(NA,100)
+  almacen.t.potencia <- rep(NA,100)
+  
+  almacen.wilcox.desc <- rep(NA,100)
+  almacen.t.desc <- rep(NA,100)
+  
+  
+  for (i in 1:100){
+    
+    vector.medias <- c(0,0)
+    
+    numeros.wishart <- draw.wishart(no.row=muestras[j],d=2,nu=2,sigma=matriz.corr)
+
+    var.wishart1 <- round(numeros.wishart[,1],2)
+    var.wishart2 <- round(numeros.wishart[,2],2)
+  
+    #Corrección para la media
+    var.wishart1 <- var.wishart1/matriz.corr[1,1]
+    var.wishart2 <- D+var.wishart2/matriz.corr[1,2]
+
+    
+    wilcoxon <- suppressWarnings(wilcox.test(var.wishart1,
+                                var.wishart2,paired=TRUE))
+    
+    almacen.wilcox.desc[i] <- c(wilcoxon$statistic)
+   
+    prueba.t<- t.test(var.wishart1,var.wishart2, paired = TRUE)
+    
+    almacen.t.desc[i] <- c(prueba.t$statistic)
+    
+    almacen.wilcox.potencia[i] <- 1*(wilcoxon$p.value<0.05)
+    
+    almacen.t.potencia[i] <- 1*(prueba.t$p.value<0.05)
+    
+    
+  }
+  
+  cuadro.resumen[j,1] <- coef_asimetria(almacen.t.desc)
+  cuadro.resumen[j,2] <- coef_asimetria(almacen.wilcox.desc)
+  cuadro.resumen[j,3] <- coef_var(almacen.t.desc)
+  cuadro.resumen[j,4] <- coef_var(almacen.wilcox.desc)
+  cuadro.resumen[j,5] <- kurto(almacen.wilcox.desc)
+  cuadro.resumen[j,6] <- kurto(almacen.t.desc)
+  
+  summary.potencia.2[j,1] <- mean(almacen.wilcox.potencia)
+  summary.potencia.2[j,2] <- mean(almacen.t.potencia)
+  
+}
+
+rownames(cuadro.resumen) <- c("20", "80", "150","300", "350", "500", 
+                              "620", "700", "850", "1000")
+
+colnames(cuadro.resumen) <- c("Asimetría W","Asimetría t", 
+              "Coef.var t", "coef.var W", 
+              "kurtosis W", "kurtosis t")
+
+
+rownames(summary.potencia.2) <- c("20", "80", "150","300", "350", "500", 
+                              "620", "700", "850", "1000")
+
+colnames(summary.potencia.2) <- c("Wilcoxon", "t")
+
+cuadro.resumen
+summary.potencia.2
+print(matriz.corr)
+
+
+
+```
+
+#Graficos
+```{r}
+df1=as.data.frame(summary.potencia.1)
+ggplot (data = df1, aes(x = Wilcoxon, y = muestras) )+
+        geom_point(shape=15,col="blue")+
+  geom_line(aes(x = Wilcoxon, y = muestras, color="Prueba wilcoxon"))+
+  geom_point(data = df1, aes(x = t, y = muestras),shape=16,col="red")+
+  geom_line(aes(x = t, y = muestras, color="Prueba t"))+
+  labs(x="Potencia de la prueba",
+       y="Tamaño de la muestra", 
+       colour= "Tipo de prueba", 
+       title = "Grafico.1: Potencias de la prueba t y prueba wilcoxon 
+       en funcion de su tamaño de muestra",subtitle = "Simulaciones con datos apartir de una distribucion normal bivariada",caption = "Grafico elaborado por Miriam Calvo, César Peñaranda, Keyla Zúñiga")
+
+df2=as.data.frame(summary.potencia.2)
+ggplot (data = df2, aes(x = Wilcoxon, y = muestras) )+
+        geom_point(shape=15,col="green4")+
+  geom_line(aes(x = Wilcoxon, y = muestras, color="Prueba wilcoxon"),col="green2")+
+  geom_point(data = df2, aes(x = t, y = muestras),shape=16,col="red")+
+  geom_line(aes(x = t, y = muestras, color="Prueba t"),col="deeppink1")+
+  labs(
+    x="Potencia de la prueba",
+       y="Tamaño de la muestra", 
+       colour= "Tipo prueba", 
+       title = "Grafico.1: Potencias de la prueba t y prueba wilcoxon 
+       en funcion de su tamaño de muestra",subtitle = "Simulaciones con datos apartir de una distribución Wishart",caption = "Grafico elaborado por Miriam Calvo, César Peñaranda, Keyla Zúñiga")
+```
+
+
+
+
+
+

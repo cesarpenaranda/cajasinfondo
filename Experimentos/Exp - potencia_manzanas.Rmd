@@ -9,8 +9,8 @@ el color normal de la fruta y 6 es el más oscuro. El objetivo final es seleccio
 tratamiento que mantenga mejor el color original para una empresa que se encarga
 de banquetes.
 
-# 1. Potencia:
-## (a) Datos muestrales:
+1. Potencia:
+(a) Datos muestrales:
 i. Promedios:
 
 ```{r}
@@ -28,7 +28,7 @@ Como se trata de un diseño de un factor balanceado, para obtener el cuadrado
 medio residual basta promediar las variancias de los 4 tratamientos, y se obtiene
 como resultado 0,98.
 
-## (b) Función:
+(b) Función:
 ```{r}
 med = function (r, mu, v = 1) {
 k = length(mu)
@@ -41,7 +41,7 @@ return(p)
 }
 ```
 
-## (c) Simulación:
+(c) Simulación:
 ```{r}
 M=1000
 mu1=c(3,3,2,4)
@@ -50,7 +50,7 @@ for(j in 1:M) prob[j]=med(5,mu1)
 mean(prob<0.05)
 ```
 
-## (d) Potencia:
+(d) Potencia:
 ```{r}
 library(pwr)
 power.anova.test(n=5,groups=4,between.var=var(mu1),within.var=1)
@@ -58,7 +58,7 @@ power.anova.test(n=5,groups=4,between.var=var(mu1),within.var=1)
 #grops es el numero de tratamientos
 ```
 
-## (e) Comparación:
+(e) Comparación:
 Mediante esta función se obtiene una potencia de 0,64 lo que indica que se tiene
 una probabilidad de 0,64 de detectar diferencias de 2 puntos si estas diferencias
 existen. Puede entenderse que si realmente hay diferencias de 2 puntos entre
@@ -68,9 +68,9 @@ en el 64% de los casos se concluirá que sí hay diferencias mientras que en el
 poco diferente pero se puede llegar a un resultado más cercano al obtenido en
 la función de R si se hace la simulación con un número mayor de iteraciones.
 
-# 2. Número de réplicas:
+2. Número de réplicas:
 
-## (a) Tamaño de muestra por tratamiento:
+(a) Tamaño de muestra por tratamiento:
 ```{r}
 pot = power.anova.test(groups=4,between.var=var(mu1),
 within.var=1,power=0.9)
@@ -81,7 +81,7 @@ Se necesitan al menos 9 réplicas por tratamiento para tener una probabilidad de
 0,90 de que se detectarán diferencias de dos unidades si esas diferencias existen.
 
 
-## (b) Variando el vector de medias verdaderas:
+(b) Variando el vector de medias verdaderas:
 ```{r}
 var(c(2,4,3,3))
 power.anova.test(groups=4,between.var=var(c(2,4,3,3)),

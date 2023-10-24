@@ -34,7 +34,7 @@ summary(kmleucemia)
 ```{r}
 autoplot(kmleucemia)
 ```
-estimacion de la mediana 
+Estimacion de la mediana 
 ```{r}
 quantile(kmleucemia,quantiles=c(0.25,0.50,0.75))
 ```
@@ -60,7 +60,7 @@ load("Bases/reincidencia.Rdata")
 reincidencia.km1=survfit(Surv(week,arrest)~fin,stype = 1,data = reincidencia)
 autoplot(reincidencia.km1)
 ```
-diferencia entre las dos curvas
+Diferencia entre las dos curvas
 ```{r}
 survdiff(Surv(week,arrest)~fin,data = reincidencia)
 ```

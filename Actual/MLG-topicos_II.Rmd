@@ -1,0 +1,171 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-09"
+---
+# Librerias 
+```{r}
+library(lme4) # para la funcion lmer 
+library(emmeans) # para las comparaciones
+```
+
+# Creacion de bases
+```{r eval=FALSE} 
+trigli=c(142.3, 144.0, 148.6, 146.9, 142.9, 147.4, 133.8,
+133.2, 134.9, 146.3, 145.2, 146.3, 125.9, 127.6,
+108.9, 107.5, 148.6, 156.5, 148.6, 153.1, 135.5,
+138.9, 132.1, 149.7, 152.0, 151.4, 149.7, 152.0,
+142.9, 142.3, 141.7, 141.2)
+dia=factor(rep(1:4,each=8))
+maq=factor(rep(c("A","B","C","D"),4,each=2))
+base=data.frame(trigli,dia,maq)
+
+```
+
+formar una columna apartir de dos
+```{r}
+base$pulpa_lote=paste(base$metodo,base$lote,sep = "-")
+```
+
+# Graficos 
+
+## Boxplot
+```{r eval=FALSE}
+library(ggplot2)
+ggplot(base,aes(lote,prod)) + # base del grafico 
+  geom_boxplot() + # tipo de grafico 
+  geom_hline(yintercept = mean(base$prod), color = "red", linetype = "dashed") + # agregar la media general
+  stat_summary(fun = mean, geom = "point", shape = 16, size = 3, color = "red") # agregar medias condicionales
+```
+
+## Grafico descriptivo
+* grafico de puntos agrupado 
+```{r eval=FALSE}
+library(lattice)
+dotplot(trigli~maq|dia,xlab="día",ylab="triglicéridos")
+```
+* sin agrupar util para comparar directamente
+```{r}
+xyplot(trigli~maq,group=dia,data = base,auto.key=list(columns=4))
+```
+
+* muy util para ver interaccion
+```{r}
+xyplot(trigli~maq,group=dia,type="a",data = base,auto.key=list(columns=4))
+```
+
+# Modelos 
+
+## Modelo mixto 
+- Ejemplo de colorantes
+$$y_{ij}=\beta_0+\delta_i+\epsilon_{ij}$$
+\(y_{ij}\) la j-esima observacion dentro del i-esimo lote
+\(\delta_{i}\) efecto del i-esimo lote o del i-esimo sujeto del nivel 2 (error del nivel 2)
+
+esperanda condicional dado el lote es
+$$E[Y|i]=\mu_i=\beta_0+\delta_i$$
+```{r eval=FALSE}
+library(lme4)
+mod1=lmer(prod~(1|lote),data = base) # para los efectos aleatorios en este caso (1|lote) el 1 representa el promedio
+```
+
+- Ejemplo de espectofotometro
+la k-esima muestra dentro del j-esimo dia, para la i-esima maquina se expresa como
+$$y_{ijk}=\beta_0+\tau_i+\delta_j+(\tau\delta)_{ij}+\epsilon_{ijk}$$
+efecto de la i-esima maquina se denota como: \(\tau_i\)
+efecto del j-esimo dia se denota con: \(\delta_j\)
+efecto de interaccion para la i-esima maquina en el j-esimo dia se denota con: \((\tau\delta)_{ij}\)
+
+esperanda condicional dado el dia y la maquina
+$$E[Y|ij]=\mu_{ij}=\beta_0+\tau_i+\delta_j+(\tau\delta)_{ij}$$
+```{r}
+mod1=lmer(trigli~1+maq+(1|dia)+(1|dia:maq),data = base)
+```
+
+- Ejemplo de papel
+
+Nivel 1 (parcela completa)
+unidad: fraccion del lote 
+factor: temperatura (tratamientos principales) 
+
+Nivel 2 (sub-parcela)
+unidad: lote 
+factor: metodo
+
+lmer(Y~F2*F1+(1|lote)), donde F2 indica el factor del Nivel 2 que, en este caso, es el método y F1 es el factor del Nivel 1 que es la temperatura.
+$$yijk=\mu+\alpha_i+\beta_i+(\alpha\beta)_{ij}+\delta_k+\epsilon_{ijkl}$$
+efecto del i-esimo metodo se denota como: \(\alpha_i\)
+efecto de la j-esima temperatura se denota con:\(\beta_i\)
+efecto de interaccion para el i-esimo metodo con la j-esima temperatura se denota con: \((\alpha\beta)_{ij}\)
+efecto del lote o error de parcela: \(\delta_{k}\)
+error de sub-parcela: \(\epsilon_{ijkl}\)
+donde el efecto del lote o error de parcela
+$$\delta\sim N(0,\sigma^2_{\delta})$$
+# Formulas 
+
+formula para obterner la estimacion de la varianza del lote apartir de un modelo lm
+$$\hat{\sigma^2}_L=\frac{CMLote-CMRes}{n}$$
+
+# Funciones
+## Intervalos de confianza para un modelo mixto
+```{r eval=FALSE}
+round(confint(profile(mod1)),3)
+```
+* Intrepertacion del intervalo de colorantes
+"Puesto que el intervalo de 95% de confianza va de 12.2 a 84.1 (no llega al extremo de cero),
+se confirma que la fuente de variabilidad de lote a lote no es nula. Sin embargo, ese intervalo
+de confianza es muy ancho, lo cual hace dudar de la precisión de la estimación. Se requeriría
+un mayor número de lotes para tener una mejor estimación de la varianza de lote a lote, y esto
+además produciría una mejor estimación de la varianza del error, ya que se contaría con más
+datos en total."
+
+* Intrepertacion del intervalo de espectofotometro
+
+Al observar el intervalo de 95% de confianza se tiene que la desviación estándar de los efectos
+de interacción está entre 2.07 y 8.6, mientras que la desviación estándar del error está entre
+3.1 y 6.3. Es claro que el efecto de interacción tiene una variabilidad no nula.
+
+## Porcentaje de variabilidad
+```{r}
+lote=1764     
+resi=2451
+
+lote/(resi+lote)
+```
+
+* Interpretacion
+41.8% de la variabilidad es debido a los lote
+
+## Prueba LTR
+```{r}
+#con interaccion
+mod1=lmer(trigli~maq+(1|dia)+(1|dia:maq),data = base)
+dev1=deviance(mod1,REML=FALSE)
+summary(mod1)
+coef1=7 #1 intercepto y 3 efectos de maquinas 3 componentes aleatorios 
+```
+
+```{r}
+#sin interaccion
+mod2=lmer(trigli~maq+(1|dia),data = base)
+summary(mod2)
+dev2=deviance(mod2,REML=FALSE)
+coef2=6 #1 intercepto , 3 maquinas y 2 componentes aleatorios
+```
+Prueba de razon de verosimulitud
+```{r}
+LTR=dev2-dev1
+gl=coef1-coef2
+#valor p
+pchisq(q=LTR,df=gl,lower.tail = F,log.p = F)
+```
+
+## Prueba de razón de verosimilitud (LRT) - drop
+```{r}
+drop1(mod1,test = "Chisq")
+```
+
+## Comparaciones
+```{r}
+emmeans(mod1, pairwise~temp|metodo, adjust="bonferroni")
+```

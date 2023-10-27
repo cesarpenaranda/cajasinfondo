@@ -1,0 +1,97 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-09-21"
+---
+
+
+CANCER
+Se cuenta con datos de incidencia de cáncer de pulmón en 4 ciudades danesas en el período de 1968-1971. El propósito del ejercicio es analizar si la incidencia de cáncer está relacionada con la edad.
+Los datos están en el archivo “cancer.Rdata”
+```{r}
+load("bases/cancer.Rdata")
+str(base)
+base$tasa=base$casos/base$pob
+```
+grafico
+```{r}
+media=tapply(base$tasa,base$edad,mean)
+boxplot(tasa~edad,data = base)
+points(media,col="red",pch=16)
+```
+
+en un primer viztaso se logra ver una relacion entre la tasa de incidencia y la edad
+
+a.	Observe que la variable edad es categórica pues se ha resumido en grupos de edad.  Para el análisis se quiere usar la edad de forma numérica y para esto es necesario usar los puntos medios de cada intervalo.  Haga la transformación de la variable edad.
+```{r}
+library(dplyr)
+base=base%>%mutate(edad2=case_when(edad=="40-54"~47,edad=="55-59"~57,edad=="60-64"~62,edad=="65-69"~67,edad=="70-74"~72,TRUE~75))
+```
+
+
+b.	Observe gráficamente cómo se comportan de los datos. 
+```{r}
+media=tapply(base$tasa,base$edad2,mean)
+boxplot(casos~edad2,data = base)
+points(media,col="red",pch=16)
+```
+c.	Ajuste un modelo de Poisson para el número de casos de cáncer, usando la edad como variable independiente.  Debe analizar si hay sobredispersión.  Determine si hay un crecimiento del número de casos asociado a la edad.  Piense cuál es el papel de la ciudad.
+```{r}
+mod.q=glm(casos~edad2*ciudad,family = quasipoisson,data = base)
+summary(mod.q)$disp
+```
+```{r}
+mod1=glm(casos~edad2+ciudad,family = poisson,data = base)
+library(AER)
+dispersiontest(mod1,trafo = 1)
+dispersiontest(mod1,trafo = 2)
+```
+```{r}
+mod1=glm(casos~edad2+ciudad,family = poisson,data = base)
+drop1(mod1,test = "LRT")
+```
+
+d.	Incluya la población y haga el análisis gráfico.
+```{r}
+xyplot(tasa~edad2|ciudad,type=c("p","r"),data = base)
+```
+
+e.	Escriba el modelo de Poisson para la tasa de incidencia de cáncer. 
+f.	Ajuste el modelo. Determine si hay un crecimiento en la tasa de incidencia asociado con la edad.  Note la diferencia en los resultados con respecto al análisis anterior.
+```{r}
+mod2=glm(casos~offset(log(pob))+edad2*ciudad,family = quasipoisson,data = base)
+summary(mod2)$disp
+
+mod5=glm(casos~offset(log(pob))+edad2*ciudad,family=poisson,data=base)
+```
+```{r}
+library(AER)
+dispersiontest(mod5,trafo = 1,alternative = "greater")
+dispersiontest(mod5,trafo = 2,alternative = "greater")
+```
+
+```{r}
+mod2=glm(casos~offset(log(pob))+edad2+ciudad,family = quasipoisson,data = base)
+drop1(mod2,test = "LRT")
+summary(mod2)$disp
+```
+
+g.	Interprete el coeficiente de la edad por un aumento razonable de la edad.
+
+```{r}
+library(MASS)
+mod8=glm.nb(casos~offset(log(pob))+edad2+ciudad,data=base)
+```
+
+```{r}
+coef=mod8$coefficients;coef
+```
+```{r}
+exp(coef[2]*5)
+```
+se espera que por cada 5 anos mas de edad la tasa promedio en incidencia de cancer aumente 33%
+
+h.	Haga un intervalo de confianza para el coeficiente de edad e interprételo por un aumento razonable de la edad.
+i.	Se puede esperar una diferencia en la tasa promedio entre ciudades?
+j.	Escriba el modelo final (no se está pidiendo las estimaciones sino el modelo que se usa).
+k.	Calcule la potencia que se tiene en este experimento para ver diferencia entre ciudades de al menos un 20% en las medias de la tasa de incidencia.  Hágalo usando una distribución Poisson.

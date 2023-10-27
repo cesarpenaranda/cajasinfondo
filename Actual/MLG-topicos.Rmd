@@ -1,0 +1,610 @@
+---
+title: "Topicos MLG - Cesar Peñaranda"
+output:
+  html_document: default
+  word_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+# Librerias
+
+```{r eval=FALSE}
+library(dplyr) #para el mutate
+library (AER) #para el dispersion test
+library(MASS) #para binomial negativa
+```
+
+# Modelos
+
+### **Ejemplo modelo poisson suma nula**
+
+$$lod(\lambda_j)=\tau_j$$ restriccion: $$\tau_1+\tau_2+\tau_3+\tau_4=0$$
+**Modelo con el factor de diseño binomial negativa**
+$$log(\lambda_i)=\beta_0+\tau_i$$
+$$\sigma^2_j=\lambda_j+\frac{\lambda^2_j}{\theta}=\lambda_j+\alpha\lambda^2_j$$
+
+**Ejemplo de ecuacion estimada propenciones log (trat referencia)**
+
+$log(\frac{p}{1-p})=-2.43+2.15D_{200}+2.29D_{400}+3.05D_{800}$
+
+**Ecuacion estimada para caso continuo**
+
+$log(\frac{p}{1-p})=-1.41+0.003D$
+
+## Distribuciones
+
+-   Poisson
+
+La distribución de Poisson es como contar cosas raras que suceden poco a
+poco. Imagina que estás mirando a través de una ventana y cuentas
+cuántos coches pasan por la calle en una hora. La distribución de
+Poisson te ayuda a saber la probabilidad de que pase un número
+específico de coches en ese tiempo.
+
+**Ejemplo moscas**
+
+En este caso se cuenta el número de moscas en un momento y lugar
+específico bajo un cierto tratamiento. Este número teóricamente puede ir
+de cero a infinito, siendo en general los conteos obtenidos números no
+muy grandes, por lo que la distribución es genuinamente Poisson y no
+convendría aproximarla a la normal por el hecho de no tener conteos muy
+grandes.
+
+**Comparar medias y varianzas**
+
+```{r eval=FALSE}
+media=tapply(base$conteo,base$trat1,mean)
+var=tapply(base$conteo,base$trat1,var)
+round(cbind(media,var),3)
+```
+
+## Grafico Boxplot
+
+```{r eval=FALSE}
+boxplot(conteo~trat1,data = base)
+
+media=tapply(base$conteo,base$trat1,mean)
+#agrega puntos en las medias 
+points(media, col = "red", pch = 16)
+#agrega una linea a la media general
+abline(h = mean(base$conteo), col = "blue")
+```
+
+## Matriz util para verificar matriz de estrucura
+
+```{r eval=FALSE}
+#donde 8 es el numero de unidades por trat
+data.frame(model.matrix(mod1),base$trat1)[1:8,]
+```
+
+## Ejemplo de como montar una base
+
+```{r eval=FALSE}
+correr = rep("correr",10)
+jump = rep("jump",10)
+cuerda = rep("cuerda",10)
+trat =c(correr,jump,cuerda)
+resp = c(27,42,27,59,64,35,60,
+         36,38,54,36,31,45,47,
+         40,10,21,10,19,28,24,
+         11,37,45,39,15,29,12,
+         7,14)
+bloque = c(1:10,1:10,1:10)
+h=cbind(bloque,trat,resp)
+h=as.data.frame(h)
+```
+
+## **Codigo para recodificar una variable en una nueva**
+
+```{r eval=FALSE}
+library(dplyr)
+base = base %>%mutate(res = case_when(clase=="muertos"~1,TRUE~0))
+```
+
+## **Cambiar entre suma nula y tratamiento de referencias**
+
+```{r eval=FALSE}
+#tratamiento de referencias
+options(contrasts=c("contr.treatment","contr.poly"))
+#suma nula
+options(contrasts=c("contr.sum","contr.poly"))
+```
+
+**para verificar podemos utilizar**
+
+```{r eval=FALSE}
+contrasts(base$factordiseno)
+
+#ademas se puede utilizar
+
+model.matrix(mod1)
+```
+
+**Estimaciones de los coeficientes para suma nula**
+
+```{r eval=FALSE}
+coef1=mod1$coefficients;round(c(coef1,-sum(coef1[-1])),3) #lo ultimo es para conseguir tau4
+```
+
+**Ejemplo de estimacion de probabilidades**
+
+Conceptual mente se hace de la siguiente manera:
+
+```{r eval=FALSE}
+beta0=coef[1] 
+alfa=coef
+
+p.d0=exp(beta0)/(exp(beta0)+1)
+
+p.d200=exp(beta0+alfa[2])/(exp(beta0+alfa[2])+1)
+p.d400=exp(beta0+alfa[3])/(exp(beta0+alfa[3])+1)
+p.d800=exp(beta0+alfa[4])/(exp(beta0+alfa[4])+1)
+
+#forma rapida y recomentada
+
+coef=mod1$coef
+beta0=coef[1]
+taus=coef
+taus[1]=0
+
+probabilidades=exp(beta0+taus)/(1+exp(beta0+taus))
+names(probabilidades)=c("D0","D200","D400","D800");round(probabilidades,2)
+```
+
+**Con la funcion predic con solo una linea de codigo**
+
+```{r eval=FALSE}
+round(tapply(predict(mod1,type ="response"),base$dosix,mean),4)
+```
+
+**Probar que existe un efecto de la dosis sobre la probabilidad de daño
+(propenciones)**
+
+```{r eval=FALSE}
+drop1(mod1,test = "LRT")
+```
+
+**Prueba del efecto de aditivo (quasipoisson) prueba F**
+
+```{r eval=FALSE}
+drop1(mod2,test = "F")
+```
+
+**Obtener las propenciones de cada tratamiento**
+
+```{r eval=FALSE}
+#vectores individuales
+
+coef=mod1$coefficients
+d0=c(1,0,0,0)
+d200=c(1,1,0,0)
+d400=c(1,0,1,0)
+d800=c(1,0,0,1)
+
+#vector de coeficientes
+
+v=cbind(d0,d200,d400,d800); 
+v2=t(v)%*%coef
+
+```
+
+**OR de cada tratamiento**
+
+```{r eval=FALSE}
+OR=exp(v2);round(OR,2)
+```
+
+**Comparacion de propenciones**
+
+Planteo de los contrastes
+
+recordar observar en cual de ellos es el menor para saber como
+plantearlos de manera correcta
+
+```{r eval=FALSE}
+d800_d0
+d800_d200
+d800_d400
+d400_d0
+d400_200
+d200_d0
+
+#vectores de contrastes
+
+d800_d0=d800-d0
+d800_d200=d800-d200
+d800_d400=d800-d400
+d400_d0=d400-d0
+d400_200=d400-d200
+d200_d0=d200-d0
+
+```
+
+**Matris de contrastes**
+
+```{r eval=FALSE}
+h=cbind(d800_d0,d800_d200,d800_d400,d400_d0,d400_200,d200_d0)
+L=t(h)%*%coef
+
+#odds ratio
+ORR=exp(L);round(ORR,2)
+```
+
+## **Hacer las pruebas de hipótesis para verificar que cada par de tratamientos**
+
+```{r eval=FALSE}
+#planteo del error
+(ee = sqrt(diag(t(h)%*%vcov(mod1)%*%h)))
+
+#obtenemos los estimados de los contrastes o nuestro eta
+L=t(h)%*%coef;L
+
+#valor estandarizado del contraste
+qt=L/ee;t
+
+#obtenemos la probabilidad asociada
+p=pnorm(qt,lower.tail=F)
+
+#no olvidemos la correccion de bonferroni k= numero de comparaciones
+k=6
+alfa=0.05/k
+p>alfa
+```
+
+## **hipótesis simultáneas para las razones entre todos los pares de tratamientos poisson**
+
+Debido a que se usa el modelo quasi-Poisson, se debe utilizar la
+distribución t en las pruebas. Esta probabilidad debe usar los grados de
+libertad residuales del modelo. El resultado de la probabilidad debe
+compararse contra α/6.
+
+```{r eval=FALSE}
+#error 
+ee=sqrt(diag(t(h)%*%vcov(mod2)%*%h))
+#valor estandarizado
+qt=L/ee
+#prueba
+k=6
+gl=nrow(base)-length(coef2)
+p=pt(qt,gl,lower.tail = F);p
+p>0.05/k
+```
+
+**intervalos de 95% de confianza global**
+
+```{r eval=FALSE}
+#quitamos los no significativos
+L2=L[-5,]
+L2
+ee2=ee[-5]
+
+#valor k en este caso solo 5 son significativas
+k=5
+
+#valor qz
+qz=qnorm(1-0.05/(2*k))
+ic.sup=exp(L2+qz*ee2)
+ic.inf=exp(L2-qz*ee2)
+round(cbind(ic.inf,ic.sup,ee2),2)
+```
+
+**Para limites infereiores**
+
+```{r eval=FALSE}
+#limites inferiores
+k=5
+qz=qnorm(1-0.05/k)
+L2=L[-5,];ee2=ee[-5]
+LIM.INF=exp(L2-qz*ee2);round(LIM.INF,2)
+```
+
+*"Con una confianza globla del 95%, se espera que la propencion de daño
+para la d800 sea almenos 40% mayor que para la d400, almenos 61% mayor
+que para la d200 y cerca de 12 veces la propencion de daño de la d0, por
+otra parte la propencion de daño de la d400 es almenos 6 veces la de d0
+y la propencion de daño de la d200 es almenos 5 veces la de d0"*
+
+## Para el caso continuo
+
+probabilidad de daño para una dosis de 300 g/l
+
+obtenemos el estimado para esa dosis
+
+```{r eval=FALSE}
+coef=mod2$coefficients
+eta=c(1,300)%*%coef
+prop=exp(eta)/(1+exp(eta));prop
+```
+
+**con la funcion predict**
+
+```{r eval=FALSE}
+predict(mod2,data.frame(dosis=300),type = "response")
+```
+
+**Interpretacion para dosis continua**
+
+```{r eval=FALSE}
+exp(coef%*%c(0,200))
+```
+
+*"por cada aumento de 200 ml en la dosis se espera que el daño sea mas
+propenso en un 75%"*
+
+## **intervalo de confianza para dicha dosis**
+
+```{r eval=FALSE}
+round(exp(confint(mod2,level = 0.95)*200),3)
+```
+
+*Se obtiene que al aumentar la dosis en 200 g/l, se puede esperar con
+95% de confianza que la propensión de daño aumente por un factor que
+está entre el 1,60 y 1,94. Aunque aquí no hay un delta, como se trata de
+aumentos porcentuales, se puede ver que ya un aumento de 60% en la
+propensión es cosiderable y por tanto se nota que aumentos de este
+tamaño en la dosis (200 g/l) van a provocar aumentos relevantes en la
+probabilidad de daño.*
+
+**Evaluando la interacción entre dosis y genotipo**
+
+```{r eval=FALSE}
+drop1(mod4,test = "LRT")
+```
+
+**Ecuaciones estimadas para el modelo**
+
+para genotipo R
+
+$log(\frac{p}{1-p})=-1.438+0.002D$
+
+para genotipo S
+
+$log(\frac{p}{1-p})=-1.424+0.003D$
+
+**Calculo e interpretacion de los OR**
+
+para R d y d+100
+
+```{r eval=FALSE}
+c(1,d+100,0,(d+100)*0)-c(1,d,0,d*0)= c(0,200,0,0)
+c(1,d+100,0,(d+100)*1)-c(1,d,0,d*1)= c(0,200,0,200)
+
+R=c(0,200,0,0)
+S=c(0,200,0,200)
+
+R.OR=exp(R%*%mod4$coefficients);R.OR
+S.OR=exp(S%*%mod4$coefficients);S.OR
+```
+
+**Interpretacion**
+
+*"Por lo tanto, se nota que el impacto de un aumento de 200 g/l en la
+dosis es mayor para las plantas de genotipo S puesto que el OR es 2,05
+(aumento por un factor 2,05 en la propensión de daño), mientras que para
+las plantas de genotipo R el OR es 1,53 (aumento de 53% en la propensión
+de daño)."*
+
+**Intervalos de confianza 95% para cada genotipo**
+
+```{r eval=FALSE}
+#contrastes de d y d+100
+
+R=c(0,200,0,0)
+S=c(0,200,0,200)
+
+eta=mod4$coefficients
+
+h=cbind(R,S)
+L=t(h)%*%eta
+
+ee4=sqrt(diag(t(h)%*%vcov(mod4)%*%h))
+```
+
+**correccion por bonferron**i
+
+```{r eval=FALSE}
+k=2
+
+qz=qnorm(1-0.05/(2*k))
+
+ic.sup=exp(L+qz*ee4)
+ic.inf=exp(L-qz*ee4)
+
+round(cbind(ic.inf,ic.sup,ee4),2)
+```
+
+**Interpretacion**
+
+*Para el genotipo R, cuando se incrementa la dosis en 200 g/l, la
+propensión aumenta entre un 32% y un 78%, mientras que para el genotipo
+S aumenta por un factor entre 1,75 y 2,4.*
+
+## Moscas/ conteo / poisson
+
+**valores ajustados para cada tratamiento**
+
+```{r eval=FALSE}
+miel=c(1,1,0,0)
+sirope=c(1,0,1,0)
+leche=c(1,0,0,1)
+vinagre=c(1,-1,-1,-1)
+
+mt=cbind(miel,sirope,leche,vinagre)
+eta=t(mt)%*%coef1
+round(exp(eta),2)
+```
+
+**Interpretacion**
+
+*Estas cantidades representan el número promedio de mosquitos estimado
+que se pueden atrapar con cada trampa en orden: miel, sirope, leche y
+vinagre.*
+
+**valores ajustados con la función predict**
+
+```{r eval=FALSE}
+tapply(predict(mod1,type = "response"),base$trat1,mean)
+fit=predict(mod1,type = "response")
+```
+
+**calculo de los residuales de person y el parametro de dispercion phi**
+
+```{r eval=FALSE}
+res=residuals(mod1,type = "pearson")
+phi=sum(res^2)/(nrow(base)-length(coef1));phi
+```
+
+**interpretacion**
+
+*Se obtiene un parámetro de dispersión ϕ = 6.1, el cual es mucho mayor
+que 1, por lo que se comprueba la sospecha de que existe
+sobredispersión, por lo tanto, no se cumple el supuesto que dice que la
+media condicional es igual que la variancia condicional.*
+
+**prueba formal cuya hipótesis nula es equidispersión, es decir, que se
+cumple el supuesto básico de la distribución de Poisson que es V [Y\|X]
+= E[Y\|X]. Para esto use la función dispersiontest en la librería AER.
+Esta función requiere de un modelo Poisson ajustado con glm y una
+especificación de una hipótesis alternativa mediante el parámetro trafo,
+el cual corresponde a 1 para la quasi-Poisson y 2 para la binomial
+negativa. Además se usa el parámetro alternative="greater" para indicar
+sobredispersión, sin embargo, no es necesario indicarlo pues éste es el
+default. En el caso de subdispersión se usa alternative="less".**
+
+```{r eval=FALSE}
+library(AER)
+
+#quasi-Poisson
+dispersiontest(mod1,trafo = 1)
+
+#binomial negativa
+dispersiontest(mod1,trafo = 2)
+
+```
+
+si no se rechaza ninguna sigo con una poisson
+
+si se rechaza la primera y la seguda no uso quasi-Poisson
+
+si se rechaza la segunda y no la primera uso binomial negativa
+
+si se rechanzan las dos no hay criterio
+
+si quisieramos cuasipoisson
+
+**modelo quasipoisson**
+
+```{r eval=FALSE}
+mod2=glm(conteo~trat1,family = quasipoisson,data = base)
+```
+
+**comparacion de errores**
+
+```{r eval=FALSE}
+tabla=cbind(summary(mod1)$coef[,1:2],summary(mod2)$coef[,1:2])
+round(tabla,3)
+
+ee1=summary(mod1)$coef[,2]
+ee2=summary(mod2)$coef[,2]
+ee2/ee1
+sqrt(phi)
+```
+
+**interpretacion**
+
+*Se puede observar que los coeficientes son los mismos obtenidos
+anteriormente pero los errores estándar ahora son mayores. Estos son los
+correctos. El error estándar de cada coeficiente ahora es* $\sqrt\phi$
+*veces el que se había obtenido antes.*
+
+**parametro de dispercion usando summary(mod)\$disp**
+
+```{r eval=FALSE}
+
+summary(mod1)$disp
+summary(mod2)$disp
+```
+
+**interpretacion**
+
+*En el primer modelo es 1 porque se asume el modelo Poisson donde la
+media = variacia. Ese parámetro no se estima, se asume 1. En el segundo
+modelo se obtiene el valor estimado de* $\phi$*.*
+
+**cálculos para obtener las estimaciones de estas comparaciones y
+explique su significado.**
+
+```{r eval=FALSE}
+coef2=mod2$coefficients
+L=t(h)%*%coef2;exp(L) #esta h es mi matriz de los contrastes osea miel-sirope por ejemplo
+```
+
+**interpretacion**
+
+*Estas cantidades representan la razón entre cada par de medias, por
+ejemplo, la media de miel es un 19% mayor que la media de sirope, la
+media de miel es 6.7 veces la media de vinagre, etc. Se nota que las que
+más se diferencian son miel y vinagre, así como sirope y vinagre.*
+
+## **Estimacion la variancia condicional en cada tratamiento**
+
+Con el modelo quasi-Poisson y con binomial negativa. Compararacion con
+las variancias observadas para ver cuál las ajusta mejor.
+
+**para la quasi-poisson** $\sigma^2_j=\phi\lambda_j$ **para la binomial
+negativa** $\lambda_j+\frac{\lambda^2_j}{\theta}$
+
+```{r eval=FALSE}
+#observadas
+var.obser=tapply(base$conteo,base$trat1,var)
+media=tapply(base$conteo,base$trat1,mean)
+
+
+#var. binomial
+phi=summary(mod2)$disp
+var.bino=phi*media
+
+#var binomial
+theta=summary(mod3)$theta
+alpha=1/theta
+var.quasi=media+alpha*(media^2)
+
+round(cbind(var.obser,var.bino,var.quasi),3)
+```
+
+# Topicos de interes
+
+La prueba para evaluar el efecto del factor de diseño compara la
+verosimilitud de dos modelos: uno con el factor de diseño y otro sin él.
+
+La prueba de la razón de verosimilitud (LRT) que compara modelos
+mediante el logaritmo de la razón de verosimilitudes y luego contrasta
+el resultado con una distribución Chi-cuadrado.
+
+Los grados de libertad en este caso se calculan restando los grados de
+libertad del modelo con el factor continuo a los grados de libertad del
+modelo con el factor discreto.
+
+**Concepto de Propencion**
+
+La propensión es el cociente de la probabilidad de éxito a la
+probabilidad de fracaso, utilizada para medir la intensidad de la
+ocurrencia del evento. Una propensión de 1 indica equiprobabilidad de
+éxito y fracaso. Menos de 1 indica más (intencidad de) fracasos, más de
+1 indica más (intensidad de) éxitos.
+
+$$odds_i=\frac{\pi_i}{1-\pi_i}=e^{\beta_0+\alpha_i}=e^{\eta_i}$$
+
+Una forma de comparar estas dos propensiones es mediante su razón. Esta
+medida es muy conocida por sus siglas en inglés OR (odds ratio). El OR
+al comparar el j-ésimo tratamiento respecto al k-ésimo tratamiento se
+puede obtener del modelo como:
+$$OR(j:k)=\frac{odds_j}{odds_k}=e^{\alpha_j-\alpha_k}$$
+
+En el caso particular en que el factor de diseño tiene solo dos niveles
+y se usa el modelo de suma nula, la restricción implica que α2 = − α1 ,
+por lo que el OR se simplifica a:
+
+$$OR(1:2)==e^{2\alpha_1}$$

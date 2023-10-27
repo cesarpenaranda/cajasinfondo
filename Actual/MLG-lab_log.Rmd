@@ -1,0 +1,125 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-09-11"
+---
+
+1.	Un estudio se basó en los datos del consolidado de accidentes con víctimas del COSEVI.  Se tomó como variable respuesta si en el accidente hubo solo heridos o si hubo muertos. Asimismo, se tomó como factor de diseño el tipo de accidente, que es una variable que categoriza los accidentes en atropello a persona, colisión de motocicleta y colisión de automóviles. También, como un segundo factor de diseño se contó con la clasificación de la carretera donde sus niveles son rural, urbana-cantonal y urbana-nacional. La base de datos contiene 539 accidentes del 2016 y se encuentra en el archivo “acci.Rdata”.
+
+- varable respuesta binomial(heridos,muerte)
+- factor diseno: tipo de accidente
+niveles:
+*atropello a persona 
+*colision de motocicleta
+*colision de automoviles 
+
+- segundo factor de diseno: clasificacion de la carretera 
+niveles: 
+*rural
+*urbana-cantonal
+*urbana-nacional
+
+```{r}
+load("bases/acci.Rdata")
+str(base)
+base$clase=as.factor(base$clase)
+base$tipo=as.factor(base$tipo)
+library(dplyr)
+base= base %>%mutate(res= case_when(clase=="muertos"~1,TRUE~0) )
+```
+
+```{r}
+mod1=glm(clase~tipo*ruta,family = binomial,data = base)
+summary(mod1)
+mod2=glm(res~tipo*ruta,family = binomial,data = base)
+summary(mod2)
+```
+
+a.	Analice si se puede considerar el efecto del tipo de carretera independientemente del tipo de accidente. (4 puntos)
+```{r}
+drop1(mod2,test = "LRT")
+```
+
+No hay suficiente evidencia estadistica para rechazar H0 de que tipo de carretera es independiente del tipo de accidente
+
+b.	Tomando en cuenta lo que obtuvo en el punto anterior, determine si la probabilidad de muerte es diferente entre tipos de carretera. Además, indique entre cuáles tipos de carretera se presentan diferencias. (8 puntos) 
+```{r}
+mod3=glm(res~tipo+ruta,family = binomial,data = base)
+coef=mod3$coefficients;coef
+```
+niveles: 
+*rural
+*urbana-cantonal
+*urbana-nacional
+
+```{r}
+#vectores de tratamientos 
+rur=c(1,0,0,0,0)
+urca=c(1,0,0,1,0)
+urna=c(1,0,0,0,1)
+
+vec=cbind(rur,urca,urna)
+eta=t(vec)%*%coef;eta
+prop=exp(eta)/(1+exp(eta));prop
+#con predict
+tapply(predict(mod3,type ="response"),base$ruta,mean)
+#contrastes
+rur_urca=rur-urca
+urna_rur=urna-rur
+urna_urca=urna-urca
+
+h=cbind(rur_urca,urna_rur,urna_urca)
+L=t(h)%*%coef
+
+#error 
+ee=sqrt(diag(t(h)%*%vcov(mod3)%*%h))
+
+#valor estandarizado 
+qt=L/ee;qt 
+
+#probabilidad asociada 
+p=pnorm(qt,lower.tail = F)
+#numero de grupos 3 
+k=3;round(p,4)
+p>0.05/k
+```
+* probabilidades de muerte asociadas a los tipos de carretera
+
+rur  0.184
+urca 0.054
+urna 0.188
+
+las diferencias significativas en la probabilidad de muerte las econtramos entre la rural y la urbana cantonal, ademas de entre la urbana nacional y la urbana cantonal, en entre carreteras es donde efectivamente se encuentran diferencias, mientras que entre la urbano nacional y la rural no se econtraron diferencias
+
+c.	Cuantifique las comparaciones entre los pares de tipos de carretera que presentan diferencias según el punto anterior (con un 95% de confianza). Escriba la interpretación adecuada de esa cuantificación. (8 puntos)
+```{r}
+#acomodamos las matrices
+L2=L[-2,]
+ee2=ee[-2]
+
+#valor k en este caso solo 5 son significativas
+k=2
+
+#valor qz
+qz=qnorm(1-0.05/(2*k))
+ic.sup=exp(L2+qz*ee2)
+ic.inf=exp(L2-qz*ee2)
+round(cbind(ic.inf,ic.sup,ee2),2)
+```
+con una confianza global del 95% se espera que la propencion de muerte para el tipo rural sea de almenos por factor de 1.62 a 9.60 veces  la propencion de muerte de tipo urbano cantonal, mientras que para urbano nacional sea de almenos entre 2 a 8.2 veces por factor la de urbano cantonal. 
+
+d.	Calcule e interprete la propensión para tipo de accidente “colisión de motocicleta” y para la clasificación de carretera “urbana-nacional”. (6 puntos)  
+```{r}
+coli.moto=c(1,0,1,0,0)
+urba.nacio=c(1,0,0,0,1)
+vec2=cbind(coli.moto,urba.nacio)
+eta=t(vec2)%*%coef
+prop2=exp(eta);prop2
+```
+para el tipo de accidente colicion de moto la propencion de muerte es de 0.26 (26 muertos por cada 100 accidentes)
+mientras que para el tipo de calle urbano nacional la propencionde muerte es de 0.23 (23 muertos por cada 100 accidentes)
+
+
+
+
+

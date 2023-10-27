@@ -1,0 +1,72 @@
+---
+title: "Reclamo pregunta 1.e - Cesar Peñaranda"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+date: "2023-10-14"
+---
+
+Pregunta:
+
+1. Se cuenta con datos de incidencia de cáncer de pulmón en 80 cantones, para cada uno de 3 grupos de edad. El propósito del análisis es determinar si la incidencia de cáncer está relacionada con la edad.  En total se tienen 240 datos con el número de casos de cáncer por cantón y grupo de edad.  Se cuenta con el número total de personas por cantón en cada grupo de edad, por lo que se quiere ajustar un modelo para la tasa de cáncer por grupo de edad.
+
+e.	A continuación, se presenta una parte del ajuste del modelo que tiene como referencia la categoría de Edad 1.  Compare los 3 grupos de edad de forma puntual e interprete los resultados. Dé una conclusión en términos del contexto. (6 puntos)  
+
+**Para esta pregunta estuve a distiempo por ello no logre pegar el codigo pero este fue el proceso que utilice para llegar a la respuesta**
+```{r}
+# con los coeficientes que nos entregaron cree este vector, he invente el intersepto = 3 en caso de que fuera necesario pero en realidad al final se iban a cancelar
+
+coef=c(3,1.10,1.25)
+# estos son los contrastes que nos solicitaban:
+
+#edad2vsedad1
+#edad3vsedad1
+#edad3vsedad2
+
+# hice los vectores puntuales
+edad1=c(1,0,0) 
+edad2=c(0,1,0)#incorrecto -> correcto=c(1,1,0)
+edad3=c(0,0,1)#incorrecto -> correcto=c(1,0,1)
+
+# y aqui fue mi error, donde olvide poner el intercepto=1 en edad2 y en edad3 porque segun yo "como se cancelaban" pero obviamente eran necesarios para que el procedimiento diera bien los resultados
+
+#aqui saque los vectores de los contrastes:
+ed2_ed1=edad1-edad2
+ed3_ed1=edad1-edad3
+ed3_ed2=edad3-edad2
+
+#e hice el resto del procedimiento necesario
+vec=cbind(ed2_ed1,ed3_ed1,ed3_ed2)
+
+L=t(vec)%*%coef
+
+round(exp(L),2)
+```
+en este caso aunque falle los primeros dos contrastes el ultimo si se lograba ya que de igual manera en el contraste de edad3 vs edad2 en el intercepto encontrabamos un cero ya fuera con el intercepto en 0 o en 1 
+
+**Prueba**
+
+con los vectores que hice
+```{r}
+edad2=c(0,1,0)#incorrecto 
+edad3=c(0,0,1)#incorrecto 
+ed3_ed2=edad3-edad2
+
+# vector resultante es 0 -1  1
+
+L=t(ed3_ed2)%*%coef
+round(exp(L),2)
+```
+con los correctos
+```{r}
+edad2=c(1,1,0)#correcto
+edad3=c(1,0,1)#correcto
+ed3_ed2=edad3-edad2
+
+# vector resultante es 0 -1  1
+
+L=t(ed3_ed2)%*%coef
+round(exp(L),2)
+```
+como vemos para los dos casos se obtenia el mismo resultado en el ultimo contraste, se que el procedimiento no fue el adecuado por olvidar el intecepto pero almenos en este caso se lograba el mismo resultado por la cancelacion de los mismos

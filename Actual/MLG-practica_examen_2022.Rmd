@@ -1,0 +1,230 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-09-20"
+---
+1.Se cuenta con los datos de muertes por enfermedad coronaria en médicos británicos en un período de 10 años. Puesto que el número de muertes está relacionado con la exposición al riesgo, es decir entre más personas tenga un grupo, se espera que haya más muertes, y también entre más años pasen, las personas tendrán más exposición. Por esto se tiene una variable llamada “personas-año” que sirve para calcular la tasa de muertes relativo al número de personas-año.
+
+a.Escriba un modelo inicial para la tasa de incidencia de enfermedad coronaria que permita determinar si hay variación entre fumadores y no fumadores, controlando por edad (continua). Use la forma larga de escribir el modelo y explique todos los detalles. (6 puntos)
+$$log(\lambda_{F,E}/P)=\beta_0+\tau_2F_2+\alpha E+\delta FE$$
+restriccion: 
+$$\tau_1=0$$
+para este caso la media lambda esta condicionada a la variable auxiliar fumado y la variable continua edad, ademas se divide entre P personas ano para poder obtener la tasa de incidencia, la varable F es la variable auxiliar de fumado(0 no fuma, 1 si fuma), la variable auxiliar E es para edad donde esta es continua ya que asi lo indica el enunciado, por ultimo vemos delta el cual es el coeficiente de la interaccion de las variables F y E 
+
+b.En el modelo del punto anterior especifique cuál es la función de enlace y cuál es la parte aleatoria.
+
+en este caso la funcion de enlace es el logartimo, la parte aleatoria es la distribucion condicional para la tasa de incidencia de enfermedad coronaria la cual suponemos se distribuye poisson con parametros lambda_EF
+
+c.Ajuste el modelo adecuado para verificar si existe diferencia en las tasas promedio de fumadores y no fumadores. Justifique por qué decide usar ese modelo. (6 puntos)
+
+base
+```{r}
+edad=c(39.5,49.5,59.5,69.5,79.5,39.5,49.5,59.5,69.5,79.5)
+muertes=c(32,104,206,186,102,2,12,28,28,31)
+den=c(52407,43248,28612,12663,5317,18790,10673,5710,2585,1462)
+fuman=c("SI","SI","SI","SI","SI","NO","NO","NO","NO","NO")
+base=data.frame(edad,muertes,den,fuman)
+str(base)
+base$fuman=as.factor(base$fuman)
+```
+grafico inicial
+```{r}
+media=tapply(base$tasa,base$fuman,mean)
+var=tapply(base$tasa,base$fuman,var)
+base$tasa=base$muertes/base$den
+round(1000*cbind(media,var),4)
+
+par(mfrow=c(1,2))
+boxplot(base$tasa[base$fuman=="SI"]*1000~base$fuman[base$fuman=="SI"]+edad[base$fuman=="SI"],xlab = "SI")
+boxplot(base$tasa[base$fuman=="NO"]*1000~base$fuman[base$fuman=="NO"]+edad[base$fuman=="NO"],xlab = "NO")
+
+```
+Usamos modelo poisson para verificar el supuesto de dispercion
+```{r}
+mod1=glm(muertes~offset(log(den))+fuman*edad,family = poisson,data = base)
+res=residuals(mod1,type = "pearson")
+gl=nrow(base)-length(mod1$coefficients)
+phi=sum(res^2)/gl;phi
+```
+```{r}
+fit=predict(mod1,type = "response")
+res=residuals(mod1,type = "response")
+
+plot(log(res^2)~log(fit))
+abline(0,1,col="red")
+```
+
+
+para este caso encontramos sobre dispercion
+
+se procede a hacer las pruebas de hipotesis de disperciontest para verificar que modelo se ajusta mejor quasi o bino
+```{r}
+library(AER)
+dispersiontest(mod1,trafo = 1,alternative = "greater")
+dispersiontest(mod1,trafo = 2,alternative = "greater")
+```
+las dos hipotesis se rechazan, se procede hacer un analisis a libre criterio para decir cual utilizar y concluir
+```{r}
+library(MASS)
+mod2=glm(muertes~offset(log(den))+fuman*edad,family = quasipoisson,data = base)
+mod3=glm.nb(muertes~offset(log(den))+fuman*edad,data = base)
+
+rai.phi=sqrt(phi)*summary(mod1)$coef[,2]
+round(cbind(summary(mod1)$coef[,1:2],summary(mod2)$coef[,1:2],summary(mod3)$coef[,1:2],rai.phi),3)
+
+```
+en vista de los resultados se decide utilizar el modelo quassi poisson ya que es el que presenta mayor consistencia en los errores multiplicados por raiz de phi ademas de que presenta los mismos coeficientes ya que los de la binomial negativa cambian por alguna razon
+
+se procede a realizar la prueba de hipotesis para vericar si debe considerarse la interaccion entre edad y fumado
+```{r}
+drop1(mod2,test = "F")
+```
+vemos que no hay interaccion entre la el factor edad y el de fumado la eliminamos verificamos sobre dispercion de nuevo
+
+```{r}
+mod2=glm(muertes~offset(log(den))+fuman+edad,family = quasipoisson,data = base)
+summary(mod2)$disp
+```
+
+
+verificamos si existe diferencia en las tasas promedio de fumadores y no fumadores con la prueba de hipotesis correspondiente
+
+```{r}
+drop1(mod2,test = "F")
+```
+como vemos, no se rechaza H0, por lo que no podemos decir que se encuentran diferencias entre las tasas promedio de fumadores y no fumadores en enfermedad coronaria
+
+d.Compare las tasas de incidencia de enfermedad coronaria entre fumadores y no fumadores de forma puntual y dé una interpretación. (8 puntos)
+```{r}
+coef=mod2$coefficients;coef
+mean(base$edad)
+```
+```{r}
+#vectores puntuales
+no.fu=c(1,0,0)
+si.fu=c(1,1,0)
+vec=cbind(no.fu,si.fu)
+eta1=t(vec)%*%coef;exp(eta1)
+#razon
+0.000038009/0.00002531690
+```
+La tasa de muertes por enfermedad coronaria de médicos británicos es 50% mayor entre fumadores comparada con la de los no fumadores, cuando fija el grupo de edad.
+
+
+2.Un estudio se basó en los datos del consolidado de accidentes con víctimas del COSEVI. Se tomó como variable respuesta si en el accidente hubo solo heridos o si hubo muertos. Asimismo, se tomó como factor de diseño el tipo de accidente, que es una variable que categoriza los accidentes en atropello a persona, colisión de motocicleta y colisión de automóviles. También, como un segundo factor de diseño se contó con la clasificación de la carretera donde sus niveles son rural, urbana-cantonal y urbana-nacional. La base de datos contiene 539 accidentes del 2016 y se encuentra en el archivo “acci.Rdata”.
+
+```{r}
+load("bases/acci.Rdata")
+base$clase=as.factor(base$clase)
+base$tipo=as.factor(base$tipo)
+```
+
+a.Analice si se puede considerar el efecto del tipo de carretera independientemente del tipo de accidente. (4 puntos)
+```{r}
+mod1=glm(clase~tipo*ruta,family = binomial,data = base)
+contrasts(base$ruta)
+drop1(mod1,test="LRT")
+```
+no hay suficiente evidencia estadistica para rechazar H0 por lo que se puede suponer que no hay interacion, por lo que se puede considerar el tipo de carretera independiente del tipo de accidente
+
+se procede a montar el modelo sin interacion 
+```{r}
+mod2=glm(clase~tipo+ruta,family = binomial,data = base)
+```
+
+
+b.Tomando en cuenta lo que obtuvo en el punto anterior, determine si la probabilidad de muerte es diferente entre tipos de carretera. Además, indique entre cuáles tipos de carretera se presentan diferencias. (8 puntos)
+
+hacemos la prueba de hipotesis para verificar la diferencia de probs segun el tipo de carretera
+```{r}
+drop1(mod2,test = "LRT")
+```
+se rechaza H0 por lo que efectivamente hay un efecto de los tipos de carretera en la prob de muerte
+se procede a hacer los analisis correspondientes(hay diferentes probs de muerte segun el tipo de carretera)
+
+```{r}
+#coeficientes
+coef2=mod2$coefficients;coef2
+```
+```{r}
+#vectores puntuales
+rur=c(1,0,0,0,0)
+ruca=c(1,0,0,1,0)
+runa=c(1,0,0,0,1)
+
+vec=cbind(rur,ruca,runa)
+eta=t(vec)%*%coef2
+prop=exp(eta)/(1+exp(eta));prop
+```
+```{r}
+#contrastes
+rur_ruca=rur-ruca
+runa_rur=runa-rur
+runa_ruca=runa-ruca
+
+h=cbind(rur_ruca,runa_rur,runa_ruca)
+L=t(h)%*%coef2
+
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod2)%*%h))
+
+#valor estandarizado
+qt=L/ee
+
+#probabilidad asociada
+k=3
+p=pnorm(qt,lower.tail = F)
+p
+p>0.05/k
+```
+las diferencias se encuentran entre la rural y rural-cantona, ademas de en la rural-nacional y la rural-cantonal, mientras que no se encuentran diferencias entre la rural-nacional y la rural
+
+c.Cuantifique las comparaciones entre los pares de tipos de carretera que presentan diferencias según el punto anterior (con un 95% de confianza). Escriba la interpretación adecuada de esa cuantificación. (8 puntos)
+```{r}
+L2=L[-2]
+ee2=ee[-2]
+k2=2
+qz=qnorm(1-0.05/k)
+
+ic.inferior=exp(L2-qz*ee2);ic.inferior
+```
+con una confianza global del 95% se espera que la propencion de muerte para rural sea almenos 70% mayor que para rural cantonal, ademas para rural-nacional se espera que la propencion de muerte sea por un factor de almenos 1.07 veces mayor que para rural-cantonal 
+
+d.Calcule e interprete la propensión para tipo de accidente “colisión de motocicleta” y para la clasificación de carretera “urbana-nacional”. (6 puntos)
+```{r}
+coef2
+```
+
+```{r}
+moto.urna=c(1,0,1,0,1)
+eta3=t(moto.urna)%*%coef2;exp(eta3)
+```
+la propencion de muerte para el accidente tipo moto y ruta tipo urbano nacional es de 0.29 
+
+e.Se ajustó un modelo utilizando datos del 2020. Utilizando los coeficientes que se presentan a continuación, calcule e interprete la probabilidad de muerte para el tipo de accidente “colisión de motocicleta”. (6 puntos)
+
+```{r}
+coefs=c(-0.6931472,-0.2876821,-0.4054651, -1.6863990, -0.1053605, -1.7754230, 0.7055697,-1.6863990, -0.9932518)
+#debemos recoerdar la interaccion
+
+#por lo que se hacen los coeficientes fijando el tratamiento
+
+#rural
+c1=c(1,0,1,0,0,0,0,0,0)
+
+eta1=c1%*%coefs
+p1=exp(eta1)/(1+exp(eta1))
+
+#un
+c2=c(1,0,1,0,1,0,0,0,1)
+eta2=c2%*%coefs
+p2=exp(eta2)/(1+exp(eta2))
+
+#ucan
+c3=c(1,0,1,1,0,0,1,0,0)
+eta3=c3%*%coefs
+p3=exp(eta3)/(1+exp(eta3))
+
+p1;p2;p3
+```
+

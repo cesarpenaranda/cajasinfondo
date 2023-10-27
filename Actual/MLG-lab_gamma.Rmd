@@ -1,0 +1,60 @@
+---
+title: "Lab de gamma"
+output:
+  word_document: default
+  html_document: default
+date: "2023-09-20"
+---
+
+
+# Gamma GLM
+Se midió la masa seca en mg de insectos de diferentes órdenes taxonómicosen el río Misuri en un estudio sobre reducción en la aparición de insectos debido a modificaciones del canal en el río. Se tienen datos para los órdenes Diptera y Ephemeroptera, y tienen la siguiente distribución:
+
+```{r}
+load("bases/datosdm.Rdata")
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(dm$ind_mg_dry[dm$order=="Diptera"],main = "dist diptera",xlab = "mg")
+mean_value1=mean(dm$ind_mg_dry[dm$order=="Ephemeroptera"])
+abline(v = mean_value1, col = "blue", lwd = 2)
+hist(dm$ind_mg_dry[dm$order=="Ephemeroptera"],main = "dist epheroptera",xlab = "mg")
+mean_value=mean(dm$ind_mg_dry[dm$order=="Ephemeroptera"])
+abline(v = mean_value, col = "red", lwd = 2)
+```
+
+La distribución condicional a cada orden es asimétrica, por lo que se espera que al ajustar un modelo lineal no se cumpla el supuesto de normalidad.
+
+
+```{r}
+library(car)
+mod1=lm(ind_mg_dry~order,data = dm)
+qqPlot(mod1$residuals)
+shapiro.test(mod1$residuals)
+```
+
+Se confirma que no se cumple el supuesto. Se puede aplicar una transformación logarítmica.
+
+## Modelo lineal con tranformacion 
+
+```{r}
+mod2=lm(log(ind_mg_dry)~order,data = dm)
+qqPlot(mod2$residuals)
+shapiro.test(mod2$residuals)
+```
+Aunque mejoró aun no se cumple el supuesto.
+
+## GLM con distribucion Gamma 
+```{r}
+mod3=glm(ind_mg_dry~order,data = dm, family = Gamma(link = "log"))
+shapiro.test(mod3$residuals)
+#Residuos de cuantil
+library(statmod)
+qr.mod3 <- qresid(mod3)
+#Grafico componente aleatorio
+qqPlot(qr.mod3)
+#prueba de hipotesis 
+shapiro.test(qr.mod3)
+```
+En los GLM revisamos si los residuos de cuantil tienen una distribución normal para comprobar que se especificó la distribución adecuada para la respuesta. En este caso se comprueba que se seleccionó una distribución apropiada.

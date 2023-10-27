@@ -1,0 +1,111 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-09-21"
+---
+CAIDAS
+Un estudio prospectivo busca investigar los efectos de dos intervenciones en la frecuencia de caídas en personas mayores de 65 años. Se seleccionan 100 personas que superan los 65 años y se dividen aleatoriamente en dos grupos. A un grupo se le da una intervención consistente en explicaciones en una serie de clases (trat=0) y al otro grupo se le dan las mismas clases y además un entrenamiento de ejercicios aeróbicos (trat=1).   Se incluyen además 3 variables de cada persona: sexo (0: mujer, 1: hombre), índice de balance  e índice de fuerza.  Durante un período de 6 meses se llevó un registro del número de caídas que cada persona tuvo.
+Los datos están en el archivo “caidas.Rdata”
+```{r}
+load("bases/caidas.Rdata")
+str(base)
+summary(base$caidas)
+base$trat=as.factor(base$trat)
+base$sexo=as.factor(base$sexo)
+levels(base$trat)=c("explica","aerobico")
+levels(base$sexo)=c("mujer","hombre")
+```
+
+a.	Represente gráficamente los datos.
+```{r}
+
+boxplot(caidas~trat+sexo,data = base)
+var=tapply(base$caidas,base$trat,var);var
+media=tapply(base$caidas,base$trat,mean)
+cbind(media,var)
+```
+
+b.	Escriba el modelo inicial.
+
+c.	Haga el análisis completo para determinar si hay un efecto del tratamiento.  En esta parte debe tomar en cuenta solo las interacciones que puedan tener sentido, así como covariables. Debe reducir su modelo usan las técnicas apropiadas.  Debe verificar que usa el modelo de conteo que cumpla con los supuestos.
+```{r}
+mod1=glm(caidas~trat+sexo+balance+fuerza,family = poisson,data = base)
+
+res=residuals(mod1,type = "response")
+fit=predict(mod1,type = "response")
+
+plot(log(res^2)~log(fit))
+abline(0,1,col="red")
+
+res.pe=residuals(mod1,type = "pearson")
+phi=sum(res.pe^2)/(nrow(base)-length(mod1$coefficients));phi
+```
+```{r}
+library(AER)
+dispersiontest(mod1,trafo = 1)
+dispersiontest(mod1,trafo = 2)
+```
+se procede a reducir el modelo
+```{r}
+mod1=glm(caidas~trat*sexo*balance*fuerza,family = poisson,data = base)
+drop1(mod1,test = "LRT")
+```
+eliminamos interaccion triple 
+```{r}
+mod1=glm(caidas~trat+sexo+balance+fuerza+trat*sexo+trat*balance+trat*fuerza,family = poisson,data = base)
+drop1(mod1,test = "LRT")
+```
+eliminamos interacion trat sexo
+```{r}
+mod1=glm(caidas~trat+sexo+balance+fuerza+trat*balance+trat*fuerza,family = poisson,data = base)
+drop1(mod1,test = "LRT")
+```
+eliminamos la de trat con fuerza
+```{r}
+mod1=glm(caidas~trat+sexo+balance+fuerza+trat*balance,family = poisson,data = base)
+drop1(mod1,test = "LRT")
+```
+se elimina trat balance 
+```{r}
+mod1=glm(caidas~trat+sexo+balance+fuerza,family = poisson,data = base)
+drop1(mod1,test = "LRT")
+```
+volvemos a verificar dispercion
+```{r}
+res.pe=residuals(mod1,type = "pearson")
+phi=sum(res.pe^2)/(nrow(base)-length(mod1$coefficients));phi
+dispersiontest(mod1,trafo = 1)
+dispersiontest(mod1,trafo = 2)
+```
+sigue respetandose el supesto de equi dispercion
+
+por otra parte se rechaza H0 indicando que efectivamente hay un efecto del trat en el promedio
+
+
+d.	Escriba el modelo final.  Aquí debe escribirlo con todos los detalles del modelo lineal generalizado y usando la simbología adecuada. Escriba el modelo en forma larga y en forma reducida.  Puede decidir si usa suma nula o tratamiento referencia, pero debe especificar claramente las restricciones.
+
+e.	De una interpretación adecuada de sus resultados.
+
+obtengo los coeficientes
+```{r}
+coef=mod1$coefficients;coef
+```
+```{r}
+#vectores puntuales
+cla=c(1,0,0,0,0)
+aer=c(1,1,0,0,0)
+vec=cbind(cla,aer)
+eta=t(vec)%*%coef;eta
+#diferencia
+cl.aer=cla-aer
+L=t(cl.aer)%*%coef;exp(L)
+#interavalo
+ee=sqrt(diag(t(cl.aer)%*%vcov(mod1)%*%cl.aer))
+
+qz=qnorm(1-0.05/2)
+inf=L-qz*ee
+sup=L+qz*ee
+
+exp(cbind(inf,sup))
+```
+

@@ -1,0 +1,44 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-09-21"
+---
+PALOMITAS
+Se realizó un experimento para determinar el efecto de la humedad (alta, baja, normal) y del tiempo de cocción en microondas (1, 2, 3 minutos) sobre el porcentaje de palomitas de maíz que quedan sin explotar.  Se cuenta con el número de granos que explotan (exito) y el número que no explotan (fracaso).  El experimento se realizó en 6 diferentes microondas y en cada uno de ellos se hicieron los 9 tratamientos.  Use los datos en el archivo “palomitas.Rdata”
+
+```{r}
+load("bases/palomitas.Rdata")
+str(base)
+levels(base$humedad)=c("alta","baja","normal")
+```
+
+
+a.	Cree una variable que sea la proporción de granos que explotaron en cada medición y presente un gráfico de cajas (boxplot) que permita comparar el comportamiento de la variable por tiempo de cocción. A partir del gráfico comente lo que se espera de las comparaciones.
+```{r}
+base$propor=base$exito/(base$exito+base$fracaso)
+media=tapply(base$propor,base$tiempo,mean)
+boxplot(propor~tiempo,data = base)
+points(media,col="red",pch=16)
+abline(h=mean(base$propor),col="blue")
+```
+```{r}
+media2=tapply(base$propor,list(base$tiempo,base$humedad),mean)
+m=c(media2[,1],media2[,2],media2[,3])
+boxplot(propor~tiempo+humedad,data = base)
+points(m,col="red",pch=16)
+```
+
+b.	Verifique (mediante prueba de hipótesis) si existe un efecto del tiempo de cocción sobre la proporción de granos que explotan. Debe considerar si la humedad afecta la prueba o no.
+```{r}
+mod1=glm(cbind(exito,fracaso)~tiempo+humedad+micro,family = binomial,data = base)
+drop1(mod1,test="LRT")
+```
+
+c.	Tome ahora la variable que indica si el grano explota o no como respuesta.  Además tome como factor de diseño solamente el tiempo de cocción (no use para nada la humedad). Use el tiempo como factor.  Escriba el modelo que se debe utilizar y explique las tres partes del modelo lineal generalizado.
+
+d.	Obtenga las estimaciones de los coeficientes del modelo y úselos para estimar la probabilidad de que una semilla explote si se usa un tiempo de 2 minutos.  Escriba todos los cálculos necesarios.
+e.	Haga las comparaciones entre los 3 tiempos por pares. Determine dónde hay diferencias.
+f.	Cuantifique las comparaciones que tengan sentido. Debe dar una interpretación de sus resultados.
+g.	Ahora haga el análisis considerando la humedad y vea si cambian los resultados.
+h.	Repita el análisis usando el tiempo de forma continua.
+i.	Haga el análisis usando como respuesta la proporción de granos que explotan en un modelo lineal normal y compare los resultados.

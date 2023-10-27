@@ -1,0 +1,96 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-26"
+---
+
+# Colorantes
+En una investigación sobre la elaboración de un colorante se sospecha que la variación del producto final
+puede estar siendo determinada por variaciones en la calidad de un producto intermedio (ácido H). Se quiere
+encontrar cuánta de la variación entre lote y lote del ácido H contribuye a la variación en la producción del
+colorante hecho con este producto. Se analiza la variabilidad total y se separa la variabilidad que introducen
+los lotes que son materia prima, de tal forma que la variabilidad restante es atribuida al proceso productivo.
+Por lo tanto, si la variabilidad total está fuertemente determinada por la variabilidad de los lotes, el productor
+de colorantes debe llamar la atención al proveedor del ácido H para lograr que su producto sea más estable.
+Se toman seis lotes de producto intermedio (ácido H) y de cada uno se hacen cinco preparaciones de colorante
+en el laboratorio. Se determina la producción de cada preparación mediante gramos de color estándar.
+
+* 6 lotes de acido H: A,B,C,D,E,F
+* 5 preparaciones de colorante por lote
+* 30 preparaciones en total
+
+* respuesta: gramos de color estandar
+
+1. Abra el archivo colorantes.Rdata
+
+```{r}
+load("bases/colorantes.Rdata")
+str(base)
+```
+## Modelo
+$$y_{ij}=\beta_0+\delta_i+\epsilon_{ij}$$
+2. Haga un gráfico para ver el comportamiento de la respuesta de lote a lote. Haga un análisis descriptivo.
+En la librería ggplot2 puede usar la función qplot de la siguiente forma: ggplot(base,aes(X,Y))+ geom_boxplot().
+
+```{r}
+library(ggplot2)
+ggplot(base,aes(lote,prod)) + # base del grafico 
+  geom_boxplot() + # tipo de grafico 
+  geom_hline(yintercept = mean(base$prod), color = "red", linetype = "dashed") + # agregar la media general
+  stat_summary(fun = mean, geom = "point", shape = 16, size = 3, color = "red") # agregar medias condicionales
+```
+
+• Discuta cómo se observa la variabilidad intra-sujeto y la variabilidad inter-sujeto.
+
+se observa una variabilidad alta de lote a lote, indicando que no hay una homogeneidad en la produccion de gramos de color estandar de lote a lote de acido H
+
+3. Ajuste el modelo mixto con la función lmer de la librería lme4. El modelo tiene en la parte de efectos
+fijos solo el intercepto (ponga un uno pero no es indispensable) y en la parte de efectos aleatorios el lote
+(1|lote) – en esta parte el 1 representa el promedio: mod1=lmer(prod~1+(1|lote)) es equivalente a
+mod1=lmer(prod~(1|lote)).
+```{r}
+library(lme4)
+```
+```{r}
+mod1=lmer(prod~1+(1|lote),data = base)
+```
+
+• Obtenga del summary del mod1 las estimaciones de las variancias correspondientes a este modelo.
+```{r}
+summary(mod1)
+```
+
+• Asegúrese que puede obtener manualmente esas estimaciones a partir del anova de un modelo lineal.
+```{r}
+mod2=lm(prod~lote,data = base)
+anova(mod2)
+```
+```{r}
+cmres=2451.2
+cmlote=11271.5
+n=6
+(cmlote-cmres)/5
+```
+% atribuible a cada varianza
+```{r}
+lote=1764     
+resi=2451
+
+lote/(resi+lote)
+```
+41.8% de la variabilidad es debido al lote 
+
+4. Obtenga los intervalos de confianza para los parámetros del modelo (por default R usa un nivel de
+confianza de 0.95): confint(profile(mod1),level=0.95). En el resultado se debe interpretar sigma
+como la desviación estándar del error y sigma01 la desviación estándar de lote.
+```{r}
+confint(profile(mod1))
+```
+
+Puesto que el intervalo de 95% de confianza va de 12.2 a 84.1 (no llega al extremo de cero),
+se confirma que la fuente de variabilidad de lote a lote no es nula. Sin embargo, ese intervalo
+de confianza es muy ancho, lo cual hace dudar de la precisión de la estimación. Se requeriría
+un mayor número de lotes para tener una mejor estimación de la varianza de lote a lote, y esto
+además produciría una mejor estimación de la varianza del error, ya que se contaría con más
+datos en total.
+

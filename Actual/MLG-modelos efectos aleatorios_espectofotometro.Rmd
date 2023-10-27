@@ -1,0 +1,155 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-26"
+---
+# Espectofotómetro
+Se está desarrollando un nuevo modelo de espectrofotómetro para uso en laboratorios clínicos con el objetivo
+de cuantificar sustancias y microorganismos. Se quiere evaluar el funcionamiento de estos instrumentos
+sabiendo que un componente crítico del desempeño es la consistencia de las mediciones de un día a otro, y de
+una máquina a otra. Se quiere saber si la variabilidad de las mediciones entre las máquinas operadas durante
+varios días está dentro de los estándares aceptables.
+Hay dos escenarios, en el primero se toman 4 máquinas asumiendo que solo existen esas 4 máquinas, mientras
+que en el segundo se seleccionan aleatoriamente 4 máquinas etiquetadas como A, B, C y D de un conjunto
+mucho mayor de máquinas. Cada día se preparan 8 replicaciones de muestras de suero en sangre con el mismo
+lote de reactivos para todo el experimento. Dos muestras de suero se asignan aleatoriamente a cada una de las
+cuatro máquinas en cada uno de los 4 días resultando en dos repeticiones de cada combinación día-máquina.
+Se miden los niveles de triglicéridos (mg/dl) en las muestras de suero. Los datos se muestran a continuación:
+
+factores
+- dia (efecto aleatorio)
+- maquina
+
+8 muestras por dia
+dos para cada maquina
+
+2 replicas por tratamientos
+
+repuesta: nivel de trigliceridos (mg/dl) en la muestra de suero
+
+nivel 2 es el dia 
+nivel 1 son las 8 muestras por dia
+con un factor fijo que es maquina
+
+```{r}
+trigli=c(142.3, 144.0, 148.6, 146.9, 142.9, 147.4, 133.8,
+133.2, 134.9, 146.3, 145.2, 146.3, 125.9, 127.6,
+108.9, 107.5, 148.6, 156.5, 148.6, 153.1, 135.5,
+138.9, 132.1, 149.7, 152.0, 151.4, 149.7, 152.0,
+142.9, 142.3, 141.7, 141.2)
+dia=factor(rep(1:4,each=8))
+maq=factor(rep(c("A","B","C","D"),4,each=2))
+base=data.frame(trigli,dia,maq)
+```
+1. Introduzca los datos. Defina dia y maquina como factor.
+```{r}
+str(base)
+```
+
+2. Haga gráficos para ver el comportamiento de la respuesta de día a día y de máquina a máquina. Haga
+un análisis descriptivo.
+```{r}
+library(lattice)
+dotplot(trigli~maq|dia,data = base)
+```
+```{r}
+xyplot(trigli~maq,group=dia,data = base,auto.key=list(columns=4))
+```
+```{r}
+xyplot(trigli~maq,group=dia,type="a",data = base,auto.key=list(columns=4))
+```
+se observa interaccion entre el dia y la maquina ademas los valores mas bajos los obtenemos en dia dos y las maquinas c y d
+
+3. Ajuste el modelo que tiene en la parte de efectos fijos el intercepto y la máquina, mientras que en la parte
+de efectos aleatorios incluye el día (1|dia) y la interacción (1|dia:maq). Recuerde que siempre que al
+menos uno de los factores tenga efectos aleatorios, la interacción se tiene también efectos aleatorios.
+```{r}
+library(lme4)
+mod1=lmer(trigli~1+maq+(1|dia)+(1|dia:maq),data = base)
+```
+
+• Obtenga las estimaciones de las variancias correspondientes a este modelo tanto en R como manualmente.
+```{r}
+summary(mod1)
+```
+```{r}
+maq.dia=34.72
+dia=44.69
+err=17.90
+total=maq.dia+dia+err
+
+h=cbind(maq.dia,dia,err)
+h/total*100
+```
+
+• Obtenga e interprete los intervalos de 95% de confianza para las desviaciones estándar. La estimaciones
+van en el orden en que aparecen en el summary, es decir, desviación estándar de interacción (sig01),
+desviación estándar de días (sig02) y desviación estándar de error (sigma).
+```{r}
+confint(profile(mod1))
+```
+Al observar el intervalo de 95% de confianza se tiene que la desviación estándar de los efectos
+de interacción está entre 2.07 y 8.6, mientras que la desviación estándar del error está entre
+3.1 y 6.3. Es claro que el efecto de interacción tiene una variabilidad no nula.
+
+4. Ajuste un modelo similar donde la máquina tiene efectos aleatorios, pues se tienen muchas máquinas y
+estas 4 son una muestra.
+• Obtenga las estimaciones de las variancias correspondientes a este modelo y compárelas con las obtenidas
+anteriormente.
+```{r}
+mod2=lmer(trigli~(1|maq)+(1|dia)+(1|dia:maq),data = base)
+summary(mod2)
+```
+```{r}
+#mod1
+maq.dia=34.72
+dia=44.69
+maq=NA
+err=17.90
+total=maq.dia+dia+err
+
+h1=rbind(maq.dia,dia,maq,err)
+#mod2
+maq.dia=34.72
+dia=44.69
+maq=57.72
+err=17.90
+total=maq.dia+dia+maq+err
+
+h2=rbind(maq.dia,dia,maq,err)
+
+#comparacion
+h=cbind(h1,h2)
+colnames(h)=c("mod1","mod2")
+h
+h/
+```
+Se obtienen las mismas estimaciones de las varianzas. La única diferencia es que ahora se obtiene la varianza
+de máquina a máquina pues se está considerando la máquina como un elemento aleatorio. La suma de los
+componentes de varianza es mayor pues en este caso se trata de la varianza total, mientras que en el ejemplo
+anterior era la varianza condicional a la máquina.
+
+prueba LTR
+```{r}
+#con interaccion
+mod1=lmer(trigli~maq+(1|dia)+(1|dia:maq),data = base)
+dev1=deviance(mod1,REML=FALSE)
+summary(mod1)
+coef1=7 #1 intercepto y 3 efectos de maquinas 3 componentes aleatorios 
+```
+
+```{r}
+#sin interaccion
+mod2=lmer(trigli~maq+(1|dia),data = base)
+summary(mod2)
+dev2=deviance(mod2,REML=FALSE)
+coef2=6 #1 intercepto , 3 maquinas y 2 componentes aleatorios
+```
+Prueba de razon de verosimulitud
+```{r}
+LTR=dev2-dev1
+gl=coef1-coef2
+#valor p
+pchisq(q=LTR,df=gl,lower.tail = F,log.p = F)
+```
+

@@ -1,0 +1,85 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-22"
+---
+
+Extraccion de los datos
+```{r}
+load("bases/ACT23_2023_17_10_14_21.Rdata")
+base=subset(ACT23_2023_17_10_14_21,select = c(ST1,ST2,ST3,ST4,ST5,ST6,ST7,ST8,ST9,ST10,CS11_TOTAL,CS1,CS2,CS3,CS4,CS5A,CS5B,CS6,CS7,CS7SI,CS8_NINGUNO,CS11_TOTAL,CS12,CS13,CS14))
+base$ponderador=1
+```
+
+grupos de edad
+18-29
+30-49
+50-69
+70-89
+90+
+
+```{r}
+base$grupo_edad <- ifelse(base$CS2 >= 17 & base$CS2 <= 29, "18-29",
+                          ifelse(base$CS2 >= 30 & base$CS2 <= 49, "30-49",
+                          ifelse(base$CS2 >= 50 & base$CS2 <= 69, "50-69",
+                          ifelse(base$CS2 >= 70 & base$CS2 <= 89, "70-89",
+                          "90+"))))
+```
+
+
+```{r}
+save(base,file = "actualidades.csv")
+save(base,file = "actualidades.sav")
+load("actualidades.Rdata")
+```
+
+```{r}
+install.packages("writexl")
+library(writexl)
+```
+
+```{r}
+write_xlsx(base, "actualidades.xlsx")
+```
+
+```{r}
+base[,c(13,27)]
+```
+
+Diseño
+```{r}
+library(survey)
+diseno=svydesign(id=~1, weights = ~ponderador,data = base)
+```
+
+Tablas de frecuencias con svytable 
+```{r}
+svytable(~ST2, design = diseno)
+svytable(~ST3, design = diseno)
+svytable(~ST4, design = diseno)
+svytable(~ST5, design = diseno)
+svytable(~ST6, design = diseno)
+svytable(~ST7, design = diseno)
+svytable(~ST8, design = diseno)
+svytable(~ST9, design = diseno)
+svytable(~ST10, design = diseno)
+```
+
+
+Tablas de frecuencias con tabyl
+```{r}
+library(janitor)
+```
+```{r}
+tabyl(base,ST1)
+tabyl(base,ST2)
+tabyl(base,ST3)
+tabyl(base,ST4)
+tabyl(base,ST5)
+tabyl(base,ST6)
+tabyl(base,ST7)
+tabyl(base,ST8)
+tabyl(base,ST9)
+tabyl(base,ST10)
+```
+

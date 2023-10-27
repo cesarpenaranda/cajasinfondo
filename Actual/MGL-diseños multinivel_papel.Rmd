@@ -1,0 +1,276 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-27"
+---
+
+### Diseño con 2 niveles y factor fijo en ambos niveles
+
+Un fabricante de papel está interesado en tres métodos para preparar la pulpa y cuatro temperaturas de cocción de la pulpa. Aunque la temperatura es una variable continua, solo se van a estudiar 4 temperaturas.
+
+El fabricante desea estudiar el efecto del método y de la temperatura sobre la resistencia a la tensión del papel, que es el esfuerzo máximo a tensión obtenido durante una prueba hasta la ruptura bajo unas condiciones prescritas. El esfuerzo es expresado como la fuerza por unidad del ancho de la muestra puesta a prueba, medido en kg/cm. 
+
+El experimento se lleva a cabo de la siguiente forma:
+
++ Produce tres lotes de pulpa con cada uno de los tres métodos que está estudiando en un orden aleatorio. En total produce 9 lotes de pulpa. 
+
++ Cada vez que produce un lote lo divide en cuatro partes o muestras y realiza la cocción de cada muestra a una temperatura diferente.
+
+Nivel 1 (parcela completa)
+unidad: fraccion del lote 
+factor: temperatura (tratamientos principales) 
+
+Nivel 2 (sub-parcela)
+unidad: lote 
+factor: metodo
+
+## Modelo
+$$yijk=\mu+\alpha_i+\beta_i+(\alpha\beta)_{ij}+\delta_k+\epsilon_{ijkl}$$
+donde el efecto del lote o error de parcela
+$$\delta\sim N(0,\sigma^2_{\delta})$$
+
+1.	Utilice los datos que se encuentran en el archivo papel.Rdata. Asegúrese que están bien definidos los factores método y temperatura.
+```{r}
+load("bases/papel.Rdata")
+str(base)
+base$metodo=as.factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$temp=as.factor(base$temp)
+```
+
+
++ La variable lote indica los lotes de pulpa, y se enumeran de 1 a 9 para diferenciar todos los lotes.   Ponga juntas las variables metodo y lote para observar la correspondencia de los lotes con los métodos.
+
+```{r}
+base$pulpa_lote=paste(base$metodo,base$lote,sep = "-")
+base[,c(2,4)]
+```
+
++ Haga una representación gráfica de los datos para ver el comportamiento de la respuesta según método y temperatura. Analice primero la interacción entre método y temperatura. Use type="a" en la función xyplot.  En los diseños de parcela divididas se pone más énfasis al factor que está en la subparcela, por lo que ese factor debe colocarse en groups, mientras que el factor de parcela se coloca en el eje X.  
+
+```{r}
+library(lattice)
+```
+
+```{r}
+xyplot(res~metodo,groups=temp,type="a",data = base, auto.key=list(columns=3))
+```
+
+
++ Basado en lo que ve en el gráfico, se espararía un efecto de la temperatura?
+
+esperarimos un efecto de la temperatura
+
++ 	¿Qué implicaciones tendría una interacción entre método y temperatura?
+
+implicaria que la conclusiones de la temperatura no son independientes al metodo por lo que las comparaciones serian fijando uno de los factores y haciendo las comparaciones por grupo
+
+2. Haga el análisis usando la función lmer de la librería lme4.  Las unidades del Nivel 2 son los lotes, mientras que en el Nivel 1 se tiene cada muestra dentro del lote. Los lotes son aleatorios, y la parte aleatoria se separan con un + de la parte fija del modelo y se pone entre paréntesis (1|lote). La instrucción completa debe quedar de la siguiente forma: lmer(Y~F2*F1+(1|lote)), donde F2 indica el factor del Nivel 2 que, en este caso, es el método y F1 es el factor del Nivel 1 que es la temperatura. 
+```{r}
+library(lme4)
+```
+
+```{r}
+mod1=lmer(res~metodo*temp+(1|lote),data = base)
+```
+
+
++  La función drop1 permite probar hipótesis sobre los términos fijos, y  debe usarse con test="Chisq" para hacer la prueba de razón de verosimilitud (LRT). Haga la prueba de la hipótesis sobre la interacción. En esta prueba también se obtiene el AIC de cada modelo y puede decidirse a partir de la comparación de los AIC, recordando que se prefiere el modelo con el menor AIC.
+
+```{r}
+drop1(mod1,test = "Chisq")
+```
+
+3.  Asumiendo que hay interacción entre METODO y TEMPERATURA, se pueden comparar las temperaturas dentro de cada método haciendo el ajuste de Bonferroni. Para esto se usa la función emmeans en la librería con el mismo nombre.  Se debe indicar  emmeans(mod, pairwise~F1|F2, adjust="bonferroni").
+```{r}
+library(emmeans)
+```
+
+```{r}
+emmeans(mod1, pairwise~temp|metodo, adjust="bonferroni")
+```
+
++ Haga el ejercicio de reconstruir los resultados que da la función "emmeans" utilizando contrastes. Note que se pueden obtener sin problema los errores estándar y los valor de t, sin embargo, las probabilidades no conciden. Esto se debe a que en los modelos mixtos se usa un ajuste llamado Kenward-Roger.
+```{r}
+model.matrix(mod1)
+```
+
+
+```{r}
+coef=c(29.6667,3.6667,1.0000,5.0000,7.3333, 9.3333,0.6667,-5.6667,-1.0000,-3.3333,-0.6667,0.3333)
+#vectores indiviciales para M1
+t200=c(1,0,0,0,0,0,0,0,0,0,0,0)
+t225=c(1,0,0,1,0,0,0,0,0,0,0,0)
+t250=c(1,0,0,0,1,0,0,0,0,0,0,0)
+t275=c(1,0,0,0,0,1,0,0,0,0,0,0)
+
+vec=cbind(t200,t225,t250,t275)
+eta=t(vec)%*%coef
+#comparaciones 
+t200_t225=t200-t225
+t200_t250=t200-t250
+t200_t275=t200-t275
+t225_t250=t225-t250
+t225_t275=t225-t275
+t250_t275=t250-t275
+
+h=cbind(t200_t225,t200_t250,t200_t275,t225_t250,t225_t275,t250_t275)
+L=abs(t(h)%*%coef)
+
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod1)%*%h))
+
+#valor estandarizado
+qt=L/ee
+
+#probabilidad asociada con correccion de bonferroni
+gl=nrow(base)-length(coef)
+gl1=18 #!!! averiguar como se obtienen estos grados de libertad
+p=pt(qt,gl1,lower.tail = F)
+k=6
+p>0.05/k
+round(p,5)
+```
+```{r}
+coef=c(29.6667,3.6667,1.0000,5.0000,7.3333, 9.3333,0.6667,-5.6667,-1.0000,-3.3333,-0.6667,0.3333)
+#vectores indiviciales para M2
+t200=c(1,1,0,0,0,0,0,0,0,0,0,0)
+t225=c(1,1,0,1,0,0,1,0,0,0,0,0)
+t250=c(1,1,0,0,1,0,0,0,1,0,0,0)
+t275=c(1,1,0,0,0,1,0,0,0,0,1,0)
+
+vec=cbind(t200,t225,t250,t275)
+eta=t(vec)%*%coef
+#comparaciones 
+t200_t225=t200-t225
+t200_t250=t200-t250
+t200_t275=t200-t275
+t225_t250=t225-t250
+t225_t275=t225-t275
+t250_t275=t250-t275
+
+h=cbind(t200_t225,t200_t250,t200_t275,t225_t250,t225_t275,t250_t275)
+L=abs(t(h)%*%coef)
+
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod1)%*%h))
+
+#valor estandarizado
+qt=L/ee
+
+#probabilidad asociada con correccion de bonferroni
+gl=nrow(base)-length(coef)
+gl1=18
+p=pt(qt,gl1,lower.tail = F)
+k=6
+p>0.05/k
+round(p,5)
+```
+```{r}
+coef=c(29.6667,3.6667,1.0000,5.0000,7.3333, 9.3333,0.6667,-5.6667,-1.0000,-3.3333,-0.6667,0.3333)
+#vectores indiviciales para M3
+t200=c(1,0,1,0,0,0,0,0,0,0,0,0)
+t225=c(1,0,1,1,0,0,0,1,0,0,0,0)
+t250=c(1,0,1,0,1,0,0,0,0,1,0,0)
+t275=c(1,0,1,0,0,1,0,0,0,0,0,1)
+
+vec=cbind(t200,t225,t250,t275)
+eta=t(vec)%*%coef
+#comparaciones 
+t200_t225=t200-t225
+t200_t250=t200-t250
+t200_t275=t200-t275
+t225_t250=t225-t250
+t225_t275=t225-t275
+t250_t275=t250-t275
+
+h=cbind(t200_t225,t200_t250,t200_t275,t225_t250,t225_t275,t250_t275)
+L=abs(t(h)%*%coef)
+
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod1)%*%h))
+
+#valor estandarizado
+qt=L/ee
+
+#probabilidad asociada con correccion de bonferroni
+gl=nrow(base)-length(coef)
+gl1=18
+p=pt(qt,gl1,lower.tail = F)
+k=6
+p>0.05/k
+round(p,5)
+```
+### Diseño con 3 niveles
+
+Como variante del ejercicio anterior, suponga que la capacidad de la planta solo permite realizar 15 corridas por día y se sospecha que de un día a otro se pueden experimentar diferencias en la resistencia. Entonces el fabricante decide considerar los días como bloques y corre una réplica en cada uno de tres días. Lleva a cabo el experimento así:
+
++ Cada día  produce tres lotes de pulpa, cada lote con uno de los tres métodos que está estudiando en un orden aleatorio.
+
++ Cada lote se divide en cuatro partes o muestras y realiza la cocción de cada muestra con una temperatura diferente, asignada aleatoriamente.
+
+1. Utilice los datos que se encuentran en el archivo papel2.Rdata. Asegúrese que están bien definidos los factores metod y temp, así como dia y lote.
+```{r}
+load("bases/papel2.Rdata")
+str(base)
+base$dia=as.factor(base$dia)
+base$metodo=as.factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$temp=as.factor(base$temp)
+base$lote=as.factor(base$lote)
+base$lote1=as.factor(base$lote1)
+
+```
+
++ Represente los datos usando xyplot con lote en el eje X, con páneles separados por método y dentro de cada panel líneas para cada temperatura.
+```{r}
+library(lattice)
+```
+
+```{r}
+xyplot(res~lote|metodo,groups = temp,type=c("a","p"),data = base,auto.key=list(columns=4))
+```
+
+2. Empiece con el modelo con interacción entre metodo y temp e incluya dia como bloque. Hágalo directamente con la función lmer y agregue el día como un término aleatorio de Nivel 3, para esto indique (1|dia/lote1), de esta forma se está diciendo que lo lotes son de Nivel 2 y están dentro de los días que son de Nivel 3.
+
++ Pruebe la hipótesis de no interacción con LRT.
+
+```{r}
+library(lme4)
+mod1=lmer(res~metodo*temp+(1|dia/lote1),data = base)
+drop1(mod1,test = "Chisq")
+```
+No se rechaza H0 por lo que no hay evidencia estadistica para detectar interacion entre metodo y temp
+
+3. Use el modelo sin interacción y pruebe si hay un efecto del método y de la temperatura.
+```{r}
+mod2=lmer(res~metodo+temp+(1|dia/lote1),data = base)
+drop1(mod2,test = "Chisq")
+```
+
++ Como se vio que el método tiene un efecto sobre la resistencia promedio, es importante comparar los promedios de resistencia entre los diferentes métodos. Haga un gráfico para comparar la resistencia según los diferentes métodos.
+```{r}
+boxplot(res~metodo,data = base)
+abline(h=mean(base$res),col="red")
+points(tapply(base$res,base$metodo,mean),col="red")
+bwplot(res~metodo,data = base)
+```
+
++ Haga la comparación usando la función emmeans.
+
+```{r}
+emmeans(mod2, pairwise~metodo, adjust="bonferroni")
+```
+a pesar de que en la prueba LRT se concluyo que si hay diferencias entre los metodos, al hacer las comparaciones por pares no se logra rechazar ninguna hipotesis, solo entre M2 y M3 se obtuvo una probabilidad levemente mayor a 0.05 es recomendable aunmentar el numero de lotes para tener una mayor potencia, esto se lograria haciendo el experimento en un numero mayor de dias
+
+
++ También se vio que la temperatura tiene un efecto sobre la resistencia promedio. Haga un gráfico para comparar la resistencia según las diferentes temperaturas. También haga la comparación formal.
+```{r}
+bwplot(res~temp,data = base)
+```
+
+```{r}
+emmeans(mod2, pairwise~temp, adjust="bonferroni")
+```
+
+no se detectaron diferencias en todos los pares; especificamente no se puede decir que el promedio de resistencia para una temperatura de 250 grados sea diferente del de la temperatura 225, asi como tampoco que el de 275 grados sea diferente del de 250 grados, sea ha probado que la resistencia promedio a una temperatura de 275 si es mayor que la de temperaturas bajas como 200 y 225, de igual forma, para las temperaturas de 225 y 250 si se tiene una resistencia promedio mayor que para 200 grados

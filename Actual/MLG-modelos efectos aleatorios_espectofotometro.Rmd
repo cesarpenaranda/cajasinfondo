@@ -81,6 +81,9 @@ total=maq.dia+dia+err
 h=cbind(maq.dia,dia,err)
 h/total*100
 ```
+"Los efectos de interacción tienen una variancia de 34.72 que representa un 35.7% de la
+variancia total, la cual es mucho mayor que la variancia del error (17.90) que representa solo
+un 18.4%."
 
 • Obtenga e interprete los intervalos de 95% de confianza para las desviaciones estándar. La estimaciones
 van en el orden en que aparecen en el summary, es decir, desviación estándar de interacción (sig01),

@@ -1,0 +1,98 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-29"
+---
+
+# Cemento
+El cemento es el material más activo de la mezcla de concreto, por tanto sus características y sobre todo
+su contenido (proporción) dentro de la mezcla tienen una gran influencia en la resistencia del concreto a
+cualquier edad. La resistencia a la compresión simple es la característica mecánica principal del concreto. Se
+define como la capacidad para soportar una carga por unidad de área, y se expresa en términos de esfuerzo,
+generalmente en kg/cm2.
+
+Un experimento trata de analizar la calidad en la producción de cemento, el cual se produce por lotes y se
+empaca en sacos. Se sospecha que hay variabilidad entre los lotes en que se ha producido el cemento, así
+como puede haberla entre los sacos provenientes de cada lote. Rutinariamente se seleccionan aleatoriamente
+3 sacos de cada lote para tenerlas como referencia. Se escogen aleatoriamente 10 lotes y se hacen 2 pruebas
+analíticas de resistencia de cada una de los 30 sacos resultantes.
+
+Ejercicios
+1. Justifique si los factores están cruzados o anidados.
+
+El factor saco está anidado dentro del factor lote, ya que los 3 sacos que se eligen dentro
+de cada lote obviamente son diferentes en los diferentes lotes.
+
+2. Cuando los factores están anidados se debe tener cuidado con la definición del factor anidado, ya que
+no pueden repetirse los niveles de este factor en los diferentes niveles del factor externo. Abra el archivo
+cemento.Rdata, observe que los sacos tienen los mismos nombres en todos los lotes. Para comprender
+los datos haga una tabla cruzada de las variables lote y saco.
+```{r}
+load("bases/cemento.Rdata")
+```
+
+```{r}
+table(base$saco,base$lote)
+```
+
+• Puede cruzar las dos variables y hacer una nueva variable llamada saco1 usando la combinación de
+ambas variables: base$lote:base$saco.
+```{r}
+base$saco1=base$lote:base$saco
+```
+
+• Obtenga la tabla cruzada de lote y saco1. Note la diferencia.
+```{r}
+table(base$lote,base$saco1)
+```
+
+3. Haga un gráfico para ver el comportamiento de la respuesta en los sacos de cada lote.
+```{r}
+dotplot(resist~saco|lote,data=base)
+```
+
+4. Analice las fuentes de variabilidad que pueden estar incidiendo en la resistencia del cemento. Haga el
+análisis de diversas formas. ¿Son consistentes los resultados obtenidos con los diferentes enfoques?
+```{r}
+library(ggplot2)
+ggplot(base,aes(lote,resist)) + # base del grafico 
+  geom_boxplot() + # tipo de grafico 
+  geom_hline(yintercept = mean(base$resist), color = "red", linetype = "dashed") + # agregar la media general
+  stat_summary(fun = mean, geom = "point", shape = 16, size = 3, color = "red")
+```
+
+```{r}
+#!!! porque funciona de este modo mod1=lmer(resist~(1|lote)+(1|lote:saco),data = base)
+mod0=lmer(resist~1+(1|saco1)+(1|lote),data=base)
+
+summary(mod1)
+```
+```{r}
+saco=8.434
+lote=1.657
+err=0.678
+total=saco+lote+err
+h=cbind(saco,lote,err)
+h/total*100
+```
+78.3% de la variabilidad es debida al saco
+15.3% de la variabilidad es debida al lote
+
+```{r}
+confint(mod1)
+```
+
+En estos resultados, sig01 es la desviación estándar de saco, mientras que sig02 es la
+desviación estándar de lote. El intervalo correspondiente a lote tiene como límite inferior
+cero, lo cual es una indicación de que esa fuente de variabilidad no es importante.
+
+Podríamos probar el efecto del saco (dentro de lote) comparando dos modelos.
+```{r}
+mod2=lmer(resist~1+(1|lote:saco)+(1|lote),REML=F,data=base)
+mod3=lmer(resist~1+(1|lote),REML=F,data=base)
+anova(mod2,mod3,test="LRT")
+```
+Es claro el efecto del saco dentro de lote, puesto que se obtiene un valor de Chi-cuadrado
+de 54.6, con un grado de libertad, y la probabilidad asociada es menor a 0.0001. Con este
+método no se prueba el efecto del lote porque no tendría sentido hacer un modelo sin el lote,
+ya que los sacos están anidados en los lotes.

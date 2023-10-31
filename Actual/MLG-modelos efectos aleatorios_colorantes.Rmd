@@ -39,10 +39,20 @@ ggplot(base,aes(lote,prod)) + # base del grafico
   geom_hline(yintercept = mean(base$prod), color = "red", linetype = "dashed") + # agregar la media general
   stat_summary(fun = mean, geom = "point", shape = 16, size = 3, color = "red") # agregar medias condicionales
 ```
+```{r}
+bwplot(prod~lote,data = base)
+```
 
 • Discuta cómo se observa la variabilidad intra-sujeto y la variabilidad inter-sujeto.
 
 se observa una variabilidad alta de lote a lote, indicando que no hay una homogeneidad en la produccion de gramos de color estandar de lote a lote de acido H
+
+"Hay algunos lotes que tienen producciones muy bajas mientras que otros las tienen muy
+altas, aunque no interesa identificar cuáles son los lotes con producción más baja o más alta
+puesto que los lotes son aleatorios. La varaibilidad inter-sujeto es la comparación de las medias
+de los diferentes lotes. Especialmente el lote E tiene una media mucho mayor que los demás.
+Por otro lado, la variabilidad intra-sujeto es la que se observa dentro de cada caja, por ejemplo,
+en el lote A esta variabilidad es bastante alta."
 
 3. Ajuste el modelo mixto con la función lmer de la librería lme4. El modelo tiene en la parte de efectos
 fijos solo el intercepto (ponga un uno pero no es indispensable) y en la parte de efectos aleatorios el lote
@@ -59,18 +69,6 @@ mod1=lmer(prod~1+(1|lote),data = base)
 ```{r}
 summary(mod1)
 ```
-
-• Asegúrese que puede obtener manualmente esas estimaciones a partir del anova de un modelo lineal.
-```{r}
-mod2=lm(prod~lote,data = base)
-anova(mod2)
-```
-```{r}
-cmres=2451.2
-cmlote=11271.5
-n=6
-(cmlote-cmres)/5
-```
 % atribuible a cada varianza
 ```{r}
 lote=1764     
@@ -80,6 +78,20 @@ lote/(resi+lote)
 ```
 41.8% de la variabilidad es debido al lote 
 
+• Asegúrese que puede obtener manualmente esas estimaciones a partir del anova de un modelo lineal.
+```{r}
+mod2=lm(prod~lote,data = base)
+anova(mod2)
+```
+
+```{r}
+cmres=2451.2
+cmlote=11271.5
+n=6
+(cmlote-cmres)/5
+```
+
+
 4. Obtenga los intervalos de confianza para los parámetros del modelo (por default R usa un nivel de
 confianza de 0.95): confint(profile(mod1),level=0.95). En el resultado se debe interpretar sigma
 como la desviación estándar del error y sigma01 la desviación estándar de lote.
@@ -87,10 +99,14 @@ como la desviación estándar del error y sigma01 la desviación estándar de lo
 confint(profile(mod1))
 ```
 
-Puesto que el intervalo de 95% de confianza va de 12.2 a 84.1 (no llega al extremo de cero),
+"Puesto que el intervalo de 95% de confianza va de 12.2 a 84.1 (no llega al extremo de cero),
 se confirma que la fuente de variabilidad de lote a lote no es nula. Sin embargo, ese intervalo
 de confianza es muy ancho, lo cual hace dudar de la precisión de la estimación. Se requeriría
 un mayor número de lotes para tener una mejor estimación de la varianza de lote a lote, y esto
 además produciría una mejor estimación de la varianza del error, ya que se contaría con más
-datos en total.
+datos en total."
 
+"Conclusión: se tiene una estimación de la variancia de los lotes que representa el 41.8%
+de la variabilidad total, lo cual es una indicación bastante fuerte de que la estabilidad en la
+producción del colorante está siendo bastante afectada por la materia prima. Si los lotes de
+ácido H fueran más estables se tendría un colorante más estable también."

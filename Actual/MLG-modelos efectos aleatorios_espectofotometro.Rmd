@@ -60,9 +60,17 @@ xyplot(trigli~maq,group=dia,type="a",data = base,auto.key=list(columns=4))
 ```
 se observa interaccion entre el dia y la maquina ademas los valores mas bajos los obtenemos en dia dos y las maquinas c y d
 
+"Se ven las diferencias de máquina a máquina cada día. Las mayores diferencias se presentan
+en el día 2. A partir de los gráficos parece que existe interacción entre día y máquina, sin
+embargo, esta interacción podría venir de una situación particular en lugar de tratarse de algo
+general, pues se vio que en el día 2 la máquina D dio resultados de triglicéridos más bajos de
+lo normal. Esta observación puede ayudar a comprender el panorama general, si bien se ha
+dicho que en este tipo de análisis no interesa tanto identificar algo particular."
+
 3. Ajuste el modelo que tiene en la parte de efectos fijos el intercepto y la máquina, mientras que en la parte
 de efectos aleatorios incluye el día (1|dia) y la interacción (1|dia:maq). Recuerde que siempre que al
 menos uno de los factores tenga efectos aleatorios, la interacción se tiene también efectos aleatorios.
+
 ```{r}
 library(lme4)
 mod1=lmer(trigli~1+maq+(1|dia)+(1|dia:maq),data = base)
@@ -91,9 +99,9 @@ desviación estándar de días (sig02) y desviación estándar de error (sigma).
 ```{r}
 confint(profile(mod1))
 ```
-Al observar el intervalo de 95% de confianza se tiene que la desviación estándar de los efectos
+"Al observar el intervalo de 95% de confianza se tiene que la desviación estándar de los efectos
 de interacción está entre 2.07 y 8.6, mientras que la desviación estándar del error está entre
-3.1 y 6.3. Es claro que el efecto de interacción tiene una variabilidad no nula.
+3.1 y 6.3. Es claro que el efecto de interacción tiene una variabilidad no nula."
 
 4. Ajuste un modelo similar donde la máquina tiene efectos aleatorios, pues se tienen muchas máquinas y
 estas 4 son una muestra.
@@ -155,4 +163,10 @@ gl=coef1-coef2
 #valor p
 pchisq(q=LTR,df=gl,lower.tail = F,log.p = F)
 ```
-
+Conclusión: el espectofotómetro no está listo para tomar las mediciones de forma precisa
+ya que estas no hay consistencia de las mediciones de una máquina a otra en diferentes días.
+Sería importante repetir el experimento puesto que parece que una de las máquinas tuvo un
+comportamiento especial en el día 2. Dada esta sospecha sería importante verificar si al tener
+más máquinas y más días en el experimento se repite este tipo de comportamiento. Lo más
+lógico es que esta interacción no esté presente y se puedan analizar los efectos de los días y de
+las máquinas de forma independiente.

@@ -1,0 +1,693 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-10-31"
+---
+# Disenos aleatorios
+
+## Espectofotómetro
+Se está desarrollando un nuevo modelo de espectrofotómetro para uso en laboratorios clínicos con el objetivo
+de cuantificar sustancias y microorganismos. Se quiere evaluar el funcionamiento de estos instrumentos
+sabiendo que un componente crítico del desempeño es la consistencia de las mediciones de un día a otro, y de
+una máquina a otra. Se quiere saber si la variabilidad de las mediciones entre las máquinas operadas durante
+varios días está dentro de los estándares aceptables.
+Hay dos escenarios, en el primero se toman 4 máquinas asumiendo que solo existen esas 4 máquinas, mientras
+que en el segundo se seleccionan aleatoriamente 4 máquinas etiquetadas como A, B, C y D de un conjunto
+mucho mayor de máquinas. Cada día se preparan 8 replicaciones de muestras de suero en sangre con el mismo
+lote de reactivos para todo el experimento. Dos muestras de suero se asignan aleatoriamente a cada una de las
+cuatro máquinas en cada uno de los 4 días resultando en dos repeticiones de cada combinación día-máquina.
+Se miden los niveles de triglicéridos (mg/dl) en las muestras de suero. Los datos se muestran a continuación:
+1. Introduzca los datos. Defina dia y maquina como factor.
+```{r}
+trigli=c(142.3, 144.0, 148.6, 146.9, 142.9, 147.4, 133.8,
+133.2, 134.9, 146.3, 145.2, 146.3, 125.9, 127.6,
+108.9, 107.5, 148.6, 156.5, 148.6, 153.1, 135.5,
+138.9, 132.1, 149.7, 152.0, 151.4, 149.7, 152.0,
+142.9, 142.3, 141.7, 141.2)
+dia=factor(rep(1:4,each=8))
+maq=factor(rep(c("A","B","C","D"),4,each=2))
+base=data.frame(trigli,dia,maq)
+```
+2. Haga gráficos para ver el comportamiento de la respuesta de día a día y de máquina a máquina. Haga
+un análisis descriptivo.
+```{r}
+library(lattice)
+xyplot(trigli~dia,groups = maq,type=c("p","a"),data = base,auto.key = list(columns=4))
+xyplot(trigli~maq,groups = dia,type=c("p","a"),data = base,auto.key = list(columns=4))
+```
+3. Ajuste el modelo que tiene en la parte de efectos fijos el intercepto y la máquina, mientras que en la parte
+de efectos aleatorios incluye el día (1|dia) y la interacción (1|dia:maq). Recuerde que siempre que al
+menos uno de los factores tenga efectos aleatorios, la interacción se tiene también efectos aleatorios.
+• Obtenga las estimaciones de las variancias correspondientes a este modelo tanto en R como manualmente.
+```{r}
+library(lme4)
+mod1=lmer(trigli~1+maq+(1|dia)+(1|dia:maq),data = base)
+summary(mod1)
+```
+• Obtenga e interprete los intervalos de 95% de confianza para las desviaciones estándar. La estimaciones
+van en el orden en que aparecen en el summary, es decir, desviación estándar de interacción (sig01),
+desviación estándar de días (sig02) y desviación estándar de error (sigma).
+```{r}
+confint(profile(mod1))
+```
+4. Ajuste un modelo similar donde la máquina tiene efectos aleatorios, pues se tienen muchas máquinas y
+estas 4 son una muestra.
+• Obtenga las estimaciones de las variancias correspondientes a este modelo y compárelas con las obtenidas
+anteriormente.
+```{r}
+mod2=lmer(trigli~(1|maq)+(1|dia)+(1|dia:maq),data = base)
+summary(mod2)
+```
+## Colorantes
+En una investigación sobre la elaboración de un colorante se sospecha que la variación del producto final
+puede estar siendo determinada por variaciones en la calidad de un producto intermedio (ácido H). Se quiere
+encontrar cuánta de la variación entre lote y lote del ácido H contribuye a la variación en la producción del
+colorante hecho con este producto. Se analiza la variabilidad total y se separa la variabilidad que introducen
+los lotes que son materia prima, de tal forma que la variabilidad restante es atribuida al proceso productivo.
+Por lo tanto, si la variabilidad total está fuertemente determinada por la variabilidad de los lotes, el productor
+de colorantes debe llamar la atención al proveedor del ácido H para lograr que su producto sea más estable.
+Se toman seis lotes de producto intermedio (ácido H) y de cada uno se hacen cinco preparaciones de colorante
+en el laboratorio. Se determina la producción de cada preparación mediante gramos de color estándar.
+
+1. Abra el archivo colorantes.Rdata
+
+```{r}
+load("bases/colorantes.Rdata")
+str(base)
+```
+2. Haga un gráfico para ver el comportamiento de la respuesta de lote a lote. Haga un análisis descriptivo.
+En la librería ggplot2 puede usar la función qplot de la siguiente forma: ggplot(base,aes(X,Y))+ geom_boxplot().
+```{r}
+library(lattice)
+xyplot(prod~lote,type=c("a","p"),data = base)
+bwplot(prod~lote,data=base)
+```
+
+• Discuta cómo se observa la variabilidad intra-sujeto y la variabilidad inter-sujeto.
+3. Ajuste el modelo mixto con la función lmer de la librería lme4. El modelo tiene en la parte de efectos
+fijos solo el intercepto (ponga un uno pero no es indispensable) y en la parte de efectos aleatorios el lote
+(1|lote) – en esta parte el 1 representa el promedio: mod1=lmer(prod~1+(1|lote)) es equivalente a
+mod1=lmer(prod~(1|lote)).
+• Obtenga del summary del mod1 las estimaciones de las variancias correspondientes a este modelo.
+```{r}
+mod1=lmer(prod~(1|lote),data = base)
+summary(mod1)
+```
+• Asegúrese que puede obtener manualmente esas estimaciones a partir del anova de un modelo lineal.
+4. Obtenga los intervalos de confianza para los parámetros del modelo (por default R usa un nivel de
+confianza de 0.95): confint(profile(mod1),level=0.95). En el resultado se debe interpretar sigma
+como la desviación estándar del error y sigma01 la desviación estándar de lote.
+```{r}
+lote=1764
+err=2451
+(lote/(err+lote))*100
+confint(profile(mod1))
+```
+
+## Escarabajos
+En un estudio se quería identificar cuál tipo de recolecta es mejor para registrar la diversidad de sexo en
+una especie de escarabajos. Se realizaron recolectas de escarabajos nocturnos con dos métodos: 1) usando
+alumbrado público y 2) utilizando lámparas. Los muestreos se hicieron sistemáticamente (hora y media a
+partir de la penumbra) durante los meses de abril a junio en cinco parcelas de cultivo en la zona de San
+Cristóbal de Las Casas, Chiapas. Se registró el sexo de los escarabajos recolectados para determinar si en un
+tipo de recolecta la proporción de cada sexo era diferente.
+
+Ejercicios
+1. Cargue los datos en el archivo escarabajos.Rdata. Defina parcela como factor.
+```{r}
+load("bases/escarabajos.Rdata")
+str(base)
+base$parcela=factor(base$parcela)
+```
+• Identifique la variable respuesta y comente sobre la distribución condicional que tiene esta variable.
+• Justifique si las parcelas representan un efecto fijo o aleatorio.
+• Represente gráficamente los datos y observe si se puede esperar un efecto del método de recolecta.
+```{r}
+xyplot(M/(M+H)~parcela,groups = tipo,type=c("a","p"),data = base,ylab = "tasa")
+xyplot(M/(M+H)~tipo,groups =parcela,type=c("a","p"),data = base,ylab = "tasa")
+```
+
+2. Tome las parcelas como bloques fijos y ajuste el modelo logístico sin interacción con glm. Ponga atención
+al modelo que está usando en R (suma nula o tratamiento referencia).
+• Interprete la razón de propensiones (OR) resultante. Debe tener claro cuál probabilidad es la que está
+obteniendo (de machos o hembras). Esto dependerá de la forma en que especificó su modelo.
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod0=glm(cbind(M,H)~tipo+parcela,family="binomial",data=base)
+coef=mod0$coefficients
+contrasts(base$tipo)
+#contraste
+tipo.l=c(1,1,0,0,0,0)
+tipo.ap=c(1,-1,0,0,0,0)
+contra=tipo.l-tipo.ap
+eta=t(contra)%*%coef
+eta=abs(eta)
+exp(eta)
+```
+
+3. Realice la prueba LRT para determinar si existe un efecto del tipo de recolecta en la proporción de
+machos (o hembras) capturados.
+```{r}
+mod01=glm(cbind(M,H)~tipo+parcela,family="binomial",data=base)
+mod02=glm(cbind(M,H)~parcela,family="binomial",data=base)
+anova(mod01,mod02,test="LRT")
+drop1(mod01,test="LRT")
+```
+
+4. Lo que se hizo anteriormente no es correcto, ya que no se está considerando la parcela como un elemento
+aleatorio sino fijo, como si solo existieran esas parcelas. Ahora tome la parcela como un efecto aleatorio
+y ajuste el modelo usando la función glmer de la librería lme4. Obtenga el OR y compárelo con el
+obtenido anteriormente.
+```{r}
+mod1=glmer(cbind(M,H)~tipo+(1|parcela),family="binomial",data=base)
+coef=summary(mod1)$coefficients[,1]
+contrasts(base$tipo)
+#contraste
+tipo.l=c(1,1)
+tipo.ap=c(1,-1)
+contra=tipo.l-tipo.ap
+eta=t(contra)%*%coef
+eta=abs(eta)
+exp(eta)
+```
+
+• En el gráfico anterior, se puede apreciar uan posible interacción entre parcela y tipo de recolecta.
+Usualmente se asume que no existe interacción cuando se tiene un diseño con bloques, porque típicamente
+esta interacción no se puede verificar al tener solo una observación por tratamiento y bloque. En este
+caso sí se puede verificar. Ajuste un modelo donde incluya la interacción, observe la estimación de la
+varianza de los efectos de interacción y relaciónelo con el mensaje que da R al ajustar este modelo.
+```{r}
+mod11=glmer(cbind(M,H)~tipo+(1|parcela),family="binomial",data=base)
+mod12=glmer(cbind(M,H)~tipo+(1|parcela)+(1|parcela:tipo),family="binomial",data=base)
+```
+
+• Realice la prueba adecuada para determinar si se debe considerar esta interacción.
+```{r}
+anova(mod11,mod12,test="LRT")
+```
+
+• Vuelva al modelo sin interacción y realice la prueba adecuada para determinar si existe un efecto del
+tipo de recolecta.
+```{r}
+mod11=glmer(cbind(M,H)~tipo+(1|parcela),family="binomial",data=base)
+mod13=glmer(cbind(M,H)~(1|parcela),family="binomial",data=base)
+anova(mod11,mod13,test="LRT")#!!! hay alguna diferencia con el orden de modelos pequeno, grande
+drop1(mod11,test = "Chisq") #!!! porque en este caso si funciona
+```
+
+• Construya intervalos de 95% para el OR obtenido con cada modelo (con bloques fijos y con efectos
+aleatorios). Compárelos.
+```{r}
+#Para fijos
+mod01=glm(cbind(M,H)~tipo+parcela,family="binomial",data=base)
+##
+exp(confint(mod01)*2)
+##
+coef=mod01$coefficients
+tipo.l=c(1,1,0,0,0,0)
+tipo.ap=c(1,-1,0,0,0,0)
+contra=tipo.l-tipo.ap
+eta=t(contra)%*%coef
+eta=abs(eta)
+ee=sqrt(diag(t(contra)%*%vcov(mod01)%*%contra))
+#valor qz
+qz=qnorm(1-0.05/2)
+ic.sup=exp(eta+qz*ee)
+ic.inf=exp(eta-qz*ee)
+round(cbind(ic.inf,ic.sup),4)
+
+#Para aleatorios
+mod11=glmer(cbind(M,H)~tipo+(1|parcela),family="binomial",data=base)
+exp(confint(mod11)*2)
+coef=summary(mod11)$coef[,1]
+##
+tipo.l=c(1,1)
+tipo.ap=c(1,-1)
+contra=tipo.l-tipo.ap
+eta=t(contra)%*%coef
+eta=abs(eta)
+vcov=c(0.075193182,0.010592613)
+ee=sqrt(t(contra)%*%vcov%*%contra)
+#valor qz
+qz=qnorm(1-0.05/2)
+ic.sup=exp(eta+qz*ee[2])
+ic.inf=exp(eta-qz*ee[2])
+round(cbind(ic.inf,ic.sup),4)
+```
+
+5. Para terminar es importante escribir el modelo teórico que se está usando. Como se trata de un modelo
+con una función de enlace logística, no conviene escribirlo en función de cada observación sino en función
+de la esperanza.
+• Observe el summary del modelo. Note que solo se ha estimado un componente de varianza ya que en
+estos modelos no se incluye la varianza del error.
+```{r}
+summary(mod11)
+```
+
+• ¿Se puede obtener a partir de los resultados una estimación de la probabilidad de obtener un macho
+con un cierto tipo de alumbrado en general en la población?
+
+
+### Diseño con 2 niveles y factor fijo en ambos niveles (papel)
+
+Un fabricante de papel está interesado en tres métodos para preparar la pulpa y cuatro temperaturas de cocción de la pulpa. Aunque la temperatura es una variable continua, solo se van a estudiar 4 temperaturas.
+
+El fabricante desea estudiar el efecto del método y de la temperatura sobre la resistencia a la tensión del papel, que es el esfuerzo máximo a tensión obtenido durante una prueba hasta la ruptura bajo unas condiciones prescritas. El esfuerzo es expresado como la fuerza por unidad del ancho de la muestra puesta a prueba, medido en kg/cm. 
+El experimento se lleva a cabo de la siguiente forma:
++ Produce tres lotes de pulpa con cada uno de los tres métodos que está estudiando en un orden aleatorio. En total produce 9 lotes de pulpa. 
++ Cada vez que produce un lote lo divide en cuatro partes o muestras y realiza la cocción de cada muestra a una temperatura diferente.
+1.	Utilice los datos que se encuentran en el archivo papel.Rdata. Asegúrese que están bien definidos los factores método y temperatura.
+```{r}
+load("bases/papel.Rdata")
+str(base)
+base$metodo=factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$temp=factor(base$temp)
+```
++ La variable lote indica los lotes de pulpa, y se enumeran de 1 a 9 para diferenciar todos los lotes.   Ponga juntas las variables metodo y lote para observar la correspondencia de los lotes con los métodos.
++ Haga una representación gráfica de los datos para ver el comportamiento de la respuesta según método y temperatura. Analice primero la interacción entre método y temperatura. Use type="a" en la función xyplot.  En los diseños de parcela divididas se pone más énfasis al factor que está en la subparcela, por lo que ese factor debe colocarse en groups, mientras que el factor de parcela se coloca en el eje X.  
+```{r}
+library(lattice)
+xyplot(res~metodo,groups=temp,type=c("a"),data = base,auto.key = list(columns=4))
+```
+
++ Basado en lo que ve en el gráfico, se espararía un efecto de la temperatura?
++ 	¿Qué implicaciones tendría una interacción entre método y temperatura?
+2. Haga el análisis usando la función lmer de la librería lme4.  Las unidades del Nivel 2 son los lotes, mientras que en el Nivel 1 se tiene cada muestra dentro del lote. Los lotes son aleatorios, y la parte aleatoria se separan con un + de la parte fija del modelo y se pone entre paréntesis (1|lote). La instrucción completa debe quedar de la siguiente forma: lmer(Y~F2*F1+(1|lote)), donde F2 indica el factor del Nivel 2 que, en este caso, es el método y F1 es el factor del Nivel 1 que es la temperatura. 
+```{r}
+library(lme4)
+mod1=lmer(res~metodo*temp+(1|lote),data = base)
+```
+
++  La función drop1 permite probar hipótesis sobre los términos fijos, y  debe usarse con test="Chisq" para hacer la prueba de razón de verosimilitud (LRT). Haga la prueba de la hipótesis sobre la interacción. En esta prueba también se obtiene el AIC de cada modelo y puede decidirse a partir de la comparación de los AIC, recordando que se prefiere el modelo con el menor AIC.
+```{r}
+drop1(mod1,test = "Chisq")
+```
+
+3.  Asumiendo que hay interacción entre METODO y TEMPERATURA, se pueden comparar las temperaturas dentro de cada método haciendo el ajuste de Bonferroni. Para esto se usa la función emmeans en la librería con el mismo nombre.  Se debe indicar  emmeans(mod, pairwise~F1|F2, adjust="bonferroni").
+```{r}
+library(emmeans)
+emmeans(mod1, pairwise~temp|metodo, adjust="bonferroni")
+```
+
++ Haga el ejercicio de reconstruir los resultados que da la función "emmeans" utilizando contrastes. Note que se pueden obtener sin problema los errores estándar y los valor de t, sin embargo, las probabilidades no conciden. Esto se debe a que en los modelos mixtos se usa un ajuste llamado Kenward-Roger.
+### Diseño con 3 niveles(papel)
+Como variante del ejercicio anterior, suponga que la capacidad de la planta solo permite realizar 15 corridas por día y se sospecha que de un día a otro se pueden experimentar diferencias en la resistencia. Entonces el fabricante decide considerar los días como bloques y corre una réplica en cada uno de tres días. Lleva a cabo el experimento así:
++ Cada día  produce tres lotes de pulpa, cada lote con uno de los tres métodos que está estudiando en un orden aleatorio.
++ Cada lote se divide en cuatro partes o muestras y realiza la cocción de cada muestra con una temperatura diferente, asignada aleatoriamente.
+1. Utilice los datos que se encuentran en el archivo papel2.Rdata. Asegúrese que están bien definidos los factores metod y temp, así como dia y lote.
+```{r}
+#!!! profundizar en este diseno no tenemos claro que representa lote1
+load("bases/papel2.Rdata")
+str(base)
+base$metodo=factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$temp=factor(base$temp)
+base$dia=factor(base$dia)
+base$lote=factor(base$lote)
+base$lote1=factor(base$lote1)
+```
++ Represente los datos usando xyplot con lote en el eje X, con páneles separados por método y dentro de cada panel líneas para cada temperatura.
+```{r}
+xyplot(res~lote1|metodo,groups=temp,type=c("a","p"),data = base,auto.key = list(columns=4))
+```
+
+2. Empiece con el modelo con interacción entre metodo y temp e incluya dia como bloque. Hágalo directamente con la función lmer y agregue el día como un término aleatorio de Nivel 3, para esto indique (1|dia/lote1), de esta forma se está diciendo que lo lotes son de Nivel 2 y están dentro de los días que son de Nivel 3.
+```{r}
+mod1=lmer(res~metodo*temp+(1|dia/lote1),data = base)
+```
+
++ Pruebe la hipótesis de no interacción con LRT.
+```{r}
+drop1(mod1,test = "Chisq")
+```
+```{r}
+mod11=lmer(res~metodo*temp+(1|dia/lote1),data = base)
+mod12=lmer(res~metodo+temp+(1|dia/lote1),data = base)
+anova(mod11,mod12,test="LRT")
+```
+
+3. Use el modelo sin interacción y pruebe si hay un efecto del método y de la temperatura.
+```{r}
+mod12=lmer(res~metodo+temp+(1|dia/lote1),data = base)
+drop1(mod12,test = "Chisq")
+```
+
+```{r}
+#con metodo de momentos
+mod12=lmer(res~metodo+temp+(1|dia/lote1),data = base)
+mod13=lmer(res~temp+(1|dia/lote1),data = base)
+anova(mod13,mod12,test="LRT")
+mod12=lmer(res~metodo+temp+(1|dia/lote1),data = base)
+mod13=lmer(res~metodo+(1|dia/lote1),data = base)
+anova(mod13,mod12,test="LRT")
+```
+
++ Como se vio que el método tiene un efecto sobre la resistencia promedio, es importante comparar los promedios de resistencia entre los diferentes métodos. Haga un gráfico para comparar la resistencia según los diferentes métodos.
+```{r}
+xyplot(res~metodo,type=c("a","p"),data=base)
+bwplot(res~metodo,data = base)
+```
+
++ Haga la comparación usando la función emmeans.
+```{r}
+emmeans(mod12, pairwise~metodo, adjust="bonferroni")
+```
+
++ También se vio que la temperatura tiene un efecto sobre la resistencia promedio. Haga un gráfico para comparar la resistencia según las diferentes temperaturas. También haga la comparación formal.
+```{r}
+xyplot(res~temp,type=c("a","p"),data=base)
+bwplot(res~temp,data = base)
+```
+
+```{r}
+emmeans(mod12, pairwise~temp, adjust="bonferroni")
+```
+
+# DISEÑOS ANIDADOS
+En este laboratorio se presentan dos ejercicios con factores anidados. Los dos ejercicios tienen una estructura
+similar. En el primer ejercicio llamado Escuelas, el factor fijo instructor está anidado dentro del factor
+fijo escuela, mientras que en el segundo llamado Cemento, el factor aleatorio barrica está anidado dentro
+del factor aleatorio lote.
+Cuando los factores son fijos se puede usar la función lm con una instrucción especial para indicar el
+anidamiento, y cuando los factores son aleatorios se utiliza la función lmer de la librería lme4 (Bates et al.,
+2015).
+
+
+## Escuelas
+Una compañía manufacturera tiene tres escuelas de mecánica regionales, una en cada una de sus regiones de
+operación. Cada escuela tiene dos instructores que dan cursos de tres semanas a 15 mecánicos aproximadamente.
+La compañía está interesada en conocer el efecto de la escuela (factor A) y el instructor (factor B) en el
+aprendizaje logrado. Se hace un experimento en el que se forman grupos en cada región y se asigna cada
+grupo a uno de los instructores. A cada instructor se le asignan dos grupos.
+Para determinar el efecto de la escuela y el instructor en el aprendizaje, se hace una prueba a los estudiantes
+y se obtiene el puntaje promedio del grupo como variable respuesta.
+
+Ejercicios
+1. Lea los datos del archivo escuelas.Rdata. Defina escuela como factor. Ponga nombres a las
+escuelas: Región K (1), Región D (2) y Central (3). Observe que hay dos variables para referirse a los
+instructores: instructor tiene valores 1 y 2 para los instructores de todas las escuelas, mientras que
+instructor1 no repite el número del instructor en diferentes escuelas, por lo que los instructores van
+del 1 al 6. Redefina esas dos variables como factor.
+
+```{r}
+load("bases/escuelas.Rdata")
+base$escuela=factor(base$escuela)
+levels(base$escuela)=c("D","K","Central")
+base$instructor=factor(base$instructor)
+base$instructor1=factor(base$instructor1)
+```
+• Haga una representación gráfica de los datos para ver el comportamiento de la respuesta según escuela
+e instructor. Use la función dotplot en la librería lattice de la siguiente forma: dotplot(puntaje ~
+instructor | escuela). Hágalo usando tanto instructor como instructor1 y vea cuál de las dos
+formas es más conveniente.
+```{r}
+library(lattice)
+dotplot(puntaje~instructor|escuela,data = base)
+dotplot(puntaje~instructor1|escuela,data = base)
+xyplot(puntaje~instructor,groups = escuela,type=c("a","p"),data = base,auto.key = list(columns=3))
+xyplot(puntaje~instructor1,groups = escuela,type=c("a","p"),data = base,auto.key = list(columns=3))
+```
+
+• ¿Se puede esperar que exista interacción entre el instructor y la escuela?
+
+No, no se analiza interacion en disenos anidados
+
+• Comente si se espera que haya un efecto del instructor sobre el puntaje promedio dentro de cada escuela?
+
+• Busque una forma de analizar gráficamente las diferencias entre escuelas. ¿Qué se puede concluir?
+```{r}
+bwplot(puntaje~escuela,data = base)
+```
+
+2. Efectos de instructor:
+• Obtenga manualmente los efectos de instructor dentro de escuela.
+```{r}
+media=tapply(base$puntaje,base$escuela,mean)
+m=tapply(base$puntaje,list(base$instructor,base$escuela),mean)
+in1=media-m[1,]
+in2=media-m[2,]
+
+h=rbind(in1,in2)
+h
+```
+```{r}
+xyplot(puntaje~escuela,groups = instructor,type=c("a","p"),data = base,auto.key = list(columns=2))
+```
+
+• Obtenga manualmente la suma de cuadrados de instructor dentro de escuela.
+```{r}
+r=2 #replicas
+scres=sum(r*h^2);scres
+```
+
+• ¿Cuántos grados de libertad tiene el factor anidado instructor?
+```{r}
+gl=(2-1)*3 #preguntar como obtener estos grados de libertad
+#3 numero de escuelas
+#2 numero de intructores
+```
+
+• Calcule el cuadrado medio de instructor dentro de escuela y explique su significado.
+```{r}
+scres/gl
+```
+3. Comparación de instructores.
+• Establezca con palabras la hipótesis nula al comparar los instructores.
+
+todos los pares de promedios de los intructores dentro de las escuelas son iguales
+
+• Se puede usar el factor anidado con el formato en que aparece instructor, pero indicando la estructura
+anidada dentro de la función lm de la siguiente forma: lm(puntaje~escuela+escuela/instructor).
+De esta forma se indica que el factor instructor está anidado dentro del factor escuela. Use el modelo
+de suma nula y llámelo mod5.
+
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod5=lm(puntaje~escuela/instructor,data = base)
+```
+
+• Obtenga el anova del modelo anidado y note que tiene una línea que parece una interacción que dice
+escuela:instructor, pero que en realidad debería leerse instructor(escuela), es decir, instructor
+dentro de escuela.
+
+```{r}
+anova(mod5)
+```
+
+• Observe el cuadrado medio de instructor y compárelo con el obtenido anteriormente. ¿Se rechaza la
+hipótesis nula referente al instructor?
+
+• Obtenga los efectos de instructor.
+```{r}
+model.tables(aov(mod5))
+```
+
+5. Comparaciones entre instructores:
+• Obtenga los coeficientes del modelo.
+```{r}
+mod5$coefficients
+```
+
+• ¿A qué corresponden los últimos 3 coeficientes?
+
+Estos 3 son los coeficientes del primer instructor dentro de la escuela
+
+• Haga las comparaciones que tengan sentido entre los instructores. No tiene sentido comparar todos los
+pares de instructores, puesto que no todos pertenecen a las mismas escuelas. Por ejemplo, no tiene
+sentido comparar un instructor de la Región D con un instructor de la Región K. Use la corrección de
+Bonferroni con un nivel de significancia de 0.10 y confianza de 90%.
+
+```{r}
+coef=mod5$coefficients
+#vectores
+#para escuela D
+ins1d=c(1,1,0,1,0,0)
+ins2d=c(1,1,0,-1,0,0)
+#para escuela K
+ins1k=c(1,0,1,0,1,0)
+ins2k=c(1,0,1,0,-1,0)
+#para escuela central
+ins1c=c(1,-1,-1,0,0,1)
+ins2c=c(1,-1,-1,0,0,-1)
+
+ins1d_ins2d=ins1d-ins2d
+ins1k_ins2k=ins1k-ins2k
+ins1c_ins2c=ins1c-ins2c
+
+h=cbind(ins1d_ins2d,ins1k_ins2k,ins1c_ins2c)
+L=t(h)%*%coef
+L=abs(L)
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+gl=nrow(base)-length(coef)
+p=pt(t,gl,lower.tail = F)
+p>0.10
+round(p,3)
+```
+```{r}
+emmeans(mod5, pairwise~instructor|escuela, adjust="bonferroni")
+```
+cotas inferiores
+```{r}
+gl=nrow(base)-length(coef)
+alpha=0.10
+qt=qt(1-alpha,gl); LIM=L-qt*ee
+row.names(LIM)=row.names(p)
+round(LIM,1)
+```
+
+6. Haga las comparaciones entre las diferentes escuelas usando Tukey con 10% de significancia en pruebas
+de una cola.
+```{r}
+#porque me da diferente a tukey !!!!!
+coef=mod5$coefficients
+#vectores
+#para escuela D
+esd=c(1,1,0,0,0,0)
+#para escuela K
+esk=c(1,0,1,0,0,0)
+#para escuela central
+esc=c(1,-1,-1,0,0,0)
+
+esd_esk=esd-esk
+esd_esc=esd-esc
+esk_esc=esk-esc
+
+h=cbind(esd_esk,esd_esc,esk_esc)
+L=t(h)%*%coef
+L=abs(L)
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod5)%*%h))
+t=L/ee
+gl=nrow(base)-length(coef)
+p=pt(t,gl,lower.tail = F)
+k=3
+p>0.10/k
+round(p,3)
+#!!!!!! preguntar porque aqui en la solucion no se hace la correcion de bonferroni
+```
+
+
+```{r}
+#3 numero de contrastes !!!! preguntar si es lo correcto
+ptukey(t*sqrt(2),3,gl,lower.tail = F)
+```
+```{r}
+emmeans(mod5, pairwise~escuela, adjust="bonferroni")
+```
+• Obtenga cotas inferiores de 90% de confianza para la diferencia de medias entre los pares de escuelas en
+que encontró diferencias.
+```{r}
+gl=nrow(base)-length(coef)
+alpha=0.10
+qt=qt(1-alpha/2,gl); LIM=L-qt*ee
+row.names(LIM)=row.names(p)
+LIM=LIM[-3,]
+round(LIM,3)
+#aqui hay un error en la solucion ya que K-central no era significativa es d-centra 
+```
+
+7. ¿Cómo se alteran las conclusiones si se considera que hay muchos instructores en cada región y en el
+experimento los que participaron fueron una muestra?
+
+```{r}
+#!!! porque en este analisis la escuela se toma como un efecto aleatorio tambien
+mod2=lmer(puntaje~1+(1|escuela)+(1|instructor1),data=base)
+mod22=lmer(puntaje~1+(1|escuela),data=base)
+summary(mod2)
+anova(mod2,mod22)
+```
+```{r}
+confint(mod2)
+```
+El intervalo de confianza para la desviación estándar de los coeficientes de escuela limita con
+el cero, lo cual hace que no se rechace la hipótesis nula referente a la igualdad de medias entre
+escuelas. Sin embargo, se siguen viendo diferencias entre los instructores dentro de escuelas
+pero no interesa comparar los instructores de forma específica.
+
+
+# Cemento
+El cemento es el material más activo de la mezcla de concreto, por tanto sus características y sobre todo
+su contenido (proporción) dentro de la mezcla tienen una gran influencia en la resistencia del concreto a
+cualquier edad. La resistencia a la compresión simple es la característica mecánica principal del concreto. Se
+define como la capacidad para soportar una carga por unidad de área, y se expresa en términos de esfuerzo,
+generalmente en kg/cm2.
+
+Un experimento trata de analizar la calidad en la producción de cemento, el cual se produce por lotes y se
+empaca en sacos. Se sospecha que hay variabilidad entre los lotes en que se ha producido el cemento, así
+como puede haberla entre los sacos provenientes de cada lote. Rutinariamente se seleccionan aleatoriamente
+3 sacos de cada lote para tenerlas como referencia. Se escogen aleatoriamente 10 lotes y se hacen 2 pruebas
+analíticas de resistencia de cada una de los 30 sacos resultantes.
+
+Ejercicios
+1. Justifique si los factores están cruzados o anidados.
+2. Cuando los factores están anidados se debe tener cuidado con la definición del factor anidado, ya que
+no pueden repetirse los niveles de este factor en los diferentes niveles del factor externo. Abra el archivo
+cemento.Rdata, observe que los sacos tienen los mismos nombres en todos los lotes. Para comprender
+los datos haga una tabla cruzada de las variables lote y saco.
+```{r}
+load("bases/cemento.Rdata")
+table(base$lote,base$saco)
+```
+• Puede cruzar las dos variables y hacer una nueva variable llamada saco1 usando la combinación de
+ambas variables: base$lote:base$saco.
+```{r}
+base$saco1=base$lote:base$saco
+```
+
+• Obtenga la tabla cruzada de lote y saco1. Note la diferencia.
+```{r}
+table(base$saco1,base$lote)
+```
+
+3. Haga un gráfico para ver el comportamiento de la respuesta en los sacos de cada lote.
+```{r}
+bwplot(resist~lote,data = base)
+xyplot(resist~saco|lote,type=c("a","p"),data=base)
+xyplot(resist~lote|saco,type=c("a","p"),data=base)
+xyplot(resist~lote,groups=saco,type=c("a","p"),data=base,auto.key = list(columns=3))
+```
+
+4. Analice las fuentes de variabilidad que pueden estar incidiendo en la resistencia del cemento. Haga el
+análisis de diversas formas. ¿Son consistentes los resultados obtenidos con los diferentes enfoques?
+
+```{r}
+#!!! porque aqui obtengo los mismo resultados
+mod1=lmer(resist~(1|lote)+(1|saco1),data = base)
+mod2=lmer(resist~(1|lote)+(1|lote:saco),data = base)
+summary(mod1)
+summary(mod2)
+```
+```{r}
+#variabilidad
+err=0.678
+lote=1.657
+saco=8.434
+total=err+lote+saco
+
+(cbind(err,lote,saco)/total)*100
+```
+```{r}
+confint(mod1)
+confint(mod2)
+```
+probar efecto del saco
+```{r}
+mod1=lmer(resist~(1|lote)+(1|saco1),data = base)
+mod11=lmer(resist~(1|lote),data = base)
+anova(mod1,mod11,test="LRT")
+```
+efecto de lote
+```{r}
+mod1=lmer(resist~(1|lote)+(1|saco1),data = base)
+mod11=lmer(resist~(1|saco1),data = base)
+anova(mod1,mod11,test="LRT")
+```
+
+```{r}
+mod1=lmer(resist~(1|lote)+(1|saco1),data = base)
+mod11=lmer(resist~(1|lote:saco),data = base)
+anova(mod1,mod11,test="LRT")
+```

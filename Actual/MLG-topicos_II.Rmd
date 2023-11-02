@@ -16,12 +16,12 @@ Variable respuesta es binaria
 
 - Binomial negativa
 
-Es útil cuando se busca saber cuántos intentos son necesarios antes de alcanzar un objetivo en situaciones como lanzar una moneda hasta obtener 3 caras o jugar a los bolos hasta derribar 5 pines.
+Es útil cuando se busca saber cuántos intentos son necesarios antes de alcanzar un objetivo en situaciones como lanzar una moneda hasta obtener 3 caras o jugar a los bolos hasta derribar 5 pines. ademas se puede usar tambien en conteos
 
 - Poisson
 
 La distribución de Poisson es como contar cosas raras que suceden poco a
-poco. Imagina que estás mirando a través de una ventana y cuentas
+poco. por ejemplo que estás mirando a través de una ventana y cuentas
 cuántos coches pasan por la calle en una hora. La distribución de
 Poisson te ayuda a saber la probabilidad de que pase un número
 específico de coches en ese tiempo.
@@ -50,6 +50,22 @@ $$Y|i,j,B,F\sim Poi(\lambda_{i,j,B,F})$$
 **Interpretacion de funcion de enlace:** la funcion de enlace entre la parte lineal (componente sistematico) y el valor esperado de la distribucion condicional es logaritmica
 
 **Error \(\epsilon\):** agragamos el error solo cuando tengo un modelo normal que esta en funcion de \(y_{ij}\) no un glm que esta descrito en funcion de la esperanza, osea si lo escribo solo si lo estoy diciendo en terminos de \(y_{ij}\)
+
+- **Grados de libertad** en lmer
+
+Entonces se tienen a(r-1) grados de libertad, donde a es el número de métodos y r el número de lotes por cada método. En este caso 3*(3-1)=6. El error de subparcela se calcula con n-p-gl.
+
+parcela, donde p es el número de coeficientes (1 de intercepto, 2 de métodos, 3 de temperaturas, 6 de interacción, son 12 coeficientes), por lo que el error de parcela tiene 36-12-6=18 grados de libertad. La probabilidad para la interacción se calcula con el error de subparcela.
+
+- Para diseños anidados el analisis que podemos hacer 
+
+Podemos probar la variabilidad que agrega cada nivel(lmer) 
+
+Podemos obtener los intervalos de confianza(confint)
+
+Podemos probar el efecto de algun factor(anova)
+
+Esto debido al factor aleatorio que se le atribuye, por lo cual no tiene sentido hacer comparaciones directas ya que los factores que se tienen son una muestra de una poblacion mas amplia
 
 ## Librerias 
 ```{r eval=FALSE}
@@ -94,6 +110,7 @@ h=as.data.frame(h)
 base$pulpa_lote=paste(base$metodo,base$lote,sep = "-")
 ```
 
+- **Sumamente util para diseños anidados**
 ```{r eval=FALSE}
 base$pulpa_lote=base$metodo:base$lote
 ```
@@ -140,6 +157,7 @@ xyplot(trigli~maq,group=dia,type="a",data = base,auto.key=list(columns=4))
 ```
 
 ```{r eval=FALSE}
+#En los diseños de parcela divididas se pone más énfasis al factor que está en la subparcela, por lo que ese factor debe colocarse en groups, mientras que el factor de parcela se coloca en el eje X.
 xyplot(res~lote|metodo,groups = temp,type=c("a","p"),data = base,auto.key=list(columns=4))
 ```
 
@@ -193,11 +211,11 @@ $log(\frac{p}{1-p})=-2.43+2.15D_{200}+2.29D_{400}+3.05D_{800}$
 
 $log(\frac{p}{1-p})=-1.41+0.003D$
 
-- Ejemplo **hojas y binomial negativa** / propenciones
+- Ejemplo **hojas** / propenciones
 ```{r eval=FALSE}
 mod1=glm(cbind(mal,thojas-mal)~dosix,family = binomial,data = base)
 ```
-
+- Ejemplo binomial negativa
 ```{r eval=FALSE}
 #binomial negativa library(MASS)
 glm.nb(res~trat1+trat2,data=base)
@@ -270,15 +288,25 @@ $$\delta\sim N(0,\sigma^2_{\delta})$$
 Sintaxis para el modelo
 
 lmer(Y~F2*F1+(1|lote)), donde F2 indica el factor del Nivel 2 que, en este caso, es el método y F1 es el factor del Nivel 1 que es la temperatura.
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(res~metodo*temp+(1|lote),data = base)
+```
 
-Ejemplo del caso que incluia bloques
+- Ejemplo del caso **papel** que incluia bloques
 
 Modelo con interacción entre metodo y temp, dia como bloque.directamente con la función lmer y día como un término aleatorio de Nivel 3, para esto se usa (1|dia/lote1), de esta forma se está diciendo que los lotes son de Nivel 2 y están dentro de los días que son de Nivel 3.
 ```{r eval=FALSE}
 mod1=lmer(res~metodo*temp+(1|dia/lote1),data = base)
+#lote1 era los lotes que se podian sacar por dia
 ```
 
-- Ejemplo **escarabajos** mixto
+
+**interpretacion de los resultados en este caso: ** no se detectaron diferencias en todos los pares; especificamente no se puede decir que el promedio de resistencia para una temperatura de 250 grados sea diferente del de la temperatura 225, asi como tampoco que el de 275 grados sea diferente del de 250 grados, sea ha probado que la resistencia promedio a una temperatura de 275 si es mayor que la de temperaturas bajas como 200 y 225, de igual forma, para las temperaturas de 225 y 250 si se tiene una resistencia promedio mayor que para 200 grados
+
+Hay que notar como las concluciones no dan cifras especificas y esto es debido al factor aleatorio que se le agrego 
+
+- Ejemplo **escarabajos** mixto (efectos aleatorios y glm)
 
 $$log(\frac{\pi_{ij}}{1-\pi_{ij}})=\beta_0+\tau_i+\delta_j$$
 
@@ -296,6 +324,9 @@ mod3=glmer(cbind(M,H)~tipo+(1|parcela),family = "binomial",data = base)
 
 - Ejemplo **escuelas** diseños anidados
 
+No se analiza la interacción cuando el diseño es anidado ya que los instructores que están
+en una escuela no son los mismos que están en otra escuela.
+
 $$\mu_{ij}= \mu+\alpha_i+\beta_{j(i)}$$
 
 \(\alpha_i=\) efecto de la i-esima escuela
@@ -306,12 +337,84 @@ $$\mu_{ij}= \mu+\alpha_i+\beta_{j(i)}$$
 mod5=lm(puntaje~escuela+escuela/instructor, data = base)
 ```
 
+- **H0**
+
+Los puntajes promedio para cada par de instructores dentro de cada escuela son iguales.
+
+- Interpretacion del anova
+
+Una línea que parece una interacción que dice
+escuela:instructor, pero que en realidad debería leerse instructor(escuela), es decir, instructor
+dentro de escuela.
+
+- Alternativa en escuelas **escuelas**
+
+Cómo se alteran las conclusiones si se considera que hay muchos instructores en cada región y en el
+experimento los que participaron fueron una muestra
+
+Para analizar el efecto de instructor cambia la hipótesis. En tal caso \(H0:\sigma_\beta^2=0\) Además
+no tendría sentido hacer comparaciones entre instructores a pesar de que se haya demostrado
+un efecto del instructor.
+
+```{r eval=FALSE}
+#Para probar efecto de instructor
+mod2=lmer(puntaje~1+(1|escuela)+(1|instructor1),data=base)
+mod22=lmer(puntaje~1+(1|escuela),data=base)
+summary(mod2)
+anova(mod2,mod22)
+```
+
+```{r eval=FALSE}
+#Intervalo de confianza
+confint(mod2)
+```
+
+```{r eval=FALSE}
+#Resultado
+Computing profile confidence intervals ...
+               2.5 %    97.5 %
+.sig01      4.374292 15.463474
+.sig02      0.000000 11.487301
+.sigma      1.643105  5.306366
+(Intercept) 7.501444 22.498690
+```
+**Interpretacion:** El intervalo de confianza para la desviación estándar de los coeficientes de escuela limita con
+el cero, lo cual hace que no se rechace la hipótesis nula referente a la igualdad de medias entre
+escuelas. Sin embargo, se siguen viendo diferencias entre los instructores dentro de escuelas
+pero no interesa comparar los instructores de forma específica.
+
+**Conclusión:** se encontró que la escuela de la Región K obtiene calificaciones promedio más
+altas que las otras dos escuelas, pero además dentro de cada escuela, hay diferencias entre los
+dos instructores. Del gráfico que se presentó al inicio, se observa que uno de los instructores de
+la Región K tiene calificaciones mayores y, aunque su compañero tiene calificaciones más bajas
+que las de él, juntos hacen que esta escuela sobresalga. Cabe preguntarse si el desempeño de
+estos dos instructores se debe a mejores condiciones en esta escuela, a que los estudiantes que
+llegan tienen mayor motivación, o a que realmente estos instructores dan más atención a sus
+estudiantes. El desempeño de la escuela no puede desligarse del desempeño de los instructores,
+y la causa de los puntajes altos en la Región K no es clara puesto que los estudiantes no fueron
+asignados aleatoriamente a las escuelas.
+
+
 - Ejemplo **cemento** diseños anidados con efecto aleatorio
 ```{r eval=FALSE}
-mod0=lmer(resist~1+(1|saco1)+(1|lote),data=base)
-mod2=lmer(resist~1+(1|lote:saco)+(1|lote),REML=F,data=base)
-mod3=lmer(resist~1+(1|lote),REML=F,data=base)
+#Modemos utilizados
+mod0=lmer(resist~1+(1|saco1)+(1|lote),data=base) #saco1 es una variable recodificada para el diseño anidado con base$lote:base$saco
+mod2=lmer(resist~1+(1|lote:saco)+(1|lote),REML=F,data=base) #Opcion sin confirmar
+mod3=lmer(resist~1+(1|lote),REML=F,data=base) #Para probar el efecto del saco
 ```
+- Interpretacion de los intervalos (confint)
+```{r eval=FALSE}
+Computing profile confidence intervals ...
+                 2.5 %    97.5 %
+.sig01       2.1579337  4.053589
+.sig02       0.0000000  2.946591
+.sigma       0.6520234  1.085448
+(Intercept) 58.6636504 61.443016
+```
+
+**Interpretacion:** En estos resultados, sig01 es la desviación estándar de saco, mientras que sig02 es la
+desviación estándar de lote. El intervalo correspondiente a lote tiene como límite inferior
+cero, lo cual es una indicación de que esa fuente de variabilidad no es importante.
 
 ## Formulas
 
@@ -338,6 +441,8 @@ base = base %>%mutate(res = case_when(clase=="muertos"~1,TRUE~0))
 ```{r eval=FALSE}
 # En el resultado se debe interpretar sigma como la desviación estándar del error y sigma01 la desviación estándar de lote.
 round(confint(profile(mod1)),3)
+# En escarabajos 2 era el contraste resultante en suma nula
+exp(confint(mod11)*2)
 ```
 **Interpretacion** del intervalo de colorantes: Puesto que el intervalo de 95% de confianza va de 12.2 a 84.1 (no llega al extremo de cero),
 se confirma que la fuente de variabilidad de lote a lote no es nula. Sin embargo, ese intervalo
@@ -388,9 +493,9 @@ pchisq(q=LTR,df=gl,lower.tail = F,log.p = F)
 
 - Prueba de razón de verosimilitud (LRT) - drop
 ```{r eval=FALSE}
-#Recordar que dro1p es solo para las H0 de efectos fijos/ no nos sirve para el de varianzas osea de efectos aleatorios mientras que anova es para aleatorios etc
+#Recordar que dro1p es solo para las H0 de efectos fijos / no nos sirve para el de varianzas osea de efectos aleatorios mientras que anova es para aleatorios etc
 
-#para probar H0 en un diseno multinivel
+#para probar H0 en un diseno multinivel (fijos)
 drop1(mod1,test = "Chisq")
 
 #para propenciones
@@ -399,15 +504,16 @@ drop1(mod1,test = "LRT")
 #(quasipoisson) prueba F
 drop1(mod2,test = "F")
 
-#para disenos anidados
+#binomial negativa
+drop1(mod1,test = "LRT")
+
+#para disenos anidados 
 anova(mod5)
 
 #para disenos anidados comparando dos modelos/efectos aleatorios
 #H0 efecto tipo de recolecta es distinto de cero
 anova(mod2,mod3,test="LRT")
 
-#binomial negativa
-drop1(mod1,test = "LRT")
 ```
 
 - Comparaciones con **emmeans**
@@ -419,7 +525,7 @@ emmeans(mod1, pairwise~temp|metodo, adjust="bonferroni") #para comparar las temp
 emmeans(mod2, pairwise~temp, adjust="bonferroni") #para comparar temperatura
 ```
 
-- Comparacion de modelos con el metodo de momentos
+- Comparacion de modelos con el metodo de momentos **(anova)**
 ```{r eval=FALSE}
 mod1=glm(cbind(M,H)~tipo+parcela,family="binomial",data=base) #modelo con el efecto que queremos probar 
 mod2=glm(cbind(M,H)~parcela,family="binomial",data=base)
@@ -493,8 +599,23 @@ r=2 #replicas
 scres=sum(r*h^2);scres
 #h son los efectos
 ```
+- Grados de libertad
+```{r eval=FALSE}
+gl=(2-1)*3
+gl
+```
+**Interpretacion:** Dentro de cada escuela hay dos instructores diferentes por lo que hay un grado de libertad
+para los instructores de cada escuela. Como son 3 escuelas se tiene en total 3 grados de
+libertad.
 
-- Efectos directamente
+- Cuadrado medio
+```{r eval=FALSE}
+scres/gl
+```
+**Interpretacion:** El cuadrado medio de instructor dentro de escuela es 189.2. Esta es una medida de la
+variabilidad entre los promedios obtenidos por los instructores de cada escuela.
+
+- **Efectos directamente**
 ```{r eval=FALSE}
 model.tables(aov(mod1))
 ```
@@ -603,13 +724,13 @@ L2=L[-5,];ee2=ee[-5]
 LIM.INF=exp(L2-qz*ee2);round(LIM.INF,2)
 ```
 
-- Para limites inferiores en diseños anidados
+- Para limites inferiores ejemplo anidados
 ```{r eval=FALSE}
+gl=nrow(base)-length(coef)
 alpha=0.10
-t=qt(1-alpha/2,6)
-
-inf=L[-3]-t*ee[-3]
-round(inf,2)
+qt=qt(1-alpha,gl); LIM=L-qt*ee #cuando son dos hay que dividir el alpha en 2
+row.names(LIM)=row.names(p)
+round(LIM,1)
 ```
 **Interpretacion:** Con una confianza globla del 95%, se espera que la propencion de daño
 para la d800 sea almenos 40% mayor que para la d400, almenos 61% mayor
@@ -618,6 +739,14 @@ otra parte la propencion de daño de la d400 es almenos 6 veces la de d0
 y la propencion de daño de la d200 es almenos 5 veces la de d0
 
 **interpretacion:** Estas cantidades representan la razón entre cada par de medias, por ejemplo, la media de miel es un 19% mayor que la media de sirope, la media de miel es 6.7 veces la media de vinagre, etc. Se nota que las que más se diferencian son miel y vinagre, así como sirope y vinagre.
+
+**Interpretacion inferior diseños anidados:** En la Región K, el puntaje promedio del instructor 1 es al menos 10.7 puntos mayor que el del instructor 2, en la Región D, el puntaje promedio del instructor 2 es al menos 7.7 puntos
+mayor que el del instructor 1, y en la Región Central, el puntaje promedio del instructor 1 es
+al menos 11.2 puntos mayor que el del instructor 2. Todo esto se puede asegurar con 90% de
+confianza.
+
+**Intepretacion intervalo al 90% disenos anidados escuelas:** Con 90% de confianza global se puede esperar que el puntaje promedio de la Región K esté al menos 1.86 puntos sobre el de la Región D, y al menos 5.11 puntos sobre el de la Región
+Central.
 
 - valores ajustados con la función predict
 ```{r eval=FALSE}
@@ -727,7 +856,7 @@ por lo que el OR se simplifica a:
 $$OR(1:2)==e^{2\alpha_1}$$
 
 
-## Generalidades para el caso continuo en propenciones
+### Generalidades para el caso continuo en propenciones
 
 - Probabilidad de daño para una dosis de 300 g/l
 ```{r eval=FALSE}

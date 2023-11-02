@@ -70,6 +70,10 @@ mod1=lmer(prod~1+(1|lote),data = base)
 summary(mod1)
 ```
 % atribuible a cada varianza
+
+"A partir de la descomposición de la variancia se obtiene el porcentaje de la variabilidad
+debida a las diferencias producidas por los lotes. La variancia de las medias de lote a lote es
+1764, mientras que la la variancia residual es 2451. De esta forma se obtiene el porcentaje:"
 ```{r}
 lote=1764     
 resi=2451
@@ -83,7 +87,6 @@ lote/(resi+lote)
 mod2=lm(prod~lote,data = base)
 anova(mod2)
 ```
-
 ```{r}
 cmres=2451.2
 cmlote=11271.5

@@ -100,8 +100,8 @@ b=mod1$coef
 OR=exp(2*b[2])
 round(OR,2)
 ```
-En una parcela específica, la propensión de encontrar un macho cuando se usa lampareo es
-74% mayor que cuando se usa alumbrado público.
+"En una parcela específica, la propensión de encontrar un macho cuando se usa lampareo es
+74% mayor que cuando se usa alumbrado público."
 
 3. Realice la prueba LRT para determinar si existe un efecto del tipo de recolecta en la proporción de
 machos (o hembras) capturados.
@@ -153,8 +153,8 @@ OR=exp(2*b[2])
 round(OR,2)
 ```
 
-Ahora el OR es 1.63 el cual es similar al obtenido cuando las parecelas se tomaron como
-fijas, sin embargo, es un poco menor.
+"Ahora el OR es 1.63 el cual es similar al obtenido cuando las parecelas se tomaron como
+fijas, sin embargo, es un poco menor."
 
 • En el gráfico anterior, se puede apreciar uan posible interacción entre parcela y tipo de recolecta.
 Usualmente se asume que no existe interacción cuando se tiene un diseño con bloques, porque típicamente
@@ -194,6 +194,15 @@ asociada da 1. Se asume que no hay interacción entre parcela y tipo de recolect
 • Vuelva al modelo sin interacción y realice la prueba adecuada para determinar si existe un efecto del
 tipo de recolecta.
 
+"En la parte de efectos fijos del anova sale la probabilidad asociada al tipo de recolecta para
+la prueba de Wald (con una z). Esta probabilidad es 0.018 con la cual se tiene evidencia para
+rechazar la hipótesis nula sobre la ausencia de efecto del tipo de recolecta.
+Otra forma de hacer esta prueba es comparando este modelo con uno sin el tipo de recolecta
+y usando LRT. En este caso la probabilidad asociada es muy parecida (0.016) y se llega a la
+misma conclusión. De hecho, hay dos formas de obtener esta probabilidad, comparando dos
+modelos mediante anova, y con la función drop1, indicando test=“Chisq”.
+"
+
 ```{r}
 #mod3=glmer(cbind(M,H)~tipo+(1|parcela),family="binomial",data=base)
 mod4=glmer(cbind(M,H)~(1|parcela),family="binomial",data=base)
@@ -230,9 +239,9 @@ ic.inf=exp(eta-qz*ee[2])
 round(cbind(ic.inf,ic.sup,ee),2)
 ```
 
-Los intervalos son similares pero no idénticos. Con el modelo mixto se concluye que el OR
+"Los intervalos son similares pero no idénticos. Con el modelo mixto se concluye que el OR
 es mayor que 1.1 y menor que 2.5. Particularmente el intervalo con efectos aleatorios es un
-poco más angosto que el que usó bloques fijos.
+poco más angosto que el que usó bloques fijos."
 
 
 5. Para terminar es importante escribir el modelo teórico que se está usando. Como se trata de un modelo
@@ -254,26 +263,26 @@ summary(mod3)
 confint(mod3)
 ```
 
-La varianza de parcela a parcela es 0.315, la desviación estándar es 0.561 y su intervalo va
-de 0.273 a 1.323.
+"La varianza de parcela a parcela es 0.315, la desviación estándar es 0.561 y su intervalo va
+de 0.273 a 1.323."
 
 • ¿Se puede obtener a partir de los resultados una estimación de la probabilidad de obtener un macho
 con un cierto tipo de alumbrado en general en la población?
 
-Para responder a esta pregunta habría que pensar en una probabiliad condicional al tipo de
+"Para responder a esta pregunta habría que pensar en una probabiliad condicional al tipo de
 recolecta solamente, pero general para la parcela. Uno podría pensar que puesto que el efecto
 de la parcela tiene esperanza cero, entonces bastaría con colocar un cero como efecto de la
 parcela y con eso se obtendría la probabilidad para cada tipo de recolecta. Sin embargo, eso se
 podría hacer si se asume que las poblaciones de escarabajos son de igual tamaño en todas las
 parcelas, de lo contrario, aquellas parcelas que tengan mayor población de escarabajos estarían
-dominando la probabilad general de que un escarabajo sea macho.
+dominando la probabilad general de que un escarabajo sea macho."
 
-Conclusión: el objetivo del estudio era determinar si el tipo de recolecta podría llevar a
+"Conclusión: el objetivo del estudio era determinar si el tipo de recolecta podría llevar a
 resultados diferentes en cuanto a la composición por sexos de esta especie. El investigador está
 interesado en determinar la composición real, sin embargo, queda claro que según el método
 que utilice, la probabilidad de obtener un macho o una hembra se verá alterada, lo cual puede
 dar una estimación inadecuada de la composición real según el método que se utilice. No queda
-claro cuál de los dos métodos produce estimaciones más cercanas a la realidad.
+claro cuál de los dos métodos produce estimaciones más cercanas a la realidad."
 
 
 

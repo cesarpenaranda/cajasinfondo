@@ -20,8 +20,8 @@ analíticas de resistencia de cada una de los 30 sacos resultantes.
 Ejercicios
 1. Justifique si los factores están cruzados o anidados.
 
-El factor saco está anidado dentro del factor lote, ya que los 3 sacos que se eligen dentro
-de cada lote obviamente son diferentes en los diferentes lotes.
+"El factor saco está anidado dentro del factor lote, ya que los 3 sacos que se eligen dentro
+de cada lote obviamente son diferentes en los diferentes lotes."
 
 2. Cuando los factores están anidados se debe tener cuidado con la definición del factor anidado, ya que
 no pueden repetirse los niveles de este factor en los diferentes niveles del factor externo. Abra el archivo
@@ -35,11 +35,19 @@ load("bases/cemento.Rdata")
 table(base$saco,base$lote)
 ```
 
+"Aquí se observa que los sacos se llaman siempre a, b y c en todos los lotes llamados A, B, C,
+etc. Además en cada combinación hay 2 datos, es decir, hay dos réplicas en cada saco dentro
+de cada lote."
+
+
 • Puede cruzar las dos variables y hacer una nueva variable llamada saco1 usando la combinación de
 ambas variables: base$lote:base$saco.
 ```{r}
 base$saco1=base$lote:base$saco
 ```
+
+"Ahora solo los sacos llamados A:a, A:b y A:c tienen datos en el lote A que es el lote al que
+pertenecen esos sacos. Aquí se nota la estructura anidada que exige la función lmer."
 
 • Obtenga la tabla cruzada de lote y saco1. Note la diferencia.
 ```{r}
@@ -50,6 +58,8 @@ table(base$lote,base$saco1)
 ```{r}
 dotplot(resist~saco|lote,data=base)
 ```
+"Dentro de algunos lotes los promedios de resistencia son muy diferentes de un saco a otro,
+por ejemplo en los lotes C, D, I."
 
 4. Analice las fuentes de variabilidad que pueden estar incidiendo en la resistencia del cemento. Haga el
 análisis de diversas formas. ¿Son consistentes los resultados obtenidos con los diferentes enfoques?
@@ -60,6 +70,15 @@ ggplot(base,aes(lote,resist)) + # base del grafico
   geom_hline(yintercept = mean(base$resist), color = "red", linetype = "dashed") + # agregar la media general
   stat_summary(fun = mean, geom = "point", shape = 16, size = 3, color = "red")
 ```
+"Hay grandes diferencias en resistencia entre algunos de los lotes, por ejemplo, el lote A
+tiene un promedio bastante alto y mucho mayor que el del lote E cuyo promedio es muy bajo."
+
+
+
+
+"Un primer enfoque es obtener los componentes de variancia y ver el porcentaje que cada
+componente aporta a la variabilidad total. Hay que notar que no se incluye la interacción en
+ningún momento debido a que los factores están anidados."
 
 ```{r}
 #!!! porque funciona de este modo mod1=lmer(resist~(1|lote)+(1|lote:saco),data = base)
@@ -75,6 +94,13 @@ total=saco+lote+err
 h=cbind(saco,lote,err)
 h/total*100
 ```
+
+"La variancia total es 10.768 (8.434+1.657+0.678). La proporción que corresponde al saco
+es 0.78 (8.434/10.768), mientras que la parte que corresponde a lote es 0.15 (1.657/10.768).
+Entonces, se ve claramente que la mayor fuente de variabilidad se debe a las diferencias entre
+los sacos de un mismo lote, mientras que entre un lote y otro no hay tanta variabilidad, ya
+que la de saco es el 78% mientras que la de lote es solo el 15%"
+
 78.3% de la variabilidad es debida al saco
 15.3% de la variabilidad es debida al lote
 
@@ -92,7 +118,19 @@ mod2=lmer(resist~1+(1|lote:saco)+(1|lote),REML=F,data=base)
 mod3=lmer(resist~1+(1|lote),REML=F,data=base)
 anova(mod2,mod3,test="LRT")
 ```
-Es claro el efecto del saco dentro de lote, puesto que se obtiene un valor de Chi-cuadrado
+"Es claro el efecto del saco dentro de lote, puesto que se obtiene un valor de Chi-cuadrado
 de 54.6, con un grado de libertad, y la probabilidad asociada es menor a 0.0001. Con este
 método no se prueba el efecto del lote porque no tendría sentido hacer un modelo sin el lote,
-ya que los sacos están anidados en los lotes.
+ya que los sacos están anidados en los lotes."
+
+"Conclusión: en este ejercicio se utilizaron 3 formas de análisis: 1) descomposición de la
+variabilidad total y análisis de la contribución de cada fuente de variación (con la función lmer
+y la variable saco1), 2) criterio con intervalos de confianza para las desviaciones estándar (con
+la función confint a partir del mismo modelo del punto anterior), y 3) comparación de dos
+modelos (modelo completo contra modelo eliminando saco1 también con lmer).
+El primer enfoque da resultados que ayudan a ver que la mayor fuente de variabilidad es de
+saco a saco, mientras que la variabilidad de lote a lote no es muy alta. Con este enfoque no
+se hace ninguna prueba, pero se complementa con el segundo enfoque, donde el intervalo de
+confianza de la desviación estándar de lote apoya la conclusión de que esta no es una fuente
+de variabilidad importante. El tercer enfoque tiene la limitante de que no permite probar si
+hay un efecto del lote, pues no se puede hacer un modelo eliminando el factor lote."

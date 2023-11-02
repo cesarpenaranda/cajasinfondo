@@ -50,13 +50,18 @@ dotplot(puntaje~instructor | escuela, data = base)
 xyplot(puntaje~instructor,type=c("a","p"),groups=escuela, data = base,auto.key = list(columns=3))
 ```
 
+"Es más conveniente usar instructor porque la otra forma guarda el campo para todos los
+instructores en todas las escuelas, lo cual no tiene sentido."
+
 • ¿Se puede esperar que exista interacción entre el instructor y la escuela?
 
-si, en este caso podriamos esperar una interacion entre la escuela y el instructor
+"No se analiza la interacción cuando el diseño es anidado ya que los instructores que están
+en una escuela no son los mismos que están en otra escuela."
 
 • Comente si se espera que haya un efecto del instructor sobre el puntaje promedio dentro de cada escuela?
 
-si, se espera un efecto del intructor dado que los promedios de cada uno son distintos
+"A partir de este gráfico, sí parece haber diferencias entre los puntajes promedio de los
+diferentes instructores dentro de cada escuela."
 
 • Busque una forma de analizar gráficamente las diferencias entre escuelas. ¿Qué se puede concluir?
 ```{r}
@@ -65,6 +70,10 @@ xyplot(puntaje~instructor,type=c("a","p"),groups=escuela, data = base,auto.key =
 ```{r}
 bwplot(puntaje~escuela,data = base)
 ```
+"Se nota que algunas escuelas tienen puntajes promedio más altos que otras, por lo que sí se
+esperaría un efecto de la escuela en el aprendizaje. En particular, se notan mayores diferencias
+entre la escuela Central y Región K. Sin embargo, aquí no se está aislando la variabilidad que
+producen los instructores, lo que hace que esas diferencias no sean tan claras."
 
 2. Efectos de instructor:
 • Obtenga manualmente los efectos de instructor dentro de escuela.
@@ -86,19 +95,19 @@ scres=sum(r*h^2);scres
 
 • ¿Cuántos grados de libertad tiene el factor anidado instructor?
 ```{r}
-gl=(2-1)*3 #!!! preguntar formula de estos gl 
+gl=(2-1)*3
 ```
 
-Dentro de cada escuela hay dos instructores diferentes por lo que hay un grado de libertad
+"Dentro de cada escuela hay dos instructores diferentes por lo que hay un grado de libertad
 para los instructores de cada escuela. Como son 3 escuelas se tiene en total 3 grados de
-libertad.
+libertad."
 
 • Calcule el cuadrado medio de instructor dentro de escuela y explique su significado.
 ```{r}
 scres/gl
 ```
-El cuadrado medio de instructor dentro de escuela es 189.2. Esta es una medida de la
-variabilidad entre los promedios obtenidos por los instructores de cada escuela.
+"El cuadrado medio de instructor dentro de escuela es 189.2. Esta es una medida de la
+variabilidad entre los promedios obtenidos por los instructores de cada escuela."
 
 3. Comparación de instructores.
 • Establezca con palabras la hipótesis nula al comparar los instructores.
@@ -125,13 +134,17 @@ anova(mod5)
 • Observe el cuadrado medio de instructor y compárelo con el obtenido anteriormente. ¿Se rechaza la
 hipótesis nula referente al instructor?
 
-coinciden con el obtenido anteriormente, y si se rechaza la hipotesis referente a intructor
+"El cuadrado medio de instructor es 189.2, el cual coincide con el obtenido anteriormente. El
+cuadrado medio residual es 7, con esto se obtiene un valor de F igual a 27.0, el cual tiene una
+probabilidad asociada muy pequeña (0.0007). De esta forma se decide rechazar la hipótesis de
+igualdad de medias para los instructores dentro de cada escuela. En al menos una escuela los
+instructores no tienen los mismos puntajes promedio."
 
 • Obtenga los efectos de instructor.
 
 ```{r}
 mod5$coef[4:6]
-model.tables(aov(mod1))
+model.tables(aov(mod5))
 ```
 
 5. Comparaciones entre instructores:
@@ -142,12 +155,23 @@ mod5$coefficients
 
 • ¿A qué corresponden los últimos 3 coeficientes?
 
-a los efectos de los intructores
+Esos 3 coeficientes son los efectos del primer instructor dentro de cada escuela.
 
 • Haga las comparaciones que tengan sentido entre los instructores. No tiene sentido comparar todos los
 pares de instructores, puesto que no todos pertenecen a las mismas escuelas. Por ejemplo, no tiene
 sentido comparar un instructor de la Región D con un instructor de la Región K. Use la corrección de
 Bonferroni con un nivel de significancia de 0.10 y confianza de 90%.
+Para hacer comparaciones entre instructores hay que escribir el modelo adecuadamente
+de la siguiente forma:
+Para hacer comparaciones entre instructores hay que escribir el modelo adecuadamente
+de la siguiente forma:
+
+#########
+
+"Todas las diferencias se expresan simplemente como el doble de los coeficientes de los
+instructores dentro de cada escuela. Por lo tanto, los contrastes están en función de los
+últimos tres coeficientes solamente. No debe hacerse ningún ajuste porque las comparaciones
+son independientes entre escuelas."
 ```{r}
 coef=mod5$coefficients
 #escuela K
@@ -182,6 +206,19 @@ p>0.10
 round(p,3)
 ```
 
+"Como no se hace ningún ajuste, las probabilidades resultantes se comparan con α directamente. Se observan diferencias entre los pares de instructores dentro de todas las escuelas."
+
+Ahora se construyen las tres cotas inferiores con 90% confianza de forma independiente.
+```{r}
+qt=qt(0.9,6); LIM=L-qt*ee
+row.names(LIM)=row.names(p)
+round(LIM,1)
+```
+"En la Región K, el puntaje promedio del instructor 1 es al menos 10.7 puntos mayor que el
+del instructor 2, en la Región D, el puntaje promedio del instructor 2 es al menos 7.7 puntos
+mayor que el del instructor 1, y en la Región Central, el puntaje promedio del instructor 1 es
+al menos 11.2 puntos mayor que el del instructor 2. Todo esto se puede asegurar con 90% de
+confianza."
 
 6. Haga las comparaciones entre las diferentes escuelas usando Tukey con 10% de significancia en pruebas
 de una cola.
@@ -206,6 +243,9 @@ gl=nrow(base)-length(coef)
 ptukey(t*sqrt(2),3,gl,lower.tail = F)
 ```
 
+"Puesto que las pruebas son de una cola con 10% de significancia, las probabilidades deben
+compararse contra α = 0.10. Se observan diferencias entre la Región K y las otras dos escuelas"
+
 • Obtenga cotas inferiores de 90% de confianza para la diferencia de medias entre los pares de escuelas en
 que encontró diferencias.
 ```{r}
@@ -216,9 +256,15 @@ inf=L[-3]-t*ee[-3]
 round(inf,2)
 ```
 
+Con 90% de confianza global se puede esperar que el puntaje promedio de la Región K esté
+al menos 1.86 puntos sobre el de la Región D, y al menos 5.11 puntos sobre el de la Región
+Central.
+
 7. ¿Cómo se alteran las conclusiones si se considera que hay muchos instructores en cada región y en el
 experimento los que participaron fueron una muestra?
 
+"Para analizar el efecto de instructor cambia la hipótesis. En tal caso H0 : σ2
+β = 0. Además no tendría sentido hacer comparaciones entre instructores a pesar de que se haya demostrado un efecto del instructor."
 ```{r}
 #!!!! en este caso que ocurre con la sintaxis de anidamiento
 #mod6=lmer(puntaje~(1|escuela)+(1|escuela:instructor1),data=base) porque esto funciona
@@ -226,7 +272,19 @@ mod6=lmer(puntaje~(1|escuela)+(1|instructor1),data=base)
 summary(mod6)
 confint(mod6)
 ```
-El intervalo de confianza para la desviación estándar de los coeficientes de escuela limita con
+"El intervalo de confianza para la desviación estándar de los coeficientes de escuela limita con
 el cero, lo cual hace que no se rechace la hipótesis nula referente a la igualdad de medias entre
 escuelas. Sin embargo, se siguen viendo diferencias entre los instructores dentro de escuelas
-pero no interesa comparar los instructores de forma específica.
+pero no interesa comparar los instructores de forma específica."
+
+"Conclusión: se encontró que la escuela de la Región K obtiene calificaciones promedio más
+altas que las otras dos escuelas, pero además dentro de cada escuela, hay diferencias entre los
+dos instructores. Del gráfico que se presentó al inicio, se observa que uno de los instructores de
+la Región K tiene calificaciones mayores y, aunque su compañero tiene calificaciones más bajas
+que las de él, juntos hacen que esta escuela sobresalga. Cabe preguntarse si el desempeño de
+estos dos instructores se debe a mejores condiciones en esta escuela, a que los estudiantes que
+llegan tienen mayor motivación, o a que realmente estos instructores dan más atención a sus
+estudiantes. El desempeño de la escuela no puede desligarse del desempeño de los instructores,
+y la causa de los puntajes altos en la Región K no es clara puesto que los estudiantes no fueron
+asignados aleatoriamente a las escuelas."
+

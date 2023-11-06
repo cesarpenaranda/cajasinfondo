@@ -1,0 +1,395 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-11-02"
+---
+
+## 1.	En el ejercicio de Colorantes del laboratorio, haga la prueba de la razón de verosimilitud para determinar si cada fuente de variación es significativa.
+```{r}
+load("bases/colorantes.Rdata")
+```
+
+- Visualizacion
+```{r}
+xyplot(prod~lote,type=c("a","p"),data=base)
+```
+```{r}
+#Definienco los dos modelos a utilizar
+mod1=lmer(prod~1+(1|lote),REML = F,data = base)
+mod2=lm(prod~1,data = base)
+summary(mod1)
+anova(mod1,mod2)
+```
+
+- Metodo informal
+```{r eval=FALSE}
+dev1=327.33
+coef1=2 #1 intercepto 1 componentes aleatorios
+dev2=332.73
+coef2=1 #1 intercepto
+# Prueba de razon de verosimulitud a pie
+LTR=dev2-dev1
+gl=coef1-coef2
+#valor p
+pchisq(q=LTR,df=1,lower.tail = F,log.p = F)
+```
+
+- Metodo formal
+```{r}
+logLik(mod1)
+logLik(mod2)
+D1=-2*logLik(mod1)
+D2=-2*logLik(mod2)
+
+LTR=D2-D1
+pchisq(D2-D1,df=1,lower.tail = F,log.p = F)
+```
+Se rechaza la \(H0:\sigma^2_{\delta}=0\) por lo que, lote si tiene una fuente de variacion significativa, osea hay variacion de lote a lote
+
+## 2.	Analice los datos de burbujas del laboratorio de bloques del curso Experimentos I, pero tomando en cuenta que las personas son aleatorias. Compare los resultados.
+
+```{r}
+load("bases/Burbujas.Rdata")
+str(base)
+base$bloque=factor(base$bloque)
+base$glicerina=factor(base$glicerina)
+```
+
+7. Análisis con ambos factores.
+(b) Analice si existe interacción entre glicerina y agua.
+```{r}
+mod1=lmer(tiempo~glicerina*agua+(1|bloque),data = base)
+drop1(mod1,test = "Chisq")
+```
+**No hay suficiente evidencia estadistica para rechazar H0, por lo que asumimos que no hay interaccion**
+
+(c) Pruebe si hay efecto de la glicerina en este nuevo diseño.
+```{r}
+mod2=lmer(tiempo~glicerina+agua+(1|bloque),data=base)
+mod2.1=lmer(tiempo~agua+(1|bloque),data=base)
+drop1(mod2,test = "Chisq")
+anova(mod2,mod2.1)
+
+```
+**Se rechaza H0 por lo que podemos esperar un efecto de la glicerina no habiendo igualdad de medias para los niveles de glicerina**
+
+(d) Cuantifique la diferencia con un nivel de confianza de 95%.
+```{r}
+coef=summary(mod2)$coef[,1]
+confint(mod2)
+
+#vectores
+gli60=c(1,0,0,0)
+gli120=c(1,1,0,0)
+#contraste
+h=gli60-gli120
+L=coef%*%h
+L=abs(L)
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod2)%*%h))
+gl=nrow(base)-length(coef)
+alpha=0.05
+qt=qt(1-alpha,gl); LIM=L-qt*ee
+colnames(LIM)=c("gli60_gli120")
+round(LIM,3)
+
+```
+
+(e) Pruebe si hay efecto del tipo de agua en este nuevo diseño.
+```{r}
+drop1(mod2,test="Chisq")
+```
+**Se rechaza H0 para la igualdad de medias en los niveles de tipo de agua, por lo que se puede esperar un efecto del tipo de agua**
+
+(f) Verifique entre cuáles pares de medias hay diferencias y cuantifique
+aquellas donde las diferencias son significativas. Use un nivel de
+signficancia de 5% y un nivel de confianza de 95%.
+
+-Con emmeans
+```{r}
+emmeans(mod2,pairwise~agua,adjust="bonferroni")
+a_d=6.997
+a_n=6.540
+L=cbind(a_d,a_n)
+qt=qt(1-0.05,gl)
+ee=2.05
+LIM=L-qt*ee;LIM
+
+```
+- A pie
+```{r}
+coef=summary(mod2)$coef[,1]
+#vectores individuales
+a=c(1,0,0,0)
+d=c(1,0,1,0)
+n=c(1,0,0,1)
+
+#contrastes
+a_d=a-d
+a_n=a-n
+d_n=d-n
+
+h=cbind(a_d,a_n,d_n)
+L=t(h)%*%coef
+L=abs(L)
+
+#error
+ee=sqrt(diag(t(h)%*%vcov(mod2)%*%h))
+gl=nrow(base)-length(coef)
+k=3
+t=L/ee
+p=pt(t,gl,lower.tail=F);p
+p>0.05/k
+
+ptukey(t*sqrt(2),3,gl,lower.tail = F)
+```
+```{r}
+alpha=0.05
+qt=qt(1-alpha,gl); LIM=L[-3]-qt*ee[-3]
+colnames(LIM)=names(L)
+round(LIM,3)
+```
+
+3.	Una diseñadora de productos gourmet tiene como objetivo determinar el nivel de picante (suave, medio y fuerte) que tiene mayor satisfacción en promedio.    
+El interés del experimento es decidir cuál nivel incrementa la satisfacción de los consumidores potenciales, para esto hace un estudio con personas que gustan de productos alimenticios especializados. 
+La variable respuesta es un índice de satisfacción calculado a partir de 8 preguntas en una escala de 1 al 10. El índice es simplemente el promedio de los puntajes de las 8 preguntas para cada persona. 
+
+La diseñadora incluye dos tipos de tomate para hacer las salsas (cherry y pera).  Para este experimento convoca a 8 personas y a cada una le da a probar todas las 6 combinaciones entre picante y tipo de tomate.  Los datos están en el archivo “salsa3.Rdata”
+La diseñadora espera que una diferencia de medio punto entre dos medias sea suficiente para demostrar que una salsa es más satisfactoria que otra.
+```{r}
+load("bases/salsa3.Rdata")
+str(base)
+```
+- Analisis grafico
+```{r}
+xyplot(puntaje~persona|tomate,groups=pic,type=c("a","p"),data = base,auto.key = list(columns=3))
+```
+
+a.	Haga el análisis adecuado tomando en cuenta que las personas son tomadas de forma aleatoria.
+```{r}
+mod1=lmer(puntaje~tomate*pic+(1|persona),data=base)
+drop1(mod1,test = "Chisq")
+```
+```{r}
+mod1=lmer(puntaje~tomate+pic+(1|persona),data=base)
+drop1(mod1,test = "Chisq")
+```
+**Hay efecto de picante, mas no hay efecto de tomate, esto por las H0 correspondientes**
+
+b.	Analice si hay interacción entre los dos factores del experimento.  Compare la probabilidad asociada a la hipótesis de independencia obtenido con el modelo usando la persona como fija vs el modelo usando la persona como aleatoria.
+```{r}
+mod1=lmer(puntaje~tomate*pic+(1|persona),data=base)
+mod2=lm(puntaje~tomate*pic+persona,data = base)
+drop1(mod1,test = "Chisq")
+drop1(mod2,test = "F")
+```
+**Para el caso de la persona aleatoria la probabilidad asociada es de 0.38 para la H0 de interacion, mientras que para la persona fija la probabilidad asociada es de 0.43 para la H0 de interacion, por lo que en ambos casos se logra asumir independencia entre picante y tomate**
+c.	Escriba el modelo resultante, tanto el que usa persona como fija como el que la usa como aleatoria.  No olvide los detalles.
+
+* Para el modelo con efectos aleatorios
+$$\mu_{ijk}=\beta_0+\tau_i+\alpha_j+\delta_k$$
+El coeficiente \(\tau_i\) esta asociado al i-esimo nivel de picante, con \(\tau_1=0\), mientras que el coeficiente \(\alpha_j\) esta asociado al j-esimo tipo de tomate con, \(\alpha_1=0\), por ultimo \(\delta_k\) esta asociado al efecto k-esima persona(aleatorio), donde \(\delta\sim(0,\sigma^2_\delta)\)
+
+* Para el modelo con efectos fijos
+
+$$\mu_{ijk}=\beta_0+\tau_i+\alpha_j+\gamma_k$$
+El coeficiente \(\tau_i\) esta asociado al i-esimo nivel de picante, con \(\tau_1=0\), mientras que el coeficiente \(\alpha_j\) esta asociado al j-esimo tipo de tomate con, \(\alpha_1=0\), por ultimo \(\gamma_k\) esta asociado al efecto de la k-esima persona, con \(\gamma_1=0\).
+
+d.	Determine si hay un efecto del nivel de picante.  
+```{r}
+mod1=lmer(puntaje~tomate+pic+(1|persona),data=base)
+drop1(mod1,test = "Chisq")
+```
+**La probabilidad asociada al tipo de picante es p<0.0001 por lo que se rechaza H0 de igualdad de medias para los niveles de picante, por lo que hay un efecto del tipo de picante (independientemente del tipo de tomate)**
+
+e.	Haga comparaciones múltiples.
+```{r}
+emmeans(mod1,pairwise~pic,adjust="bonferroni")
+```
+
+```{r}
+coef=summary(mod1)$coef[,1];coef
+contrasts(base$pic)
+```
+```{r}
+#vectores individuales
+alto=c(1,0,0,0)
+medio=c(1,0,1,0)
+bajo=c(1,0,0,1)
+#contrastes
+alto_medio=alto-medio
+alto_bajo=alto-bajo
+medio_bajo=medio-bajo
+
+h=cbind(alto_medio,alto_bajo,medio_bajo)
+L=t(h)%*%coef
+L=abs(L)
+
+#erro
+ee=sqrt(diag(t(h)%*%vcov(mod1)%*%h))
+t=L/ee
+k=3
+#probabilidad asociada
+gl=37
+p=pt(t,gl,lower.tail = F);p
+p>0.05/k
+#con tukey
+ptukey(t*sqrt(2),3,gl,lower.tail = F)
+```
+**Se encuentran diferencias en los tres niveles de picante, siendo el promedio de medio el mas alto**
+
+4.	Se quiere evaluar la variabilidad entre muestras de penicilina usando el método Bacillus subtilis.  
+
+•	Se toman 6 muestras de penicilina.  El interés del estudio no es comparar esas muestras de penicilina específicamente sino qué tanta variabilidad se puede encontrar entre muestras de penicilina en general.
+•	En este método se toma un medio inoculado y se coloca en una placa Petri de aproximadamente 90mm de diámetro (plato).  
+•	Cuando el medio está listo se pegan 6 pequeños cilindros huecos (alrededor de 4mm de diámetro) en la superficie a intervalos igualmente espaciados. 
+•	Se colocan unas gotas de cada muestra de penicilina que van a ser comparadas en los respectivos cilindros y la placa entera se coloca en una encubadora por un tiempo determinado. 
+•	Cada placa se puede considerar como un bloque que contiene las 6 muestras de penicilina que van a ser comparadas. 
+•	La penicilina se difunde de los cilindros en el medio y esto produce una clara zona de inhibición del crecimiento de los organismos que puede medirse fácilmente. 
+•	La respuesta es el diámetro (mm) de la zona de inhibición de crecimiento del organismo.  El diámetro de la zona está relacionado con la concentración de la penicilina en la solución. 
+
+Los datos están en el archivo “penicilina.Rdata”.
+```{r}
+load("bases/penicilina.Rdata")
+```
+
+a.	Represente los datos gráficamente y comente sobre la variabilidad entre muestras de penicilina.
+```{r}
+bwplot(diam~muestra,data = base)
+bwplot(diam~plato,data = base)
+```
+```{r}
+xyplot(diam~plato,groups=muestra,type=c("a","p"),data = base,auto.key = list(columns=4))
+```
+
+b.	Escriba el modelo en términos del individuo y explique cuál (cuáles) es (son) el (los) componente (s) aleatorio (s) del modelo.
+
+La i-esima muestra dentro j-esimo plato se expresa como:
+$$y_{ij}=\beta_0+\alpha_i+\delta_j+\epsilon_{ij}$$
+El coeficiente \(\tau_i\) esta asociado a la i-esima muestra (efecto aleatorio) donde \(\tau\sim N(0,\sigma^2_\tau)\), mientras que el coeficiente \(\delta_j\) esta asociado al j-esimo plato (efecto aleatorio) donde \(\delta\sim N(0,\sigma^2_\delta)\)
+
+c.	Escriba el modelo para la media.
+$$E[Y|muestra=i,plato=j]=\mu_{ij}=\beta_0+\alpha_i+\delta_j$$
+$$E[Y|muestra=1]=\mu_i=\beta_0+\alpha_i$$
+d.	Escriba las hipótesis relevantes que quieren ser puestas a prueba.
+Hay un efecto de muestra, la varianza de muestra a muestra es mayor a cero
+$$H0:\sigma^2_L=0$$
+$$H1:\sigma^2_L>0$$
+e.	¿Qué se puede concluir de este experimento? 
+
+```{r}
+mod1=lmer(diam~(1|plato)+(1|muestra),data=base)
+mod12=lmer(diam~(1|muestra),data=base)
+mod13=lmer(diam~(1|plato),data=base)
+confint(mod1)
+anova(mod1,mod12,test="LRT")
+anova(mod1,mod13,test="LRT")
+```
+**Interpretacion:** Se concluye que la variabilidad de muestra a muestra es mayor a cero, por lo que se puede esperar que haya diferencias en la respuesta promedio de una muestra de penisilina a otra.
+
+para obtener las estimaciones de las varianzas usamos el metodo de maxima verosimilitud(sin restriccion) con REML=F 
+```{r}
+mod1=lmer(diam~(1|plato)+(1|muestra),REML = F,data=base)
+summary(mod1)
+plato=0.7150
+muestra=3.1352
+err=0.3024
+total=plato+muestra+err
+(cbind(plato,muestra,err)/total)*100
+```
+
+**Interpretacion de variabilidad:** La variabilidad entre muestras de penicilina respresenta el 75% de la variabilidad total lo cual es bastante alto
+**Interpretacion del intervalo:** Con un 95% de confianza se espera que la desviacion estandar de muestra a muestra este entre 1.10 a 3.56, lo cual es un valor superior a cero y confirma la alta variabilidad de muestra a muestra.
+
+**Mi interpretacion:** En estos resultadosm sigma01 es la desviacion estandar de plato, mientras que sigma02 es la desviacion estandar de muestra, con un 95% de confianza se espera que la variabilidad de muestra este entre 1.09  y 3.55 , el intervalo correspondiente a muestra no limita con cero, y confirma la alta variabilidad de muestra a muestra, lo cual es una indicacion de que esa fuente de variabilidad no es nula, por otra parte 75% de la variabilidad total es debido a la muestra lo cual es bastante alto. ademas haciendo las pruebas de H0 por el metodo de momentos obtenemos que la variabilidad muestra a muestra y de plato a plato es mayor a cero, por lo que se espera que la respesta promedio varie.
+
+5.	Se llevó a cabo un experimento para investigar la capacidad o aptitud de un sistema de medición. Se seleccionaron diez piezas al azar y tres operadores escogidos aleatoriamente midieron cada pieza. Los operadores repitieron las mediciones, pero esta vez en diferente orden y sin observar las mediciones realizadas anteriormente por sus compañeros. Se obtuvieron los siguientes datos:
+```{r}
+res=c(
+42,	45,	42,	42,	80,	78,
+35,	47,	80,	82,	72,	74,
+53,	55,	70,	70,	70,	68,
+52,	50,	75,	80,	60,	60,
+52,	50,	75,	80,	60,	60,
+61,	60,	70,	73,	70,	68,
+70,	72,	47,	47,	70,	72,
+50,	60,	68,	60,	68,	70,
+38,	32,	35,	40,	60,	60,
+52,	58,	70,	75,	68,	72
+)
+pieza=factor(rep(1:10,each=6))
+medi=factor(rep(1:2,30))
+oper=factor(rep(c("op1","op2","op3"),10,each=2))
+base=data.frame(res,pieza,medi,oper)
+```
+a.	Represente los datos gráficamente y comente sobre las fuentes de variación.
+```{r}
+bwplot(res~oper|pieza,layout=c(10,1),data = base)
+```
+```{r}
+xyplot(res~pieza,groups=oper,type=c("a","p"),data = base,auto.key = list(columns=3))
+```
+**Graficamente se observa que hay una variabilidad en las mediciones segun el operador, principalemente hay poca uniformidad en las mediciones el operador 2 de pieza a pieza**
+**Ademas las mediciones para la pieza 1 son similares, miestras que para la pieza 2 son bastante distintas, esto da una idea de que hay una interaccion entre el operador y la pieza**
+
+b.	Haga la descomposición de la variancia total (incluya interacción).  
+```{r}
+mod1=lmer(res~(1|pieza)+(1|oper)+(1|pieza:oper),data=base)
+summary(mod1)
+```
+```{r}
+interaccion=124.433    
+pieza=3.716   
+oper=59.395    
+err=9.317   
+total=interaccion+pieza+oper+err
+(cbind(pieza,oper,interaccion,err)/total)*100
+```
+**La mayor variabilidad se debe a las interacion (63%) y al operador (30%)**
+c.	Haga las pruebas formales sobre la variación de la interacción. Use la prueba de razón de verosimilitud y el AIC.
+```{r}
+mod1=lmer(res~(1|pieza)+(1|oper)+(1|pieza:oper),data=base)
+mod12=lmer(res~(1|pieza)+(1|oper),data=base)
+anova(mod1,mod12,test="LRT")
+```
+**Si se usa LRT se rechaza H0 de independencia entre pieza y operador ya que p<0.0001, por lo que las diferencias que se encuentran de un operador a otro va a depender de la pieza, si se usa AIC el modelo con el menor AIC es el que incluye la interaccion mod1 (AIC=418.55), llegando a las mismas concluciones **
+
+6.	Se hace un experimento para medir el efecto de la edad de cosecha en el forraje de la planta arbustiva botón de oro. Se toman 9 parcelas en las que se siempra la planta. Se divide cada parcela en 3 partes y se decide aleatoriamente cosechar cada parte a un tiempo diferente (edades de cosecha a 6, 8 y 10 semanas).   Cuando se cosecha se toman 10 plantas de la sección correspondiente y se promedia el forraje producido por la planta (en gramos). Los datos están en el archivo “forraje.Rdata” en la base4.
+```{r}
+load("bases/forraje.Rdata")
+str(base4)
+base4$parcela=factor(base4$parcela)
+base4$edad=factor(base4$edad)
+```
+a.	Haga el análisis para determinar si hay un efecto de la edad sobre el forraje.
+```{r}
+mod1=lmer(forraje~edad+(1|parcela),data = base4)
+```
+
+Ahora considere que se hizo un experimento similar al anterior donde se quería además ver el efecto de la densidad de siembra  por lo que se decidió sembrar 3 de las parcelas a una planta por metro cuadrado, otras 3 parcelas a 2 plantas por metro cuadrado y otras 3 parcelas a 4 plantas por metro cuadrado.  Los datos están en la base3 del mismo archivo anterior “forraje.Rdata”.
+
+b.	Justifique por qué ahora este diseño es de parcelas divididas y no de bloques.
+c.	Analice gráficamente el comportamiento de la respuesta al comparar las 3 densidades y las 3 edades simultáneamente (gráfico de cajas).
+d.	Escriba el modelo.
+e.	Haga el análisis para determinar si hay interacción entre edad y densidad.
+f.	Haga el análisis para deteminar si hay un efecto de la densidad y de la edad.
+g.	Haga las comparaciones relevantes si tiene sentido hacerlas.
+
+7.	Se toman 9 grupos de hemípteros semiacuáticos, cada grupo compuesto por 10 individuos.  Se analizan dos factores: tipo de jabón y concentración (ppm) la cual se toma en rangos de 1 a 8, 9 a 48 y 50 a 190.   Cada grupito de insectos se somete a un solo tipo de jabón pero pasa por las 3 concentraciones dejando un tiempo de recuperación entre una concentración y la siguiente.   Nos vamos a concentrar  en una variable en cada corrida: tiempo del individuo en el agua.  Los datos están en el archivo “Hemipteros.Rdata”.
+
+a.	Escriba el modelo que incluye interacción entre los dos factores de diseño. Escriba todos los componentes del modelo.
+b.	Represente los datos gráficamente y comente lo que se puede esperar.
+c.	Verifique si hay interacción.
+d.	Obtenga la estimaciones de las varianzas e intervalos de confianza para las desviaciones estándar.
+e.	Continúe el análisis adecuadamente.
+
+8.	Tome el ejemplo sobre el cerebro de las ratas (Rat Brain) del capítulo 5 del libro “Linear mixed models a practical guide using statistical. software”.
+
+a.	Utilice los datos que se encuentran en el archivo “ratas.Rdata”. Asegúrese que las variables “treatment” y “región” están bien definidas como factor. La variable respuesta es “actívate”.
+b.	Haga un boxplot con la respuesta en Y y region+treatment en X, de tal forma que se vea la variabilidad de cada combinación. Obtenga las medias y desviaciones estándar para cada combinación de tratamiento y región. Justifique si se puede esperar homocedasticidad.
+c.	Represente los datos gráficamente para determinar si hay interacción entre tratamiento y región.
+d.	Verifique la interacción entre tratamiento y region.
+e.	Haga las comparaciones de interés y reporte intervalos de confianza.
+
+9.	Analice los datos del ejemplo de mascarillas que se explicó en la presentación y se encuentran en el archivo “mascarillas.Rdata”. Incluya en su análisis el sexo de cada rostro además de la clasificación de atractivo. Recuerde que el factor de diseño es la oclusión.
+

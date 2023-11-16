@@ -1,0 +1,1251 @@
+---
+title: "Resumen-Experimentos"
+author: "Cesar Peñaranda"
+date: "2023-10-09"
+output:
+  word_document: default
+  html_document: default
+---
+
+## Distribuciones / Generalidades
+- Gamma: Las variables continuas positivas usualmente tienen una distribucion asimetrica, debido al limete en cero, presentan una relacion entre la media y la varianza, la funcion gamma se pude utilizar para modelar
+
+- Binomial: Variable respuesta es binaria
+
+- Binomial negativa: Es útil cuando se busca saber cuántos intentos son necesarios antes de alcanzar un objetivo en situaciones como lanzar una moneda hasta obtener 3 caras o jugar a los bolos hasta derribar 5 pines. ademas se puede usar tambien en conteos
+
+- Poisson: La distribución de Poisson es como contar cosas raras que suceden poco a
+poco. por ejemplo que estás mirando a través de una ventana y cuentas
+cuántos coches pasan por la calle en una hora. La distribución de
+Poisson te ayuda a saber la probabilidad de que pase un número
+específico de coches en ese tiempo.
+
+## Librerias 
+```{r eval=FALSE}
+library(lme4) #para la funcion lmer 
+library(emmeans) #para las comparaciones
+library(dplyr) #para el mutate
+library (AER) #para el dispersion test
+library(MASS) #para binomial negativa
+library(lattice) #para algunos graficos
+```
+
+## Creacion de bases / Creacion de variables
+```{r eval=FALSE} 
+trigli=c(142.3, 144.0, 148.6, 146.9, 142.9, 147.4, 133.8,
+133.2, 134.9, 146.3, 145.2, 146.3, 125.9, 127.6,
+108.9, 107.5, 148.6, 156.5, 148.6, 153.1, 135.5,
+138.9, 132.1, 149.7, 152.0, 151.4, 149.7, 152.0,
+142.9, 142.3, 141.7, 141.2)
+dia=factor(rep(1:4,each=8))
+maq=factor(rep(c("A","B","C","D"),4,each=2))
+base=data.frame(trigli,dia,maq)
+
+```
+
+```{r eval=FALSE}
+correr = rep("correr",10)
+jump = rep("jump",10)
+cuerda = rep("cuerda",10)
+trat =c(correr,jump,cuerda)
+resp = c(27,42,27,59,64,35,60,
+         36,38,54,36,31,45,47,
+         40,10,21,10,19,28,24,
+         11,37,45,39,15,29,12,
+         7,14)
+bloque = c(1:10,1:10,1:10)
+h=cbind(bloque,trat,resp)
+h=as.data.frame(h)
+```
+
+```{r eval=FALSE}
+res=c(
+42,	45,	42,	42,	80,	78,
+35,	47,	80,	82,	72,	74,
+53,	55,	70,	70,	70,	68,
+52,	50,	75,	80,	60,	60,
+52,	50,	75,	80,	60,	60,
+61,	60,	70,	73,	70,	68,
+70,	72,	47,	47,	70,	72,
+50,	60,	68,	60,	68,	70,
+38,	32,	35,	40,	60,	60,
+52,	58,	70,	75,	68,	72
+)
+pieza=factor(rep(1:10,each=6))
+medi=factor(rep(1:2,30))
+oper=factor(rep(c("op1","op2","op3"),10,each=2))
+base=data.frame(res,pieza,medi,oper)
+```
+
+- Formar una columna apartir de dos columnas
+```{r eval=FALSE}
+base$pulpa_lote=paste(base$metodo,base$lote,sep = "-")
+```
+
+- **Sumamente util para diseños anidados**
+```{r eval=FALSE}
+base$pulpa_lote=base$metodo:base$lote
+```
+
+- Codigo para recodificar una variable en una nueva 
+```{r eval=FALSE}
+library(dplyr)
+base = base %>%mutate(res = case_when(clase=="muertos"~1,TRUE~0))
+```
+
+## Graficos 
+
+### Boxplot 
+
+- Con ggplot2
+```{r eval=FALSE}
+library(ggplot2)
+ggplot(base,aes(lote,prod)) + #base del grafico 
+  geom_boxplot() + #tipo de grafico 
+  geom_hline(yintercept = mean(base$prod), color = "red", linetype = "dashed") + #agregar la media general
+  stat_summary(fun = mean, geom = "point", shape = 16, size = 3, color = "red") #agregar medias condicionales
+```
+
+- Con lattice
+```{r eval=FALSE}
+bwplot(res~temp,data = base)
+```
+
+- Basico
+```{r eval=FALSE}
+#Si se tienen dos factores se puede hacer trat1+trat2 graficar cada tratamiento
+boxplot(conteo~trat1,data = base)
+
+media=tapply(base$conteo,base$trat1,mean)
+#agrega puntos en las medias 
+points(media, col = "red", pch = 16)
+#agrega una linea a la media general
+abline(h = mean(base$conteo), col = "blue")
+```
+
+### Grafico de puntos (dotplot)
+- Agrupado 
+```{r eval=FALSE}
+library(lattice)
+dotplot(trigli~maq|dia,xlab="día",ylab="triglicéridos")
+```
+- Sin agrupar util para comparar directamente
+```{r eval=FALSE}
+xyplot(trigli~maq,group=dia,data = base,auto.key=list(columns=4))
+```
+
+### Grafico de lineas (medias)
+
+En los diseños de parcela divididas se pone más énfasis al factor que está en la subparcela, por lo que ese factor debe colocarse en groups, mientras que el factor de parcela se coloca en el eje X.
+
+- Muy util para ver interaccion
+```{r eval=FALSE}
+xyplot(trigli~maq,group=dia,type="a",data = base,auto.key=list(columns=4))
+```
+
+```{r eval=FALSE}
+
+xyplot(res~lote|metodo,groups = temp,type=c("a","p"),data = base,auto.key=list(columns=4))
+```
+
+- Grafico del ejemplo escarabajos
+```{r eval=FALSE}
+xyplot(M/(M+H)~parcela,groups=tipo,type=c("p","a"),
+auto.key=list(columns=2),ylab="proporción de machos",data=base)
+```
+
+### Grafico para verificar equidispercion
+- Plot supuesto de equidispercion
+```{r eval=FALSE}
+res=residuals(mod1,type="response")
+plot(log(res^2)~log(fit))
+abline(0,1,col="red")
+```
+
+
+## Modelos 
+**Griegas/coeficientes**
+
+**Latinas/variables**
+
+### Modelos Lineales Generalizados
+
+#### **Binomial/Propenciones**
+
+- **HOJAS**
+```{r eval=FALSE}
+mod1=glm(cbind(mal,thojas-mal)~dosix,family = binomial,data = base)
+```
+$$log(\frac{\pi_i}{1-\pi_i})=\beta_0+\alpha_i$$
+i-esima dosis de herbicida
+
+- Ejemplo de **ecuacion estimada**, propenciones log (trat referencia)
+$$log(\frac{p}{1-p})=-2.43+2.15D_{200}+2.29D_{400}+3.05D_{800}$$
+
+- **Ecuacion estimada** para caso continuo
+$$log(\frac{p}{1-p})=-1.41+0.003D$$
+- Ejemplo de estimacion de probabilidades
+```{r eval=FALSE}
+coef=mod1$coef
+beta0=coef[1]
+taus=coef
+taus[1]=0
+
+probabilidades=exp(beta0+taus)/(1+exp(beta0+taus))
+names(probabilidades)=c("D0","D200","D400","D800");round(probabilidades,2)
+```
+
+- Estimacion de probabilidades con la funcion predic
+```{r eval=FALSE}
+round(tapply(predict(mod1,type ="response"),base$dosix,mean),4)
+```
+
+- Obtener las propenciones de cada tratamiento
+```{r eval=FALSE}
+#vectores individuales con ref
+
+coef=mod1$coefficients
+d0=c(1,0,0,0)
+d200=c(1,1,0,0)
+d400=c(1,0,1,0)
+d800=c(1,0,0,1)
+
+#vector de coeficientes
+
+v=cbind(d0,d200,d400,d800); 
+v2=t(v)%*%coef
+
+```
+
+```{r eval=FALSE}
+#OR de cada tratamiento
+OR=exp(v2);round(OR,2)
+```
+
+
+#### **Conteos**
+
+Ejemplo moscas: En este caso se cuenta el número de moscas en un momento y lugar
+específico bajo un cierto tratamiento. Este número teóricamente puede ir
+de cero a infinito, siendo en general los conteos obtenidos números no
+muy grandes, por lo que la distribución es genuinamente Poisson y no
+convendría aproximarla a la normal por el hecho de no tener conteos muy
+grandes.
+
+- Ejemplo modelo **poisson suma nula**
+$$lod(\lambda_j)=\beta_0+\tau_j$$ 
+Restriccion:
+$$\tau_1+\tau_2+\tau_3+\tau_4=0$$
+- **Binomial negativa**
+```{r eval=FALSE}
+#binomial negativa library(MASS)
+glm.nb(res~trat1+trat2,data=base)
+```
+- Modelo **quasipoisson**
+```{r eval=FALSE}
+mod2=glm(conteo~trat1,family = quasipoisson,data = base)
+``` 
+
+- **CAIDAS**
+
+$$log(\lambda_{i,j,B,F})=\beta_0+\tau_i+\gamma_j+\beta_1B+\beta_2F+(\tau\gamma)_{ij}+\beta^*_{1,i}B+\beta^*_{2,i}F$$
+El coeficiente \(\tau_i\) esta asociado al i-esimo tratamiento, con \(\tau_1=0\), mientras que el coeficiente \(\gamma_j\) esta asociado al j-esimo sexo con,\(\gamma_1=0\), la interaccion entre ambos se denota por \((\tau\gamma)_{ij}\), los coeficientes \(\beta_1\) y \(\beta_2\) corresponde a las variables balance y fuerza, respectivamente, mientras que \(\beta^*_{1,i}\) y \(\beta^*_{2,i}\) son las interacciones de balance y fuerza con el i-esimo tratamiento, respectivamente
+
+**Interpretacion de distribucion de \(y\):** se asume que la distribucion de \(y\): numero de caidas, condicional al trat, sexo, el valor de balance y fuerza, es poisson con esperanza \(\lambda_{i,j,B,F}\)
+
+$$Y|i,j,B,F\sim Poi(\lambda_{i,j,B,F})$$
+
+**Interpretacion de funcion de enlace:** la funcion de enlace entre la parte lineal (componente sistematico) y el valor esperado de la distribucion condicional es logaritmica
+
+- **CANCER**
+
+$$log(\lambda_{F,E}/P)=\beta_0+\tau_2F+\delta E+\gamma FE$$
+Donde \(F\) es una variable auxiliar que toma valor 1 si son fumadores y 0 si no lo son, \(E\) grupo medio del grupo de edad y \(P\) es el numero de personas año. se asume una distribucion poisson para el numero de muertes  dado un grupo de fumado (si/no) y la edad, con esperanza \(\lambda_{F,E}\)
+
+**componente aleatorio:** La funcion de enlace es logaritmica y la parte aleatoria es la distribucion condicional al numero de muertes dado el grupo de fumado y la edad, la cual se asume poisson con parametro \(\lambda_{F,E}\)
+
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=glm(muertes~offset(log(den))+edad*fumado,family = poisson,data=base)
+```
+**Interpretacion del OR:** La tasa de muertes por enfermedad coronaria de medicos es 50% mayor entre fumadores comparada con la de los no fumadores, cuando se fija el grupo de edad
+
+### Modelos Efectos aleatorios
+* Analisis que podemos hacer: 
+
+Podemos probar la variabilidad que agrega cada nivel(lmer) 
+
+Podemos obtener los intervalos de confianza(confint)
+
+Podemos probar el efecto de algun factor(anova)
+
+Dependiendo podemos hacer comparaciones, pero estas no son exactamente puntuales
+
+Esto debido al factor aleatorio que se le atribuye, por lo cual no tiene sentido hacer comparaciones directas ya que los factores que se tienen son una muestra de una poblacion mas amplia
+
+**Error \(\epsilon\):** agragamos el error solo cuando tengo un modelo normal que esta en funcion de \(y_{ij}\) no un glm que esta descrito en funcion de la esperanza, osea si lo escribo solo si lo estoy diciendo en terminos de \(y_{ij}\)
+
+
+- **COLORANTES**
+
+**Interpreatacion de Intra e inter sujeto**variabilidad intra-sujeto y la variabilidad inter-sujeto.
+
+Hay algunos lotes que tienen producciones muy bajas mientras que otros las tienen muy altas, aunque no interesa identificar cuáles son los lotes con producción más baja o más alta puesto que los lotes son aleatorios. La varaibilidad inter-sujeto es la comparación de las medias
+de los diferentes lotes. Especialmente el lote E tiene una media mucho mayor que los demás.
+Por otro lado, la variabilidad intra-sujeto es la que se observa dentro de cada caja, por ejemplo,
+en el lote A esta variabilidad es bastante alta.
+
+$$y_{ij}=\beta_0+\delta_i+\epsilon_{ij}$$
+
+\(y_{ij}=\) la j-esima observacion dentro del i-esimo lote
+
+\(\delta_{i}=\) efecto del i-esimo lote o del i-esimo sujeto del nivel 2 (error del nivel 2)
+
+donde:
+$$\delta_i\sim N(0,\sigma^2_\delta)$$
+
+Esperanza condicional dado el lote es
+$$E[Y|i]=\mu_i=\beta_0+\delta_i$$
+```{r eval=FALSE}
+#Modelo utilizado
+library(lme4)
+mod1=lmer(prod~(1|lote),data = base) # para los efectos aleatorios en este caso (1|lote) el 1 representa el promedio
+```
+
+- Intervalos de confianza
+```{r eval=FALSE}
+# En el resultado se debe interpretar sigma como la desviación estándar del error y sigma01 la desviación estándar de lote.
+round(confint(profile(mod1)),3)
+```
+
+**Interpretacion (confint)** del intervalo de colorantes: Puesto que el intervalo de 95% de confianza va de 12.2 a 84.1 (no llega al extremo de cero),
+se confirma que la fuente de variabilidad de lote a lote no es nula. Sin embargo, ese intervalo de confianza es muy ancho, lo cual hace dudar de la precisión de la estimación. Se requeriría un mayor número de lotes para tener una mejor estimación de la varianza de lote a lote, y esto además produciría una mejor estimación de la varianza del error, ya que se contaría con más
+datos en total.
+
+
+- Porcentaje de variabilidad
+```{r eval=FALSE}
+lote=1764     
+resi=2451
+lote/(resi+lote)
+```
+**Interpretacion (summary):** A partir de la descomposición de la variancia se obtiene el porcentaje de la variabilidad
+debida a las diferencias producidas por los lotes. La variancia de las medias de lote a lote es 1764, mientras que la la variancia residual es 2451. De esta forma se obtiene el porcentaje:
+
+**Interpretacion:** 41.8% de la variabilidad es debido a los lote
+
+- **ESPECTOFOTOMETRO**
+
+la k-esima muestra dentro del j-esimo dia, para la i-esima maquina se expresa como
+$$y_{ijk}=\beta_0+\tau_i+\delta_j+(\tau\delta)_{ij}+\epsilon_{ijk}$$
+\(\tau_i=\) efecto de la i-esima maquina
+
+\(\delta_j=\) efecto del j-esimo dia 
+
+\((\tau\delta)_{ij}=\) efecto de interaccion para la i-esima maquina en el j-esimo dia
+ 
+donde:
+$$\delta_j\sim N(0,\sigma^2_\delta)$$
+Esperanza condicional dado el dia y la maquina
+$$E[Y|ij]=\mu_{ij}=\beta_0+\tau_i+\delta_j+(\tau\delta)_{ij}$$
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(trigli~1+maq+(1|dia)+(1|dia:maq),data = base)
+```
+**Interpretacion(confint):** del intervalo de espectofotometro: Al observar el intervalo de 95% de confianza se tiene que la desviación estándar de los efectos
+de interacción está entre 2.07 y 8.6, mientras que la desviación estándar del error está entre
+3.1 y 6.3. Es claro que el efecto de interacción tiene una variabilidad no nula.
+
+**Interpretacion(summary):** Los efectos de interacción tienen una variancia de 34.72 que representa un 35.7% de la
+variancia total, la cual es mucho mayor que la variancia del error (17.90) que representa solo
+un 18.4%.
+
+### Modelos practica
+- **PICANTE**
+$$\mu_{ijk}=\beta_0+\tau_i+\alpha_j+\delta_k$$
+
+El coeficiente \(\tau_i\) esta asociado al i-esimo nivel de picante, con \(\tau_1=0\), mientras que el coeficiente \(\alpha_j\) esta asociado al j-esimo tipo de tomate con, \(\alpha_1=0\), por ultimo \(\delta_k\) esta asociado al efecto k-esima persona(aleatorio), donde \(\delta\sim(0,\sigma^2_\delta)\)
+
+* Para el modelo con efectos fijos
+
+$$\mu_{ijk}=\beta_0+\tau_i+\alpha_j+\gamma_k$$
+
+El coeficiente \(\tau_i\) esta asociado al i-esimo nivel de picante, con \(\tau_1=0\), mientras que el coeficiente \(\alpha_j\) esta asociado al j-esimo tipo de tomate con, \(\alpha_1=0\), por ultimo \(\gamma_k\) esta asociado al efecto de la k-esima persona, con \(\gamma_1=0\).
+
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(puntaje~tomate*pic+(1|persona),data=base)
+drop1(mod1,test = "Chisq")
+```
+
+```{r eval=FALSE}
+mod1=lmer(puntaje~tomate+pic+(1|persona),data=base)
+drop1(mod1,test = "Chisq")
+```
+
+**Interpretacion de las correspondientes pruebas** Primero se verifica que no hay interacion con un p<0.05, luego se corre un modelo sin interacion y se obtiene que hay diferencias entre los niveles de picante p<0.001 (independientemente del tipo de tomate)
+
+**Interpretacion de H0 prueba de efecto de picante** se concluye que si hay un efecto de picante puesto que la probabilidad asociada al comparar el modelo con picante y el modelo sin picante p<0.05, almenos uno de los niveles de picante produce un punteje promedio diferente(Independientemente del tipo de tomate)
+
+**Interpretacion de las comparaciones de tukey** se hacen las comparaciones de Tuker con 37 grados de libertad, se encuentran diferencias entre los promedios de los 3 niveles de picante, siendo el mas alto el promedio para el picante medio y el mas bajo para picante alto
+
+- **PENISILINA**
+La i-esima muestra dentro j-esimo plato se expresa como:
+$$y_{ij}=\beta_0+\alpha_i+\delta_j+\epsilon_{ij}$$
+El coeficiente \(\tau_i\) esta asociado a la i-esima muestra (efecto aleatorio) donde \(\tau\sim N(0,\sigma^2_\tau)\), mientras que el coeficiente \(\delta_j\) esta asociado al j-esimo plato (efecto aleatorio) donde \(\delta\sim N(0,\sigma^2_\delta)\)
+
+- Modelo para la media.
+$$E[Y|muestra=i,plato=j]=\mu_{ij}=\beta_0+\alpha_i+\delta_j$$
+$$E[Y|muestra=1]=\mu_i=\beta_0+\alpha_i$$
+hipótesis relevantes que quieren ser puestas a prueba.
+
+- **H0**
+
+Hay un efecto de muestra, la varianza de muestra a muestra es mayor a cero
+$$H0:\sigma^2_L=0$$
+**Interpretacion de la anterior H0:** se concluye que la variabilidad de muestra a muestra es mayor a cero por lo que si se puede esperar que haya diferencias en la respuesta promedio en de una muestra de pelicilina a otra
+
+**Interpretacion de variabilidad:** La variabilidad entre muestras de penicilina respresenta el 75% de la variabilidad total lo cual es bastante alto
+
+**Interpretacion del intervalo:** Con un 95% de confianza se espera que la desviacion estandar de muestra a muestra este entre 1.10 a 3.56, lo cual es un valor superior a cero y confirma la alta variabilidad de muestra a muestra.
+
+- **PIEZAS**
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(res~(1|pieza)+(1|oper)+(1|pieza:oper),data=base)
+summary(mod1)
+```
+
+**Interpretacion summary:**La mayor variabilidad se debe a las interacion (63%) y al operador (30%)
+
+**Interpretacion H0:**Si se usa LRT se rechaza H0 de independencia entre pieza y operador ya que p<0.0001, por lo que las diferencias que se encuentran de un operador a otro va a depender de la pieza, si se usa AIC el modelo con el menor AIC es el que incluye la interaccion mod1 (AIC=418.55), llegando a las mismas concluciones
+
+- **COSECHA**
+
+No podemos analisar la interacion dado que la parcela funciona como un bloque, y no hay mas de dos observaciones de tratamientos por bloque dado que es un promedio de 10 plantas(un valor por tratamiento) no grados de libertad suficientes
+
+```{r eval=FALSE}
+#Modelo utlizado
+mod1=lmer(forraje~edad+(1|parcela),data = base4)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion prueba H0 efecto de la edad: **Se rechaza la H0 de igualdad de medias para las tres edades con un p<0.05
+
+- Cuando pasa a ser multinivel 
+
+$$\mu_{ijk}=\beta_0+\alpha_i+\tau_j+(\alpha\tau)_{ij}+\delta_k$$
+donde: 
+$$\delta\sim N(0,\sigma^2_\delta)$$
+\(\alpha_i\) = efecto de la i-esima edad
+\(\tau_j\)= efecto de la j-esima dencidad
+\((\alpha\tau)_{ij}\)= efecto de interacion de edad y dencidad
+\(\delta_k\)= efecto aleatorio de la parcela
+
+El diseno de bloques de la primera parte se convierte en parcelas divididas, porque ahora cada bloque tiene un tratamiento diferente en cuanto a dencidad de siembra (Nivel2). cada bloque se convierte en una parcela con factor de parcela la dencidad de siembra, mientras que cada subdivision del bloque original se denomina subparcela y la edad de cosecha es el factor de subparcela (Nivel1)
+
+- Determinar si hay interacción entre edad y densidad.
+```{r eval=FALSE}
+mod1=lmer(forraje~den*edad+(1|parcela),data = base3)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion:** la probabilidad asociada a la interacion es p=0.25 por lo que con un nivel de significancia de 0.05 no se rechaza la hipotesis de independecia entre densidad y edad, se pueden hacer comparaciones entre las 3 edades independientemente de dencidad y viceversa
+
+- Deteminar si hay un efecto de la densidad y de la edad.
+```{r eval=FALSE}
+mod1=lmer(forraje~den+edad+(1|parcela),data = base3)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion:** se ecuentra un efecto de la dencidad en el forraje promedio por parcela (p=0.004), asi como un efecto de la edad (p<0.001)
+
+- Comparaciones relevantes si tiene sentido hacerlas.
+```{r eval=FALSE}
+emmeans(mod1,pairwise~den,adjust="Tukey")
+emmeans(mod1,pairwise~edad,adjust="Tukey")
+```
+**Interpretacion:** se encuentran diferencias entre la denciadades de 1 planta por metro cuadrado y 4 plantas por metro cuadrado, con la dencidad mas baja se obtiene un forraje promedio menor que con la dencidad de 4, ademas para la edad de 6 semanas se obtienen promedios menores a las otras 2 edades, mientras que bo se detectan diferencias entre 8 y 10 semanas
+
+- **HEMIPTEROS**
+$$\mu_{ijk}=\beta_0+\alpha_i+\tau_j+(\alpha\tau)_{ij}+\delta_k$$
+donde: 
+$$\delta\sim N(0,\sigma^2_\delta)$$
+ademas, i-esimo concentracion, j-esimo tipo de jabon,\((\alpha\tau)_{ij}\) interaccion entre jabon y concentracion, \(\delta_k\) efecto aleatorio del grupo de 10 individuos
+
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(tiempo~tipo*ppm+(1|grupo),data = datos)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion** se concluye que hay interaccion ya que la probabilidad asociada es p<0.001
+
+**Interpretacion de las varianzas:** la variaza de grupo es de 0.35 mientras que la residual es de 5.42
+
+**Interpretacion (confit):**Aunque la varianza de grupo a grupo es pequena, no es despreciable ya que el intervalo de la desviacion estandar no pega con el cero, pues va de 0.23 a 1.18, la desviacion estandar residual va de 2.1 a 2.5 (con 95% de confianza)
+```{r eval=FALSE}
+#Por la interaccion 
+emmeans(mod1,pairwise~ppm|tipo,adjust="Bonferroni")
+```
+
+- **RATAS** 
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(activate~region*treatment+(1|animal),data = base)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion** se comprueba que hay interaccion entre tratamiento y region 
+
+**Se encuentran diferencias en las medias de activacion en las tres regiones,para los dos tratamientos,hay que cuantificar dichas diferencias**
+
+```{r eval=FALSE}
+ee=38.2
+t1_t2.r1=-98.2
+t1_t2.r2=-197.5
+t1_t2.r3=-360.0
+L=cbind(t1_t2.r1,t1_t2.r2,t1_t2.r3)
+L=abs(L)
+alpha=0.05
+gl=nrow(base)-length(coef)
+qt=qt(1-alpha,gl);LIM.I=L-qt*ee
+LIM.I
+LIM.S=L+qt*ee;LIM.S
+```
+
+- **MASCARILLA** 
+
+**Nivel 1**
+
+Unidad: Rostro-oclusion
+
+Factor: Nivel oclusion
+
+
+**Nivel2:**
+
+Unidad: rostros-sexo
+
+Factor: sexo
+
+**Nivel3:**
+
+Unidad: bloque
+
+Factor: nivel de atractivo
+
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(y~oclusion*atractivo*sexo+(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion** No hay interaccion triple
+```{r eval=FALSE}
+mod1=lmer(y~oclusion*atractivo+sexo(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion** La interacion entre oclusion y sexo no resulta significativa
+```{r eval=FALSE}
+
+mod1=lmer(y~oclusion*atractivo+sexo+(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+**Interpretacion** si resulta interaccion entre oclusion y atractivo, aunque el sexo no es un factor de diseno, se puede observar que hay diferencias en la respuesta promedio entre hombres y mujeres(independientemente de oclusion y de atractivo)
+
+```{r eval=FALSE}
+emmeans(mod1,pairwise~oclusion|atractivo,adjust="Bonferroni")
+```
+**Conclusion:** Segun el grafico de arriba, para las personas tracticas la oclusion no hace diferencia en la respuesta promedio, en cambio, para personas no atractivas, las mascarillas de tela y medica aumentan la respuestra promedio con respecto al control. todo esto se confirma en las pruebas de pares de medias pues solo se econtraron diferencias entre control y cada una de las mascarillasm pero en personas no atractivas
+
+### Modelos Diseños multinivel
+
+
+- **Grados de libertad** en este caso y para el de efectos aleatorios
+
+Entonces se tienen a(r-1) grados de libertad, donde a es el número de métodos y r el número de lotes por cada método. En este caso 3*(3-1)=6. El error de subparcela se calcula con n-p-gl.
+
+parcela, donde p es el número de coeficientes (1 de intercepto, 2 de métodos, 3 de temperaturas, 6 de interacción, son 12 coeficientes), por lo que el error de parcela tiene 36-12-6=18 grados de libertad. La probabilidad para la interacción se calcula con el error de subparcela.
+
+- **PAPEL**
+
+**Nivel 1 (sub-parcela)**
+
+*Unidad*: fraccion del lote 
+
+*Factor*: metodo (tratamientos principales) 
+
+**Nivel 2 (parcela completa)**
+
+*Unidad*: lote 
+
+*Factor*: temperatura
+
+$$yijk=\mu+\alpha_i+\beta_i+(\alpha\beta)_{ij}+\delta_k+\epsilon_{ijkl}$$
+\(\alpha_i=\) efecto del i-esimo metodo
+
+\(\beta_i=\) efecto de la j-esima temperatura
+
+\((\alpha\beta)_{ij}=\) efecto de interaccion para el i-esimo metodo con la j-esima temperatura
+ 
+\(\delta_{k}=\) efecto del lote o error de parcela
+
+\(\epsilon_{ijkl}= \) error de sub-parcela 
+
+donde el efecto del lote o error de parcela:
+$$\delta\sim N(0,\sigma^2_{\delta})$$
+Sintaxis para el modelo
+
+lmer(Y~F2*F1+(1|lote)), donde F2 indica el factor del Nivel 2 que, en este caso, es el método y F1 es el factor del Nivel 1 que es la temperatura.
+```{r eval=FALSE}
+#Modelo utilizado
+mod1=lmer(res~metodo*temp+(1|lote),data = base)
+```
+
+**Interpretacion implicaciones de interaccion:** si hubiera interaccion entre metodo y temperatura se esperaria que el efecto que tiene la temperatura fuera diferente para cada metodo
+
+**Interpretacion de H0 interaccion** La probabilidad asociada a esta prueba es menor que el nivel de significancia con un p<0.05 por lo que no se rechaza la hipotesis de no interaccion. tambien al observar el AIC, el modelo completo tiene un AIC mas bajo que el que elimina la interacion, de esta forma se mantiene la interacion y se concluye que el efecto de la temperatura no es el mismo para cada metodo
+
+**Interpretacion de las comparaciones** mientras que con M1 y M2 se encuentran diferencias entre 200 y las demas, con el M3 suceden cosas diferentes, tal como se ve que 200 solo se diferencia de 275, pero ademas que 275 es diferente de 225 y 250 
+- **PAPEL/BLOQUES** incluia dias como bloques
+
+Modelo con interacción entre metodo y temp, dia como bloque.directamente con la función lmer y día como un término aleatorio de Nivel 3, para esto se usa (1|dia/lote1), de esta forma se está diciendo que los lotes son de Nivel 2 y están dentro de los días que son de Nivel 3.
+```{r eval=FALSE}
+mod1=lmer(res~metodo*temp+(1|dia/lote1),data = base)
+#lote1 era los lotes que se podian sacar por dia
+```
+
+**Interpretacion de la prueba H0 de interaccion** no se detecta que haya interaccion entre el metodo y temperatura ya que la probabilidad asociada es mayor que el nivel de significancia p>0.05
+
+**Interpretacion de H0 prueba de efecto** tanto metodo como temperatura tienen probabilidades asociadas menores que el nivel de significancia (p<0.05 para metodo y p<0.05 para temperatura) por lo que se concluye que ambos factores tienen un efecto sobre la resistencia promedio
+
+**interpretacion de los resultados en este caso: ** no se detectaron diferencias en todos los pares; especificamente no se puede decir que el promedio de resistencia para una temperatura de 250 grados sea diferente del de la temperatura 225, asi como tampoco que el de 275 grados sea diferente del de 250 grados, sea ha probado que la resistencia promedio a una temperatura de 275 si es mayor que la de temperaturas bajas como 200 y 225, de igual forma, para las temperaturas de 225 y 250 si se tiene una resistencia promedio mayor que para 200 grados
+
+Hay que notar como las concluciones no dan cifras especificas y esto es debido al factor aleatorio que se le agrego 
+
+### MODELO GLMM (lineal generalizado mixto) 
+
+- **ESCARABAJOS**
+
+**Interpretacion de variable respuesta y su distribucion condicional:** 
+La variable respuesta es el número de escarabajos machos en una parcela. Esta variable tiene una distribución binomial ya que el número de escarabajos machos en una parcela en particular está acotado por el número de escarbajos capturados en esa parcela. La distribución de esta variable tiene dos parámetros: 1) la probabilidad de atrapar machos en la parcela para un método de recolecta en particular, y 2) el número de escarabajos atrapados en la parcela
+con ese método específico."
+
+**Justificacion del efecto aleatorio:**
+Las parcelas son un factor aleatorio porque los resultados no interesan solo para esas
+parcelas, sino que estas son una muestra entre muchas parcelas. Cada parcela funciona como
+un bloque pues en cada parcela se tienen los dos tratamientos (alumbrado público y lampareo),
+sin embargo, en cada parcela se tiene más de una observación por tratamiento, ya que hay
+varios escarabajos en cada tipo de alumbrado y a cada uno se observa si es macho o hembra
+(variable respuesta).
+
+Es importante notar que estos efectos no significan lo mismo que en un modelo con distribución
+normal, es decir, el efecto no se define como la diferencia entre la media condicional y la media
+general, sino que es más bien un coeficiente que se agrega al intercepto.
+
+$$log(\frac{\pi_{ij}}{1-\pi_{ij}})=\beta_0+\tau_i+\delta_j$$
+
+\(\tau_i=\) indica el efecto del tipo de recolecta (fijo) 
+
+\(\delta_j=\) el efecto de la parcela (aleatorio).
+
+donde:
+$$\delta_j\sim N(0,\sigma^2_\delta)$$
+```{r eval=FALSE}
+# Modelo utilizado efectos fijos
+mod1=glm(cbind(M,H)~tipo+parcela,family="binomial",data=base) # cbind(exito,fracaso)
+
+# Modelo utilizado ejectos aleatorios
+mod3=glmer(cbind(M,H)~tipo+(1|parcela),family = "binomial",data = base)
+```
+**Interpretacion del OR:** En una parcela específica, la propensión de encontrar un macho cuando se usa lampareo es 74% mayor que cuando se usa alumbrado público.
+
+- **H0 efecto tipo de recolecta es distinto de cero**
+En la prueba de razón de verosimilitud se observa que la probabilidad asociada al tipo de
+recolecta es suficientemente baja, y se puede rechazar la hipótesis nula de que ese factor no
+tiene ningún efecto sobre la proporción de machos atrapados. Por lo tanto, sí se puede esperar
+un cambio en la probabilidad de atracción de machos según el tipo de luz que se utilice.
+
+- Intervalos de confianza
+```{r eval=FALSE}
+# En escarabajos 2 era el contraste resultante en suma nula
+exp(confint(mod11)*2)
+```
+
+**Interpretacion(confint)** Con el modelo mixto se concluye que el OR
+es mayor que 1.1 y menor que 2.5
+**Interpretacion(summary):** la varianza de parcela a parcela es 0.315, la desviación estándar es 0.561 y su intervalo va
+de 0.273 a 1.323.
+
+### Modelos Diseños anidados
+
+- **ESCUELAS**
+
+No se analiza la interacción cuando el diseño es anidado ya que los instructores que están
+en una escuela no son los mismos que están en otra escuela.
+
+$$\mu_{ij}= \mu+\alpha_i+\beta_{j(i)}$$
+
+\(\alpha_i=\) efecto de la i-esima escuela
+
+\(\beta_{i(j)}=\) efecto de j-esimo intructor dentro de la i-esima escuela
+```{r eval=FALSE}
+#De esta forma se indica que el factor instructor está anidado dentro del factor escuela.
+mod5=lm(puntaje~escuela+escuela/instructor, data = base)
+```
+
+- **H0**
+
+Los puntajes promedio para cada par de instructores dentro de cada escuela son iguales.
+**Interpretacion de la prueba**El cuadrado medio de instructor es 189.2, el cual coincide con el obtenido anteriormente. El
+cuadrado medio residual es 7, con esto se obtiene un valor de F igual a 27.0, el cual tiene una
+probabilidad asociada muy pequeña (0.0007). De esta forma se decide rechazar la hipótesis de
+igualdad de medias para los instructores dentro de cada escuela. En al menos una escuela los
+instructores no tienen los mismos puntajes promedio."
+
+- ¿A qué corresponden los últimos 3 coeficientes? (parecen interacciones)
+
+Esos 3 coeficientes son los efectos del primer instructor dentro de cada escuela.
+
+- Interpretacion del anova
+
+Una línea que parece una interacción que dice
+escuela:instructor, pero que en realidad debería leerse instructor(escuela), es decir, instructor
+dentro de escuela.
+
+- **ESCUELAS2**
+
+Cómo se alteran las conclusiones si se considera que hay muchos instructores en cada región y en el experimento los que participaron fueron una muestra
+- H0
+Para analizar el efecto de instructor cambia la hipótesis.
+$$H0:\sigma_\beta^2=0$$
+Además no tendría sentido hacer comparaciones entre instructores a pesar de que se haya demostrado un efecto del instructor.
+
+```{r eval=FALSE}
+#Para probar efecto de instructor
+mod2=lmer(puntaje~1+(1|escuela)+(1|instructor1),data=base)
+mod22=lmer(puntaje~1+(1|escuela),data=base)
+summary(mod2)
+anova(mod2,mod22)
+```
+
+```{r eval=FALSE}
+#Intervalo de confianza
+confint(mod2)
+```
+
+```{r eval=FALSE}
+#Resultado
+Computing profile confidence intervals ...
+               2.5 %    97.5 %
+.sig01      4.374292 15.463474
+.sig02      0.000000 11.487301
+.sigma      1.643105  5.306366
+(Intercept) 7.501444 22.498690
+```
+**Interpretacion:** El intervalo de confianza para la desviación estándar de los coeficientes de escuela limita con
+el cero, lo cual hace que no se rechace la hipótesis nula referente a la igualdad de medias entre
+escuelas. Sin embargo, se siguen viendo diferencias entre los instructores dentro de escuelas
+pero no interesa comparar los instructores de forma específica.
+
+**Conclusión:** se encontró que la escuela de la Región K obtiene calificaciones promedio más
+altas que las otras dos escuelas, pero además dentro de cada escuela, hay diferencias entre los
+dos instructores. Del gráfico que se presentó al inicio, se observa que uno de los instructores de
+la Región K tiene calificaciones mayores y, aunque su compañero tiene calificaciones más bajas
+que las de él, juntos hacen que esta escuela sobresalga. Cabe preguntarse si el desempeño de
+estos dos instructores se debe a mejores condiciones en esta escuela, a que los estudiantes que
+llegan tienen mayor motivación, o a que realmente estos instructores dan más atención a sus
+estudiantes. El desempeño de la escuela no puede desligarse del desempeño de los instructores,
+y la causa de los puntajes altos en la Región K no es clara puesto que los estudiantes no fueron
+asignados aleatoriamente a las escuelas.
+
+- **CEMENTO** (anidado con efectos aleatorios)
+```{r eval=FALSE}
+#Modemos utilizados
+mod0=lmer(resist~1+(1|saco1)+(1|lote),data=base) #saco1 es una variable recodificada para el diseño anidado con base$lote:base$saco
+mod2=lmer(resist~1+(1|lote:saco)+(1|lote),REML=F,data=base) #Opcion sin confirmar
+mod3=lmer(resist~1+(1|lote),REML=F,data=base) #Para probar el efecto del saco
+```
+**Intepretacion de variabilidad:** La variancia total es 10.768 (8.434+1.657+0.678). La proporción que corresponde al saco
+es 0.78 (8.434/10.768), mientras que la parte que corresponde a lote es 0.15 (1.657/10.768).
+Entonces, se ve claramente que la mayor fuente de variabilidad se debe a las diferencias entre
+los sacos de un mismo lote, mientras que entre un lote y otro no hay tanta variabilidad, ya
+que la de saco es el 78% mientras que la de lote es solo el 15%
+
+**Interpretacion de H0**
+Es claro el efecto del saco dentro de lote, puesto que se obtiene un valor de Chi-cuadrado
+de 54.6, con un grado de libertad, y la probabilidad asociada es menor a 0.0001. Con este
+método no se prueba el efecto del lote porque no tendría sentido hacer un modelo sin el lote,
+ya que los sacos están anidados en los lotes.
+
+
+- Interpretacion de los intervalos (confint)
+```{r eval=FALSE}
+Computing profile confidence intervals ...
+                 2.5 %    97.5 %
+.sig01       2.1579337  4.053589
+.sig02       0.0000000  2.946591
+.sigma       0.6520234  1.085448
+(Intercept) 58.6636504 61.443016
+```
+
+**Interpretacion:** En estos resultados, sig01 es la desviación estándar de saco, mientras que sig02 es la
+desviación estándar de lote. El intervalo correspondiente a lote tiene como límite inferior
+cero, lo cual es una indicación de que esa fuente de variabilidad no es importante.
+
+## Funciones/codigos
+
+#### **Comparaciones**
+- Comparaciones a pie
+```{r eval=FALSE}
+#vectores individuales con ref
+
+coef=mod1$coefficients
+d0=c(1,0,0,0)
+d200=c(1,1,0,0)
+d400=c(1,0,1,0)
+d800=c(1,0,0,1)
+
+#vectores de contrastes
+
+d800_d0=d800-d0
+d800_d200=d800-d200
+d800_d400=d800-d400
+d400_d0=d400-d0
+d400_200=d400-d200
+d200_d0=d200-d0
+
+h=cbind(d800_d0,d800_d200,d800_d400,d400_d0,d400_200,d200_d0)
+L=t(h)%*%coef
+
+#odds ratio (glm binomial)
+ORR=exp(L);round(ORR,2)
+```
+
+- Pruebas de hipótesis para verificar que cada par de tratamientos (glm binomial)
+```{r eval=FALSE}
+#planteo del error
+(ee = sqrt(diag(t(h)%*%vcov(mod1)%*%h)))
+
+#obtenemos los estimados de los contrastes o nuestro eta
+L=t(h)%*%coef;L
+
+#valor estandarizado del contraste
+t=L/ee;t
+
+#obtenemos la probabilidad asociada
+p=pnorm(t,lower.tail=F) 
+#no olvidemos la correccion de bonferroni k= numero de comparaciones
+k=6
+alfa=0.05/k
+p>alfa
+```
+- Caso para poisson/lmer/anidados/multinivel
+
+Debido a que se usa el modelo quasi-Poisson, se debe utilizar la
+distribución t en las pruebas. Esta probabilidad debe usar los grados de libertad residuales del modelo. El resultado de la probabilidad debe compararse contra α/6.
+ 
+```{r eval=FALSE}
+#error 
+ee=sqrt(diag(t(h)%*%vcov(mod2)%*%h))
+#valor estandarizado
+t=L/ee
+#prueba
+k=6
+gl=nrow(base)-length(coef2)
+p=pt(t,gl,lower.tail = F);p
+p>0.05/k
+```
+
+- Comparaciones con **emmeans**
+```{r eval=FALSE}
+emmeans(mod1, pairwise~temp|metodo, adjust="bonferroni") #para comparar las temperaturas por metodo
+```
+
+```{r eval=FALSE}
+emmeans(mod2, pairwise~temp, adjust="bonferroni") #para comparar temperatura
+```
+
+- Comparacion de modelos con el metodo de momentos **(anova)**
+```{r eval=FALSE}
+mod1=glm(cbind(M,H)~tipo+parcela,family="binomial",data=base) #modelo con el efecto que queremos probar 
+mod2=glm(cbind(M,H)~parcela,family="binomial",data=base)
+anova(mod2,mod1,test="LRT") #modelo sin esa variable
+#si se rechaza la H0 la variable si tiene un efecto 
+```
+- Comparaciones con tukey
+```{r eval=FALSE}
+#grados de libertad
+t=L/ee
+#3 numero de contrastes !!!!
+ptukey(t*sqrt(2),3,gl,lower.tail = F)
+```
+
+- **Cambiar entre suma nula y tratamiento de referencias**
+```{r eval=FALSE}
+#tratamiento de referencias
+options(contrasts=c("contr.treatment","contr.poly"))
+#suma nula
+options(contrasts=c("contr.sum","contr.poly"))
+```
+
+- Matriz util para verificar matriz de estructura
+```{r eval=FALSE}
+#donde 8 es el numero de unidades por trat
+data.frame(model.matrix(mod1),base$trat1)[1:8,]
+```
+
+- Estimaciones de los coeficientes para suma nula
+```{r eval=FALSE}
+coef1=mod1$coefficients;round(c(coef1,-sum(coef1[-1])),3) #lo ultimo es para conseguir tau4
+```
+
+- Verificar tipo de modelo
+```{r eval=FALSE}
+contrasts(base$factordiseno)
+
+#ademas se puede utilizar
+
+model.matrix(mod1)
+```
+
+- Obtener los efectos
+```{r eval=FALSE}
+m.es=tapply(base$puntaje,base$escuela,mean)
+m=tapply(base$puntaje,list(base$instructor,base$escuela),mean)
+in1=m.es-m[1,]
+in2=m.es-m[2,]
+h=rbind(in1,in2);h
+```
+
+- Suma de cuadrados
+```{r eval=FALSE}
+r=2 #replicas
+scres=sum(r*h^2);scres
+#h son los efectos
+```
+
+- Grados de libertad
+```{r eval=FALSE}
+gl=(2-1)*3
+gl
+```
+**Interpretacion:** Dentro de cada escuela hay dos instructores diferentes por lo que hay un grado de libertad
+para los instructores de cada escuela. Como son 3 escuelas se tiene en total 3 grados de
+libertad.
+
+- Cuadrado medio
+```{r eval=FALSE}
+scres/gl
+```
+**Interpretacion:** El cuadrado medio de instructor dentro de escuela es 189.2. Esta es una medida de la
+variabilidad entre los promedios obtenidos por los instructores de cada escuela.
+
+- **Efectos directamente**
+```{r eval=FALSE}
+model.tables(aov(mod1))
+```
+
+- Prueba LTR (prueba de la razón de verosimilitud para determinar si cada fuente de variación es significativa)
+```{r eval=FALSE}
+#Definienco los dos modelos a utilizar
+mod1=lmer(prod~1+(1|lote),REML = F,data = base)
+mod2=lm(prod~1,data = base)
+
+logLik(mod1)
+logLik(mod2)
+D1=-2*logLik(mod1)
+D2=-2*logLik(mod2)
+
+LTR=D2-D1
+pchisq(D2-D1,df=1,lower.tail = F,log.p = F)
+```
+**Interpretacion:** La prueba de razon de verosimilitud da una probabilidad asociada de p=0.02, por lo que se rechaza la hipotesis nula \(H0:\sigma^2_L=0\) y se concluye que si hay veriabilidad de lote a lote 
+
+- Prueba de razón de verosimilitud (LRT) - drop
+```{r eval=FALSE}
+#Recordar que dro1p es solo para las H0 de efectos fijos / no nos sirve para el de varianzas osea de efectos aleatorios mientras que anova es para aleatorios etc
+
+#para probar H0 en un diseno multinivel (fijos)
+drop1(mod1,test = "Chisq")
+
+#para propenciones
+drop1(mod1,test = "LRT")
+
+#(quasipoisson) prueba F
+drop1(mod2,test = "F")
+
+#binomial negativa
+drop1(mod1,test = "LRT")
+
+#para disenos anidados 
+anova(mod5)
+
+#para disenos anidados comparando dos modelos/efectos aleatorios
+#H0 efecto tipo de recolecta es distinto de cero
+anova(mod2,mod3,test="LRT")
+
+```
+
+#### Intervalos de confianza
+- Intervalos de 95% de confianza global (glm binomial/glmm)
+```{r eval=FALSE}
+#quitamos los no significativos
+L2=L[-5,];L2
+ee2=ee[-5]
+#valor k (contrastes significativos) en este caso solo 5 son significativas
+k=5
+#valor qz
+qz=qnorm(1-0.05/(2*k))
+ic.sup=exp(L2+qz*ee2)
+ic.inf=exp(L2-qz*ee2)
+round(cbind(ic.inf,ic.sup,ee2),2)
+```
+
+- Para limites inferiores con 95% de confianza (glm/glmm)
+```{r eval=FALSE}
+#limites inferiores
+k=5
+#al ser solo un limite ya k no se multiplica por 2
+qz=qnorm(1-0.05/k)
+L2=L[-5,];ee2=ee[-5]
+LIM.INF=exp(L2-qz*ee2);round(LIM.INF,2)
+```
+**Interpretacion propenciones:** Con una confianza globla del 95%, se espera que la propencion de daño
+para la d800 sea almenos 40% mayor que para la d400, almenos 61% mayor
+que para la d200 y cerca de 12 veces la propencion de daño de la d0, por
+otra parte la propencion de daño de la d400 es almenos 6 veces la de d0
+y la propencion de daño de la d200 es almenos 5 veces la de d0
+
+**interpretacion:** Estas cantidades representan la razón entre cada par de medias, por ejemplo, la media de miel es un 19% mayor que la media de sirope, la media de miel es 6.7 veces la media de vinagre, etc. Se nota que las que más se diferencian son miel y vinagre, así como sirope y vinagre.
+
+- Para limites inferiores ejemplo anidados/lmer/multinivel
+```{r eval=FALSE}
+gl=nrow(base)-length(coef)
+alpha=0.10
+qt=qt(1-alpha,gl); LIM=L-qt*ee #cuando son dos hay que dividir el alpha en 2
+row.names(LIM)=row.names(p)
+round(LIM,1)
+```
+
+**Interpretacion inferior diseños anidados:** En la Región K, el puntaje promedio del instructor 1 es al menos 10.7 puntos mayor que el del instructor 2, en la Región D, el puntaje promedio del instructor 2 es al menos 7.7 puntos
+mayor que el del instructor 1, y en la Región Central, el puntaje promedio del instructor 1 es
+al menos 11.2 puntos mayor que el del instructor 2. Todo esto se puede asegurar con 90% de
+confianza.
+
+**Intepretacion intervalo al 90% disenos anidados escuelas:** Con 90% de confianza global se puede esperar que el puntaje promedio de la Región K esté al menos 1.86 puntos sobre el de la Región D, y al menos 5.11 puntos sobre el de la Región
+Central.
+
+#### **Evalacion de dispercion**
+- valores ajustados con la función predict
+```{r eval=FALSE}
+tapply(predict(mod1,type = "response"),base$trat1,mean)
+fit=predict(mod1,type = "response")
+```
+
+- Calculo de los residuales de person y el parametro de dispercion phi \((\phi)\)a pie
+```{r eval=FALSE}
+res=residuals(mod1,type = "pearson")
+phi=sum(res^2)/(nrow(base)-length(coef1));phi
+```
+- Parametro de dispercion usando summary(mod)$disp
+```{r eval=FALSE}
+#funciona solo en modelos quasipoisson o binomial negativa
+summary(mod1)$disp
+```
+
+**interpretacion:** Se obtiene un parámetro de dispersión ϕ = 6.1, el cual es mucho mayor que 1, por lo que se comprueba la sospecha de que existe sobredispersión, por lo tanto, no se cumple el supuesto que dice que la media condicional es igual que la variancia condicional.
+
+- Prueba formal 
+
+cuya hipótesis nula es equidispersión, es decir, que se cumple el supuesto básico de la distribución de Poisson que es \(V[Y|X]=E[Y|X]\). Para esto se usa la función dispersiontest en la librería AER. Esta función requiere de un modelo Poisson ajustado con glm y una especificación de una hipótesis alternativa mediante el parámetro trafo, el cual corresponde a 1 para la quasi-Poisson y 2 para la binomial negativa. Además se usa el parámetro alternative="greater" para indicar sobredispersión, sin embargo, no es necesario indicarlo pues éste es el default. En el caso de subdispersión se usa alternative="less".
+
+```{r eval=FALSE}
+library(AER)
+
+#quasi-Poisson
+dispersiontest(mod1,trafo = 1)
+
+#binomial negativa
+dispersiontest(mod1,trafo = 2)
+
+```
+- Criterios para las H0 de las pruebas trafo
+
+*si no se rechaza ninguna sigo con una poisson*
+
+*si se rechaza la primera y la seguda no uso quasi-Poisson*
+
+*si se rechaza la segunda y no la primera uso binomial negativa*
+
+*si se rechanzan las dos no hay criterio*
+
+*si quisieramos cuasipoisson*
+
+- Estimacion la variancia condicional en cada tratamiento
+
+Con el modelo quasi-Poisson y con binomial negativa. Compararacion con
+las variancias observadas para ver cuál las ajusta mejor.
+
+para la quasi-poisson $\sigma^2_j=\phi\lambda_j$ para la binomial
+negativa $\lambda_j+\frac{\lambda^2_j}{\theta}$
+
+```{r eval=FALSE}
+#observadas
+var.obser=tapply(base$conteo,base$trat1,var)
+media=tapply(base$conteo,base$trat1,mean)
+
+
+#var. binomial
+phi=summary(mod2)$disp
+var.bino=phi*media
+
+#var binomial
+theta=summary(mod3)$theta
+alpha=1/theta
+var.quasi=media+alpha*(media^2)
+
+round(cbind(var.obser,var.bino,var.quasi),3)
+```
+
+
+## Formulas
+
+Para un diseño anidado los efectos del factor anidado dentro de cada nivel del factor superior:
+$$\beta_{j(i)}=\mu_{ij}-\mu_i$$
+
+Formula para obterner la estimacion de la varianza del lote apartir de un modelo lm
+$$\hat{\sigma^2}_L=\frac{CMLote-CMRes}{n}$$
+Probabilidad:
+$$\pi=\frac{e^\eta}{1+e^\eta}$$
+
+Propencion:
+$$\frac{\pi}{1-\pi}$$
+## Topicos de interes
+
+La prueba para evaluar el efecto del factor de diseño compara la
+verosimilitud de dos modelos: uno con el factor de diseño y otro sin él.
+
+La prueba de la razón de verosimilitud (LRT) que compara modelos
+mediante el logaritmo de la razón de verosimilitudes y luego contrasta
+el resultado con una distribución Chi-cuadrado.
+
+Los grados de libertad en este caso se calculan restando los grados de
+libertad del modelo con el factor continuo a los grados de libertad del
+modelo con el factor discreto.
+
+- Concepto de Propencion
+
+La propensión es el cociente de la probabilidad de éxito a la
+probabilidad de fracaso, utilizada para medir la intensidad de la
+ocurrencia del evento. Una propensión de 1 indica equiprobabilidad de
+éxito y fracaso. Menos de 1 indica más (intencidad de) fracasos, más de
+1 indica más (intensidad de) éxitos.
+
+$$odds_i=\frac{\pi_i}{1-\pi_i}=e^{\beta_0+\alpha_i}=e^{\eta_i}$$
+
+Una forma de comparar estas dos propensiones es mediante su razón. Esta
+medida es muy conocida por sus siglas en inglés OR (odds ratio). El OR
+al comparar el j-ésimo tratamiento respecto al k-ésimo tratamiento se
+puede obtener del modelo como:
+$$OR(j:k)=\frac{odds_j}{odds_k}=e^{\alpha_j-\alpha_k}$$
+
+En el caso particular en que el factor de diseño tiene solo dos niveles
+y se usa el modelo de suma nula, la restricción implica que α2 = − α1 ,
+por lo que el OR se simplifica a:
+
+$$OR(1:2)==e^{2\alpha_1}$$
+
+
+### Generalidades para el caso continuo en propenciones
+
+- Probabilidad de daño para una dosis de 300 g/l
+```{r eval=FALSE}
+coef=mod2$coefficients
+eta=c(1,300)%*%coef
+prop=exp(eta)/(1+exp(eta));prop
+```
+- Probabilidad de daño para una dosis de 300 g/l con la funcion predict
+```{r eval=FALSE}
+predict(mod2,data.frame(dosis=300),type = "response")
+```
+
+- Valor relevante para fines de interpretacion
+```{r eval=FALSE}
+exp(coef%*%c(0,200))
+```
+
+**Interpretacion:** por cada aumento de 200 ml en la dosis se espera que el daño sea mas propenso en un 75%
+
+- Intervalo de confianza para dosis de 200
+```{r eval=FALSE}
+round(exp(confint(mod2,level = 0.95)*200),3)
+```
+
+**Interpretacion:** Se obtiene que al aumentar la dosis en 200 g/l, se puede esperar con
+95% de confianza que la propensión de daño aumente por un factor que
+está entre el 1,60 y 1,94. Aunque aquí no hay un delta, como se trata de
+aumentos porcentuales, se puede ver que ya un aumento de 60% en la
+propensión es cosiderable y por tanto se nota que aumentos de este
+tamaño en la dosis (200 g/l) van a provocar aumentos relevantes en la
+probabilidad de daño.*
+
+- Evaluar interacción entre dosis y genotipo
+```{r eval=FALSE}
+drop1(mod4,test = "LRT")
+```
+
+- Ecuaciones estimadas para el modelo
+
+Para genotipo R
+
+$log(\frac{p}{1-p})=-1.438+0.002D$
+
+Para genotipo S
+
+$log(\frac{p}{1-p})=-1.424+0.003D$
+
+**Calculo e interpretacion de los OR**
+
+para genotipo R: d y d+100
+```{r eval=FALSE}
+#prueba
+c(1,d+100,0,(d+100)*0)-c(1,d,0,d*0)= c(0,200,0,0)
+c(1,d+100,0,(d+100)*1)-c(1,d,0,d*1)= c(0,200,0,200)
+
+R=c(0,200,0,0)
+S=c(0,200,0,200)
+
+R.OR=exp(R%*%mod4$coefficients);R.OR
+S.OR=exp(S%*%mod4$coefficients);S.OR
+```
+
+**Interpretacion:** Por lo tanto, se nota que el impacto de un aumento de 200 g/l en la
+dosis es mayor para las plantas de genotipo S puesto que el OR es 2,05
+(aumento por un factor 2,05 en la propensión de daño), mientras que para
+las plantas de genotipo R el OR es 1,53 (aumento de 53% en la propensión
+de daño).
+
+- Intervalos de confianza 95% para cada genotipo 
+```{r eval=FALSE}
+#contrastes de d y d+100
+
+R=c(0,200,0,0)
+S=c(0,200,0,200)
+
+eta=mod4$coefficients
+
+h=cbind(R,S)
+L=t(h)%*%eta
+
+ee4=sqrt(diag(t(h)%*%vcov(mod4)%*%h))
+
+#correccion 
+k=2
+
+qz=qnorm(1-0.05/(2*k))
+
+ic.sup=exp(L+qz*ee4)
+ic.inf=exp(L-qz*ee4)
+
+round(cbind(ic.inf,ic.sup,ee4),2)
+```
+
+**Interpretacion:** Para el genotipo R, cuando se incrementa la dosis en 200 g/l, la
+propensión aumenta entre un 32% y un 78%, mientras que para el genotipo
+S aumenta por un factor entre 1,75 y 2,4.

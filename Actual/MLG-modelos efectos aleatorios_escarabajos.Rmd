@@ -59,7 +59,7 @@ machos que el método de alumbrado público."
 al modelo que está usando en R (suma nula o tratamiento referencia).
 ```{r}
 options(contrasts=c("contr.sum","contr.poly"))
-#options(contrasts=c("contr.treatment","contr.poly"))
+options(contrasts=c("contr.treatment","contr.poly"))
 contrasts(base$tipo)
 ```
 
@@ -213,7 +213,7 @@ anova(mod3,mod4)
 • Construya intervalos de 95% para el OR obtenido con cada modelo (con bloques fijos y con efectos
 aleatorios). Compárelos.
 ```{r}
-#options(contrasts=c("contr.sum","contr.poly"))
+options(contrasts=c("contr.sum","contr.poly"))
 mod1=glm(cbind(M,H)~tipo+parcela,family = "binomial",data = base)
 mod3=glmer(cbind(M,H)~tipo+(1|parcela),family = "binomial",data = base)
 
@@ -286,6 +286,9 @@ claro cuál de los dos métodos produce estimaciones más cercanas a la realidad
 
 
 
+```{r}
+emmeans(mod1, pairwise~tipo, adjust="Tukey")
+```
 
 
 

@@ -36,7 +36,7 @@ Codigos de especie
 Carga de la base
 
 ```{r}
-load("base_abejas.Rdata")
+load("bases/base_abejas.Rdata")
 levels(base_abejas$especie)=c("apis","euglo","poly","toxo","trigo")
 ```
 

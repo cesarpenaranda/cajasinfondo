@@ -366,30 +366,233 @@ a.	Haga el análisis para determinar si hay un efecto de la edad sobre el forraj
 mod1=lmer(forraje~edad+(1|parcela),data = base4)
 ```
 
-Ahora considere que se hizo un experimento similar al anterior donde se quería además ver el efecto de la densidad de siembra  por lo que se decidió sembrar 3 de las parcelas a una planta por metro cuadrado, otras 3 parcelas a 2 plantas por metro cuadrado y otras 3 parcelas a 4 plantas por metro cuadrado.  Los datos están en la base3 del mismo archivo anterior “forraje.Rdata”.
+```{r}
+xyplot(forraje~parcela,groups = edad,type=c("a","p"), data = base4,auto.key = list(columns=3))
+```
+**Graficamente se obserca cierto efecto de la edad en el forraje, pero es variable segun la parcela, por ejemplo en la parcela 1 se ven las diferencias mas claras mientras que en la parcela 6 las diferencias son muy reducidas, por lo que se puede ver cierta interaccion**
 
+- Prueba formal de independencia
+```{r}
+mod1=lmer(forraje~edad+(1|parcela),data = base4)
+mod2=lmer(forraje~edad+(1|parcela)+(1|parcela:edad),data = base4)
+anova(mod1,mod2,test="LRT")
+```
+**No podemos analisar la interacion dado que la parcela funciona como un bloque, y no hay mas de dos observaciones de tratamientos por bloque dado que es un promedio de 10 plantas(un valor por tratamiento) no grados de libertad suficientes**
+
+- Prueba formal del efecto de edad
+```{r}
+mod1=lmer(forraje~edad+(1|parcela),data = base4)
+drop1(mod1,test = "Chisq")
+```
+**Se rechaza la H0 de igualdad de medias para las tres edades con un p<0.05**
+
+Ahora considere que se hizo un experimento similar al anterior donde se quería además ver el efecto de la densidad de siembra  por lo que se decidió sembrar 3 de las parcelas a una planta por metro cuadrado, otras 3 parcelas a 2 plantas por metro cuadrado y otras 3 parcelas a 4 plantas por metro cuadrado.  Los datos están en la base3 del mismo archivo anterior “forraje.Rdata”.
+```{r}
+str(base3)
+base3$parcela=factor(base3$parcela)
+base3$den=factor(base3$den)
+base3$edad=factor(base3$edad)
+```
 b.	Justifique por qué ahora este diseño es de parcelas divididas y no de bloques.
+
+**Pasa a ser de parcelas divididas o multinivel, dado que las parcelas tienen un factor de interes diferente a las demas, ademas de que hay mas de una observacion del factor dentro de cada parcela**
+
+**El diseno de bloques de la primera parte se convierte en parcelas divididas, porque ahora cada bloque tiene un tratamiento diferente en cuanto a dencidad de siembra (Nivel2). cada bloque se convierte en una parcela con factor de parcela la dencidad de siembra, mientras que cada subdivision del bloque original se denomina subparcela y la edad de cosecha es el factor de subparcela (Nivel1)**
+
 c.	Analice gráficamente el comportamiento de la respuesta al comparar las 3 densidades y las 3 edades simultáneamente (gráfico de cajas).
+```{r}
+xyplot(forraje~parcela|edad,groups = den,type=c("a","p"),data = base3,auto.key = list(columns=3))
+```
+```{r}
+xyplot(forraje~edad|den,type=c("a","p"),data = base3,auto.key = list(columns=3))
+xyplot(forraje~edad,groups = den,type=c("a","p"),data = base3,auto.key = list(columns=3))
+```
+**Se puede ver un efecto de la dencidad y de la edad, edemas de cierta interaccion entre las mismas**
 d.	Escriba el modelo.
+$$\mu_{ijk}=\beta_0+\alpha_i+\tau_j+(\alpha\tau)_{ij}+\delta_k$$
+donde: 
+$$\delta\sim N(0,\sigma^2_\delta)$$
+\(\alpha_i\) = efecto de la i-esima edad
+\(\tau_j\)= efecto de la j-esima dencidad
+\((\alpha\tau)_{ij}\)= efecto de interacion de edad y dencidad
+\(\delta_k\)= efecto aleatorio de la parcela
+
 e.	Haga el análisis para determinar si hay interacción entre edad y densidad.
+```{r}
+mod1=lmer(forraje~den*edad+(1|parcela),data = base3)
+drop1(mod1,test = "Chisq")
+```
+**No hay suficiente evidencia estadistica para rechazar H0 con un p>0.05, por lo que podemos asumir independencia entre la edad y la dencidad para el promedio de forraje, ademas se pueden hacer comparaciones de las 3 edades independientemente de la dencidad y viceversa**
+
 f.	Haga el análisis para deteminar si hay un efecto de la densidad y de la edad.
+```{r}
+mod1=lmer(forraje~den+edad+(1|parcela),data = base3)
+drop1(mod1,test = "Chisq")
+```
+**Para ambos casos se rechaza H0 con un p<0.05, por lo que hay un efecto de la dencidad y de la edad en el forraje promedio**
 g.	Haga las comparaciones relevantes si tiene sentido hacerlas.
+```{r}
+emmeans(mod1,pairwise~den,adjust="Tukey")
+```
+**Para las dencidades se encuentran diferencias significativas entre la dencidad 1 y la dencidad 4, siendo el valor mas alto para la dencidad 1, en las demas no se logran encontrar diferencias significativas**
+
+```{r}
+emmeans(mod1,pairwise~edad,adjust="Tukey")
+```
+**Para las edades se logra encontras diferencias significativas en las edades 6 y 10, siendo el valor mas alto en el promedio del forraje para la dencidad 10, en las demas no se logran encontrar diferencias significativas**
 
 7.	Se toman 9 grupos de hemípteros semiacuáticos, cada grupo compuesto por 10 individuos.  Se analizan dos factores: tipo de jabón y concentración (ppm) la cual se toma en rangos de 1 a 8, 9 a 48 y 50 a 190.   Cada grupito de insectos se somete a un solo tipo de jabón pero pasa por las 3 concentraciones dejando un tiempo de recuperación entre una concentración y la siguiente.   Nos vamos a concentrar  en una variable en cada corrida: tiempo del individuo en el agua.  Los datos están en el archivo “Hemipteros.Rdata”.
+```{r}
+load("bases/Hemipteros.Rdata")
+```
 
 a.	Escriba el modelo que incluye interacción entre los dos factores de diseño. Escriba todos los componentes del modelo.
+$$\mu_{ijk}=\beta_0+\alpha_i+\tau_j+(\alpha\tau)_{ij}+\delta_k$$
+donde: 
+$$\delta\sim N(0,\sigma^2_\delta)$$
+ademas, i-esimo concentracion, j-esimo tipo de jabon,\((\alpha\tau)_{ij}\) interaccion entre jabon y concentracion, \(\delta_k\) efecto aleatorio del grupo
+
 b.	Represente los datos gráficamente y comente lo que se puede esperar.
+```{r}
+xyplot(tiempo~tipo,groups = ppm,type=c("a","p"),data = datos,auto.key = list(columns=3))
+xyplot(tiempo~ppm,groups = tipo,type=c("a","p"),data = datos,auto.key = list(columns=3))
+
+dotplot(tiempo~grupo|tipo,groups = ppm,type=c("a","p"),data = datos,auto.key = list(columns=3))
+dotplot(tiempo~grupo|ppm,groups = tipo,type=c("a","p"),data = datos,auto.key = list(columns=3))
+```
+**Se puede ver cierta interaccion entre el tipo de jabon y la concentracion, ademas de un efecto de la concentracion**
 c.	Verifique si hay interacción.
+```{r}
+mod1=lmer(tiempo~tipo*ppm+(1|grupo),data = datos)
+drop1(mod1,test = "Chisq")
+```
+**Se rechaza H0 con un p<0.001, por lo que se encuentra interaccion entre el tipo de jabon y la concetracion, por lo tanto no hay independencia entre estos factores, para sus respectivas conparaciones se debe fijar uno de los factores segun sea el interes del investigador**
 d.	Obtenga la estimaciones de las varianzas e intervalos de confianza para las desviaciones estándar.
+```{r}
+summary(mod1)
+confint(mod1)
+```
+**Aunque la varianza de grupo a grupo es pequena, no es despreciable ya que el intervalo de la desviacion estandar no pega con el cero, pues va de 0.23 a 1.18, la desviacion estandar residual va de 2.1 a 2.5 (con 95% de confianza)**
+
+
+**Se obtiene un sigma01 el cual es la desviacion estandar del grupo, aunque su variabilidad no es demaciado alta, esta no deja de ser relevante dado que esta no limita con cero**
+
 e.	Continúe el análisis adecuadamente.
+```{r}
+emmeans(mod1,pairwise~ppm|tipo,adjust="Bonferroni")
+```
 
 8.	Tome el ejemplo sobre el cerebro de las ratas (Rat Brain) del capítulo 5 del libro “Linear mixed models a practical guide using statistical. software”.
 
 a.	Utilice los datos que se encuentran en el archivo “ratas.Rdata”. Asegúrese que las variables “treatment” y “región” están bien definidas como factor. La variable respuesta es “actívate”.
+```{r}
+load("bases/ratas.Rdata")
+str(base)
+base$treatment=factor(base$treatment)
+base$region=factor(base$region)
+```
+
 b.	Haga un boxplot con la respuesta en Y y region+treatment en X, de tal forma que se vea la variabilidad de cada combinación. Obtenga las medias y desviaciones estándar para cada combinación de tratamiento y región. Justifique si se puede esperar homocedasticidad.
+```{r}
+m=tapply(base$activate,list(base$treatment,base$region),mean);m
+var=tapply(base$activate,list(base$treatment,base$region),var);var
+boxplot(activate~region+treatment,data=base)
+points(m,col="red",pch=8)
+```
+**No podemos esperar homocedasticidad a primera vista dado que las varianzas son distintas para varios tratamientos**
 c.	Represente los datos gráficamente para determinar si hay interacción entre tratamiento y región.
+```{r}
+xyplot(activate~region,groups=treatment,type=c("a","p"),data=base,auto.key = list(columns=2))
+xyplot(activate~treatment,groups=region,type=c("a","p"),data=base,auto.key = list(columns=3))
+```
+**Se observa interaccion entre la region y el tratamiento dado las diferencias en los promedios de la region 1 a la 3 son mas claras sus respectivas diferencias**
 d.	Verifique la interacción entre tratamiento y region.
+```{r}
+mod1=lmer(activate~region*treatment+(1|animal),data = base)
+drop1(mod1,test = "Chisq")
+```
+**Se rechaza H0 con un p<0.0001, por lo que no hay independencia entre los factores de tratamiento y region, por lo tanto las comparaciones de los efectos deben hacerse fijando un factor segun sea el interes del investigador**
+
 e.	Haga las comparaciones de interés y reporte intervalos de confianza.
+```{r}
+emmeans(mod1,pairwise~treatment|region,adjust="Bonferroni")
+```
+**Se encuentran diferencias en las medias de activacion en las tres regiones,para los dos tratamientos,hay que cuantificar dichas diferencias**
+```{r}
+ee=38.2
+t1_t2.r1=-98.2
+t1_t2.r2=-197.5
+t1_t2.r3=-360.0
+L=cbind(t1_t2.r1,t1_t2.r2,t1_t2.r3)
+L=abs(L)
+alpha=0.05
+gl=nrow(base)-length(coef)
+qt=qt(1-alpha,gl);LIM.I=L-qt*ee
+LIM.I
+LIM.S=L+qt*ee;LIM.S
+```
 
 9.	Analice los datos del ejemplo de mascarillas que se explicó en la presentación y se encuentran en el archivo “mascarillas.Rdata”. Incluya en su análisis el sexo de cada rostro además de la clasificación de atractivo. Recuerde que el factor de diseño es la oclusión.
 
+Nivel 1
+Unidad: Rostro-oclusion
+Factor: Nivel oclusion
+
+Nivel2:
+Unidad: rostros-sexo
+Factor: sexo
+
+Nivel3:
+Unidad: bloque
+Factor: nivel de atractivo
+
+```{r}
+load("bases/mascarillas.Rdata")
+str(base)
+```
+```{r}
+xyplot(y~sexo|atractivo,groups = oclusion,type=c("a","p"),data = base,auto.key = list(columns=3))
+```
+
+**Hay interacion en del sexo para los no atractivos**
+
+```{r}
+mod1=lmer(y~oclusion*atractivo*sexo+(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+
+**No hay suficiente evidencia estadistica para rechazar H0, por lo que no se encuentra interaccion triple**
+
+```{r}
+mod1=lmer(y~oclusion*atractivo+oclusion*sexo+atractivo*sexo+(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+
+**Primeramente eliminamos la interacion de atractivo:sexo**
+```{r}
+mod1=lmer(y~oclusion*atractivo+sexo(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+
+
+**Eliminamos la interaccion de oclusion:sexo **
+```{r}
+mod1=lmer(y~oclusion*atractivo+sexo+(1|bloque),data=base)
+drop1(mod1,test = "Chisq")
+```
+**Se rechaza H0 con un p>0.05, por lo que no hay independencia entre el atractivo y la oclusion, aunque sexo no es un factor de diseno, se puede observar que hay diferencias entre la respuesta promedio de hombres y mujeres (independientemente de oclusion y atractivo)**
+
+```{r}
+xyplot(y~sexo,groups = oclusion,type=c("a","p"),data = base,auto.key = list(columns=3))
+```
+```{r}
+xyplot(y~atractivo,groups = oclusion,type=c("a","p"),data = base,auto.key = list(columns=3))
+```
+
+```{r}
+emmeans(mod1,pairwise~oclusion|atractivo,adjust="Bonferroni")
+```
+**Segun el grafico de arriba, para las personas tracticas la oclusion no hace diferencia en la respuesta promedio, en cambio, para personas no atractivas, las mascarillas de tela y medica aumentan la respuestra promedio con respecto al control. todo esto se confirma en las pruebas de pares de medias pues solo se econtraron diferencias entre control y cada una de las mascarillasm pero en personas no atractivas**
+```{r}
+emmeans(mod1,pairwise~sexo,adjust="Bonferroni")
+```

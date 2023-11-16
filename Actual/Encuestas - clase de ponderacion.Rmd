@@ -1,0 +1,138 @@
+---
+title: "Untitled"
+author: "Cesar Peñaranda"
+date: "2023-11-13"
+output: html_document
+---
+
+```{r}
+library(survey)
+library(haven)
+library(janitor)
+library(dplyr)
+```
+- cargar base de datos de la enaho
+```{r}
+enaho= read_dta("ENAHO2023.dta")
+```
+
+- estimaciones poblacionales de la enaho
+
+```{r}
+enaho %>% tabyl(A4) # sexo 
+enaho %>% tabyl(A5) # edad 
+enaho %>% tabyl(A14) # educacion
+
+```
+
+```{r}
+enaho = enaho %>% mutate(CS1=as_factor(A4)) # le pongo cs1 para que me quede con el mismo nombre que tiene en actualidades
+
+enaho  %>%  tabyl(CS1) # sexo 
+```
+- recodificaciones}
+
+```{r}
+enaho = enaho %>% mutate(edad=case_when(
+  A5 < 18 ~ NA,
+  A5 >= 18 & A5 <= 34 ~ 1,
+  A5 >= 35 & A5 <= 49 ~ 2,
+  A5 > 49 ~ 3))
+
+enaho = enaho %>% mutate(edad=factor(edad, labels = c("18a34","35a49","50+")))
+enaho  %>%  tabyl(edad) #edad 
+
+```
+```{r}
+enaho = enaho %>% mutate(edu=case_when(
+  A14 <= 39 ~ 1,
+  A14 >= 41 & A14 <= 119 ~ 2))
+
+enaho = enaho %>% mutate(edu=factor(edu, labels = c("primariaYsecundaria","universitaria")))
+enaho  %>%  tabyl(edu) #educacion 
+```
+
+```{r}
+diseno.enaho= svydesign(ids = ~ nro_Vivienda, strata = ~ REGION+ZONA,weights = ~ FACTOR, data = subset(enaho , A5 >=18 & is.na(edad)== FALSE & is.na(edu)==FALSE))
+```
+
+```{r}
+tabla= svytable(~edu+edad+CS1, diseno.enaho); tabla
+tabla= as.data.frame(tabla);tabla
+#cuando haga lo de actualidades las etiquetas edu edad CS1 deben de ser exactamente iguales.
+```
+- cargar actualidades y recodificar
+```{r}
+act= read_sav("ACT23_2023_completa.sav")
+
+act= filter(act,CS2>=18)
+act %>% tabyl(CS1)
+```
+
+```{r}
+act= act %>% mutate(CS1=as_factor(CS1))
+act= act %>% mutate(CS1=case_match(CS1,"INTERSEXO" ~"MUJER", .default = CS1)) 
+act= act %>% mutate(CS1=factor(CS1,labels = c("Hombre","Mujer")))
+act %>% tabyl(CS3)
+```
+```{r}
+act= act %>% mutate(edu=case_when(
+  CS3<=39~1,
+  CS3>= 41 & CS3 <=119~2))
+act= act %>% mutate(edu=factor(edu, labels = c("primariaYsecundaria","universitaria")))
+act %>% tabyl(edu)
+```
+
+
+```{r}
+act = act %>% mutate(edad=case_when(
+  CS2 >= 18 & CS2 <= 34 ~ 1,
+  CS2 >= 35 & CS2 <= 49 ~ 2,
+  CS2 > 49 ~ 3))
+
+act = act %>% mutate(edad=factor(edad, labels = c("18a34","35a49","50+")))
+act  %>%  tabyl(edad) #edad 
+```
+
+```{r}
+diseno.act0= svydesign(ids= ~1,data = act)
+```
+- post estratificar
+```{r}
+diseno.act= postStratify(diseno.act0,strata = ~ edu+edad+CS1, population = tabla)
+```
+
+
+```{r}
+svytable(~CS1,diseno.act)
+svytable(~CS1,diseno.enaho)
+```
+```{r}
+svytable(~edu,diseno.act)
+svytable(~edu,diseno.enaho)
+```
+
+```{r}
+svytable(~edad,diseno.act)
+svytable(~edad,diseno.enaho)
+```
+- normalizar los pesos
+```{r}
+act = act %>% mutate (factor=1/(diseno.act$prob))
+act$factor = act$factor * (630/sum(1/diseno.act$prob))
+sum(act$factor)
+```
+```{r}
+diseno.act2= svydesign(ids = ~ 1, data= act,weights = ~ factor)
+```
+
+- verificar proporciones
+```{r}
+svytable(~ CS1, diseno.act2)/sum(act$factor)
+svytable(~CS1,diseno.enaho)/ sum(1/diseno.enaho$prob)
+
+svytable(~ edu, diseno.act2)/sum(act$factor)
+svytable(~ edu,diseno.enaho)/ sum(1/diseno.enaho$prob)
+```
+
+

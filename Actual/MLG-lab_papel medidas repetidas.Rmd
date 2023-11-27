@@ -1,0 +1,103 @@
+---
+title: "Lab. No.6 - Medidas repetidas - SOLUCION"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+### Papel
+```{r}
+library(lattice)
+library(lme4)
+library(emmeans)
+```
+
+1.	Utilice los datos que se encuentran en el archivo `papel.Rdata`. Asegúrese que están bien definido el método como factor, pero deje temperatura como numérica.
+```{r}
+load("bases/papel.Rdata")
+str(base)
+table(base$metodo)
+base$metodo=factor(base$metodo)
+levels(base$metodo)=c("M1","M2","M3")
+base$lote=factor(base$lote)
+```
+
++ Haga un gráfico de la respuesta contra temperatura, donde se aprecien los datos de cada lote en  paneles separados. Agregue una línea de regresión para cada lote y verifique si tiene sentido modelar la temperatura de forma continua.
+
+```{r}
+xyplot(res~temp|lote,type=c("r","p"),data = base)
+```
+**Se observa linealidad en los lotes, por lo que tiene sentido observar la temperatura de manera continua**
+
++ Haga un gráfico para apreciar si la pendiente de temperatura es similar de lote a lote, dentro de cada método.
+```{r}
+xyplot(res~temp|metodo,groups = lote,type=c("r","p"),data = base,auto.key = list(columns=3))
+```
+**Las pendientes son similares mas no identicas, para los lotes del metodo uno es donde se observa mas las distinciones de las pendientes de cada lote**
+
++ Haga un gráfico para visualizar si se puede esperar interacción entre método y temperatura.
+```{r}
+xyplot(res~temp,groups = metodo,type=c("r","p"),data = base,auto.key = list(columns=3))
+```
+**No se observa una interaccion aparante**
+
+2.  Escriba el modelo matemático completo donde se permite interacción entre método y temperatura, además se permite que las pendientes de temperatura varíen de lote a lote, dentro de cada método.
+
++ Escriba el modelo de la forma corta (sin variables auxiliares para método e interacción).
+$$y_{ijk,T}=\beta_0+\alpha_i+\beta_1T+\delta_i+u_{0,j}+u_{1,j}+\epsilon_{ijk}$$
++ Escriba el modelo de la forma larga (con variables auxiliares para método e interacción).
+
+$$\mu_{ij,T}=\beta_0+\alpha_2M2+\alpha_3M3+\beta_1T+\delta_2M2T+\delta_3M3T+u_{0,i}+u_{1,i}$$
++ Compare estos modelos con sus contrapartes cuando se utiliza temperatura de forma categórica.
+$$y_{ijk}=\beta_0+\alpha_i+\tau_j+\delta_{ij}+\epsilon_{ijk}$$
+3. Haga el análisis para determinar la forma correcta en la parte aleatoria.
+```{r}
+mod1=lmer(res~metodo*temp+(1+temp|lote),data = base)
+mod2=lmer(res~metodo*temp+(1|lote),data = base)
+
+anova(mod1,mod2,test="LRT")
+```
+
+**No se rechaza H0 por lo que los dos modelos explican lo mismo**
+
+4. Analice la interacción entre método y temperatura.
+```{r}
+#analisamos con drop1 dado que es la parte fija
+mod2=lmer(res~metodo*temp+(1|lote),data = base)
+drop1(mod2,test="Chisq")
+```
+**No econtramos interaccion entre metodo y temperatura**
+```{r}
+mod2=lmer(res~metodo+temp+(1|lote),data = base)
+drop1(mod2,test="Chisq")
+```
+
+
+5. ¿Qué análisis deben hacerse a partir de lo obtenido anteriromente?
+```{r}
+summary(mod2)
+```
+**En el drop1 se concluye que el coeficiente de temperatura es diferente de cero (p<0.001). Del summary se obtiene este coeficiente y se interpreta
+para un aumento de temperatura que tenga sentido, por ejemplo, 25 grados. Entonces por cada 25 grados que aumente la temperatura se espera
+que la resistencia promedio aumente (0.12x25=3.02) 3.02 kg/cm, en cualquiera de los 3 métodos. También se puede hacer un intervalo de 
+confianza para este aumento**
+
+
+```{r}
+# Utilizamos un aumento de 25 grados para fines de interpretacion
+confint(mod2)
+confint(mod2)[6,]*1
+```
+**Se espera con un 95% de confianza global que la resistencia aumente entre 0,09380 y 0.1479 kl/cm por cada aumento de un grado en la temperatura independientemente del metodo  **
+
+comparaciones para metodo dado que en el drop salio significativo
+```{r}
+emmeans(mod2,pairwise~metodo,adjust="Tukey")
+```
+**Ningun contraste es significativo, no se detecta diferencias entre ningun par de metodos**
+
+
+

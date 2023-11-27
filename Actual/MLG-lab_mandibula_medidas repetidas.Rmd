@@ -1,0 +1,75 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-11-27"
+---
+
+6.2. Ortodoncia
+Se realizó un estudio para dar seguimiento al crecimiento óseo de la maxila o mandíbula de
+27 niños (16 hombres y 11 mujeres) desde los 8 a los 14 años. Cada dos años se midió la
+distancia entre la pituitaria y la escotadura pterygomaxilar, dos puntos que son fácilmente
+identificados con rayos X. Esta distancia se utiliza para conocer el grado de maduración
+esquelética del individuo y está medida en milímetros. Se compara el ritmo de crecimiento
+de esta distancia entre hombres y mujeres.
+Ejercicios
+1. Abra el archivo ortodoncia.Rdata.
+```{r}
+load("bases/ortodoncia.Rdata")
+str(base)
+```
+
+2. Haga un gráfico donde se pueda ver el crecimiento de la distancia en función del tiempo.
+En el gráfico se deben apreciar las diferencias entre los diferentes niños sin importar
+el sexo. Primero se tiene que hacer una nueva variable llamada edad1=edad-8 de tal
+forma que el intercepto represente la distancia a la edad inicial que es 8 años.
+A partir de lo que se observa en el gráfico, ¿qué se puede adelantar sobre el crecimiento
+de la distancia? ¿Se puede decir que entre más alta la distancia a los 8 años va a haber
+un mayor crecimiento de esa distancia en el tiempo?
+```{r}
+base$edad1=base$edad-8
+```
+
+```{r}
+xyplot(distancia~edad1|sujeto,type=c("r","p"),data=base)
+```
+¿qué se puede adelantar sobre el crecimiento
+de la distancia?
+
+**Se observa una tendencia lineal al crecimiento de la distancia segun trascurren los años, mas pronunciada en algunos individuos que en otros**
+
+¿Se puede decir que entre más alta la distancia a los 8 años va a haber
+un mayor crecimiento de esa distancia en el tiempo?
+
+**No podemos anfirmar lo anterior dado que las distancias iniciales y los crecimientos que estas experimentan en el tiempo son distintas por cada individuo**
+3. Haga gráficos donde se pueda ver el crecimiento de la distancia en función del tiempo
+para hombres y para mujeres. En un caso ponga las líneas de cada sujeto y en otro
+ponga solo la línea de tendencia de hombres y de mujeres.
+```{r}
+xyplot(distancia~edad|sexo,groups = sujeto,type=c("r","p"),data=base,)
+xyplot(distancia~edad,groups = sexo,type=c("r","p"),data=base,auto.key = list(columns=2))
+```
+
+A partir de los gráficos, ¿se puede adelantar que en alguno de los sexos haya un mayor
+crecimiento de la distancia?
+**Para el caso de los hombres se observa una tendencia del crecimiento de la distancia un poco mayor a travez del tiempo**
+
+Usando un modelo verifique si la distancia crece al mismo ritmo para hombres y para mujeres. En su análisis debe decidir si descarta la posibilidad de correlación entre
+pendientes e interceptos.
+```{r}
+mod1=lmer(distancia~sexo*edad1+(edad1|sujeto),data = base)
+mod2=lmer(distancia~sexo*edad1+(1|sujeto),data = base)
+anova(mod1,mod2,test="LRT")
+summary(mod2)
+```
+```{r}
+drop1(mod2,test = "Chisq")
+```
+**Encontramos interaccion entre edad y sexo, por lo que los hombre y mujeres tienen un ritmo de crecimiento de la distancia distinto a travez del tiempo**
+
+Escriba el modelo utilizado para las observaciones individuales.
+Escriba el modelo para la media condicional de cada sexo.
+Estime cuánto crece la distancia cada año en promedio entre los hombres y cuánto crece
+entre mujeres. Para hacer las estimaciones debe usar un modelo que se haya estimado
+con REML.
+Estime la distancia promedio a los 8 años para cada sexo. ¿En cuánto difiere la distancia
+entre hombres y mujeres a esa edad? ¿En cuánto difiere la distancia a los 14 años?

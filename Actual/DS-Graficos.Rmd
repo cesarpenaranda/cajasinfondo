@@ -1,0 +1,174 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-11-27"
+---
+```{r Librerias}
+library(cowplot)
+library(haven)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+```
+
+```{r Cargar la base}
+base <- read_sav("~/ACT23_vf.sav")
+```
+
+```{r}
+# Define un vector con los nombres de preguntas personalizados
+nombres_preguntas <- c(
+  "...su vida en general?",
+  "...nivel educativo?",
+  "... ingresos del hogar?",
+  "...amistades?",
+  "...relaciones familiares?",
+  "...capacidad para moverse?",
+  "...salud mental?",
+  "...aprender nuevas habilidades?",
+  "...vivienda?"
+)
+
+#diseno
+base1 <- base %>%
+  select(ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8, ST9,F.mu)
+
+basef <- base1 %>%
+  filter_all(all_vars(. != 9))
+
+#diseno.act2= svydesign(ids = ~ 1, data= base.fil,weights = ~ F.mu)
+# Crea el diseño de la encuesta
+diseno <- svydesign(ids = ~1, data = basef, weights = ~F.mu)
+
+# Transforma los datos para calcular las proporciones de calificaciones
+ST1<- svytable(~ST1, design = diseno)
+ST2<- svytable(~ST2, design = diseno)
+ST3<- svytable(~ST3, design = diseno)
+ST4<- svytable(~ST4, design = diseno)
+ST5<- svytable(~ST5, design = diseno)
+ST6<- svytable(~ST6, design = diseno)
+ST7<- svytable(~ST7, design = diseno)
+ST8<- svytable(~ST8, design = diseno)
+ST9<- svytable(~ST9, design = diseno)
+Count=c(ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8, ST9)
+# Convierte las calificaciones en factores categóricos con el orden deseado
+
+
+Pregunta=factor(rep(c("ST1", "ST2", "ST3", "ST4", "ST5", "ST6", "ST7", "ST8", "ST9"),each=3))
+Calificacion=factor(rep(c("Insatisfecho", "Ni insatisfecho ni satisfecho","Satisfecho"),9,each=1))
+base2=data.frame(Pregunta,Calificacion,Count)
+# Calcula la proporción de calificaciones en cada pregunta
+base1 <- base2 %>% 
+  group_by(Pregunta) %>% 
+  mutate(Proporcion = Count / sum(Count)) %>%
+  ungroup()
+base1$Proporcion=round(base1$Proporcion,3)
+```
+
+```{r GRAFICO PARA CUADRO 2}
+# Crea el gráfico de barras apiladas de 100%
+ggplot(base1, aes(x = Proporcion, y = Pregunta, fill = Calificacion), weights=base$F.mu) +
+  geom_col(position = "stack") +
+  scale_fill_brewer(palette = "Set3") +  # Utiliza la paleta Set3
+  scale_y_discrete(labels = nombres_preguntas) +
+   geom_text(
+    aes(label =scales::percent(Proporcion)),
+    position = position_stack(vjust = 0.5),   # Ajusta la posición vertical de las etiquetas
+    color = "black",                          # Color del texto
+    size = 3,                                 # Tamaño del texto
+    show.legend = F                           # No mostrar en la leyenda
+  )+
+  labs(
+    title = "",
+    x = "Porcentaje",
+    y = "Aspecto de la vida"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    panel.background = element_rect(fill = "white"),  # Fondo blanco
+  # Elimina las marcas de texto en los ejes
+    axis.ticks = element_blank()   # Elimina las marcas de ejes
+  )
+```
+
+- grafico extranjero/costarricense
+```{r}
+#filtrado de los NS/NR
+base.filt<- base[base$ST9 != 9, ]
+base.fil=base.filt[base.filt$CS6 != 9, ]
+#diseno
+diseno.act2= svydesign(ids = ~ 1, data= base.fil,weights = ~ F.mu)
+
+# Crear una tabla de contingencia
+tabla_contingencia = svytable(~ CS6+ST9, diseno.act2)
+#tabla_contingencia <- table(base.fil$CS6, base.fil$ST9)
+
+#Calcular porcentajes por fila
+porcentajes <- prop.table(tabla_contingencia, margin = 1) * 100
+
+datos_porcentajes1 <- as.data.frame(as.table(porcentajes))
+
+colnames(datos_porcentajes1) <- c("Nacional", "SatisfaccionV", "Porcentaje")
+
+levels(datos_porcentajes1$SatisfaccionV)=c("Insatisfecho", "Ni insatisfecho ni satisfecho", "Satisfecho")
+levels(datos_porcentajes1$Nacional)=c("Costarricense", "Extranjero")
+# Grafico Nacionalidad
+grafico1=ggplot(datos_porcentajes1, aes(x = Nacional, y = Porcentaje, fill = SatisfaccionV),weights=base.fil$F.mu) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Porcentaje,2)), vjust = -0.5, position = position_dodge(width = 0.9))+
+  scale_fill_brewer(palette = "Set3")+
+  labs(#title = "Vivienda",
+       x = "Nacionalidad",
+       y = "Porcentaje",
+       fill = "Satisfacción") +
+  theme_minimal()
+
+grafico1
+```
+
+- Grafico satisfaccion/cronicos
+
+```{r}
+#porcentaje de satisfaccion con la vida en general segun ingreso subjetivo
+
+base.filt<- base[base$ST6 != 9, ]
+base.fil=base.filt[base.filt$Padecimientos != 9, ]
+
+#diseno
+diseno.act2= svydesign(ids = ~ 1, data= base.fil,weights = ~ F.mu)
+# Ordenar el dataframe por GrupoEdad de mayor a menor
+
+# Crear una tabla de contingencia
+tabla_contingencia = svytable(~ Padecimientos+ST6, diseno.act2)
+
+# Calcular porcentajes por fila
+porcentajes <- prop.table(tabla_contingencia, margin = 1) * 100
+datos_porcentajes2 <- as.data.frame(as.table(porcentajes))
+colnames(datos_porcentajes2) <- c("Padecimientos", "SatisfaccionCM", "Porcentaje")
+
+levels(datos_porcentajes2$SatisfaccionCM)=c("Insatisfecho", "Ni insatisfecho ni satisfecho", "Satisfecho")
+levels(datos_porcentajes2$Padecimientos)=c("No", "Si")
+
+# Grafico capacidad para moverse
+grafico2=ggplot(datos_porcentajes2, aes(x =Padecimientos, y = Porcentaje, fill = SatisfaccionCM),weights=base.fil$F.mu) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Porcentaje,2)), vjust = -0.5, position = position_dodge(width = 0.9))+
+  scale_fill_brewer(palette = "Set3")+
+  labs(#title = "Capacidad para moverse",
+       x = "Padecimientos crónicos",
+       y = "Porcentaje",
+       fill = "Satisfacción") +
+  theme_minimal()
+
+grafico2
+```
+
+```{r}
+# Combina los gráficos en una sola fila
+grafico_combinado <- plot_grid(grafico1, grafico2, ncol = 1,align = "h", labels = c("Capacidad para moverse", "             Vivienda"))
+
+# Muestra el gráfico combinado
+print(grafico_combinado)
+```

@@ -1,0 +1,423 @@
+---
+title: "Analisis Abejas polinizadoras"
+author: "Cesar Peñaranda, Keyla, Kevin"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-11-18"
+---
+# Anotaciones
+
+* Vamos a analizar el efecto del tiempo en las especies, donde la zona es un efecto aleatorio dado que proviene de una poblacion mas amplia 
+
+* El mes no es un bloque, es una medida repetida
+
+
+- Librerias
+```{r include=FALSE}
+library(lattice)
+library(emmeans)
+library(lme4)
+library(dplyr)
+library(MASS) #para binomial negativa
+library(blmeco) #parametro de dispercion
+```
+
+- Codigos de mes
+```{r eval=FALSE}
+noviembre2018 = 1
+marzo2019     = 2
+abril2019     = 3
+octubre2019   = 4
+noviembre2019 = 5
+marzo2020     = 6
+```
+
+
+- Codigos de especie
+```{r eval=FALSE}
+
+Apis_mellifera       = "apis"
+Euglossa_viridissima = "euglo"
+Polybia_occidentalis = "poly"
+Toxomerus_2          = "toxo"
+Trigona_corvina      = "trigo"
+```
+
+
+- Carga de la base
+```{r}
+load("bases/base_abejas.Rdata")
+levels(base_abejas$especie)=c("apis","euglo","poly","toxo","trigo")
+str(base_abejas)
+```
+
+Columna del total de conteo para cada zona en cada mes
+```{r}
+total <- base_abejas %>%
+  group_by(zona, mes) %>%
+  mutate(x = sum(conteo))
+print(total)
+base_abejas$total=total$x
+base_abejas %>% arrange(zona)
+```
+
+
+- Graficos proporcion de la especie segun finca y mes
+```{r}
+xyplot(conteo/total~mes|zona,group=especie,type=c("a","p"),data=base_abejas,auto.key=list(columns=5))
+```
+
+- Grafico pendiente general
+```{r}
+xyplot(conteo~mes,type=c("r","p"),data=base_abejas,auto.key=list(columns=5))
+```
+**Se oberseva una tendencia al aumento pero minima**
+
+- Grafico pendientes por zona
+```{r}
+xyplot(conteo~mes,group=zona,type=c("r","p"),data=base_abejas,auto.key=list(columns=5))
+```
+**Hay una tendencia al aumento minima, en finca garzas mas bien hay una tendencia negativa**
+- Grafico pendiente por especie segun zona
+```{r}
+xyplot(conteo~mes|zona,group=especie,type=c("r","p"),data=base_abejas,auto.key=list(columns=5))
+
+```
+# Modelos
+
+- Modelo aleatorio poisson
+```{r}
+mod.p1=glmer(conteo~especie*mes+(1|zona)+(mes|zona),family = poisson,data = base_abejas)
+summary(mod.p1)
+```
+
+- Modelo aleatorio binomial negativa
+```{r}
+mod.b1=glmer.nb(conteo~especie*mes+(1|zona)+(mes|zona),data = base_abejas)
+summary(mod.b1)
+```
+- Seleccion del modelo a trabajar H0 los dos modelos explican lo mismo
+```{r}
+anova(mod.p1,mod.b1,test="LRT")
+```
+**Se rechaza H0 con un p<0.05, ademas el modelo con el menor AIC (435.43) es el de la binomial negativa por lo que es el que se ajusta mejor**
+
+- Pruebas formales
+
+H0 independencia entre pendientes e interceptos aleatorios
+```{r}
+mod.b1=glmer.nb(conteo~especie*mes+(1|zona)+(0+mes|zona),data = base_abejas)
+mod.b2=glmer.nb(conteo~especie*mes+(mes|zona),data = base_abejas)
+anova(mod.b1,mod.b2)
+```
+**No hay suficiente evidencia estadistica para rechazar H0**
+
+H0 pendientes aleatorias iguales
+```{r}
+#mod.b1=glmer.nb(conteo~especie*mes+(1|zona)+(0+mes|zona),data = base_abejas)
+mod.b3=glmer.nb(conteo~especie*mes+(1|zona),data = base_abejas)
+anova(mod.b1,mod.b3)
+```
+**No hay suficiente evidencia estadistica para rechazar H0**
+
+H0 independencia entre mes y especie
+```{r}
+mod.b3=glmer.nb(conteo~especie*mes+(1|zona),data = base_abejas)
+mod.b4=glmer.nb(conteo~especie+mes+(1|zona),data = base_abejas)
+anova(mod.b3,mod.b4,test="LRT")
+```
+**Se rechaza H0, por lo que mes y especie no son independientes**
+
+- Comparacion del modelo resultante binomial negativa y modelo del poisson
+
+se le hicieron las mismas pruebas formales al modelo poisson resultando el siguiente modelo:
+
+**mod3=glmer(conteo~especie*mes+(1|zona),family = poisson,data = base_abejas)**
+
+H0 los dos modelos explican lo mismo
+```{r}
+mod.b3=glmer.nb(conteo~especie*mes+(1|zona),data = base_abejas)
+mod.p3=glmer(conteo~especie*mes+(1|zona),family = poisson,data = base_abejas)
+anova(mod.b3,mod.p3,test="LRT")
+```
+**Se rechaza H0 con un p<0.05, el modelo con el menor (AIC=429.52) sigue siendo el binomial negativo, por lo que es el que se ajusta mejor a los datos**
+
+- Parametro de dispercion
+```{r}
+#modelo poisson
+blmeco::dispersion_glmer(mod.p3)
+```
+
+```{r}
+#modelo binomial negativo
+blmeco::dispersion_glmer(mod.b3)
+```
+**Se observa que el mas cercano a 1 es el de la binomial negativa dado que esta considera la sobredispercion para el modelo**
+
+Dado las pruebas anteriores se decide trabajar con la binomial negativa para las comparaciones y conclusiones
+
+- Intervalos de confianza (obtenemos un error para la binomial negativa) pero al usar method wald podemos obtener una estimacion
+```{r eval=FALSE}
+#error al usar confint(profile(mod.b3))
+Error in zeta(shiftpar, start = opt[seqpar1][-w]) :
+profiling detected new, lower deviance (deviance diff = 8.06e-05, tolerance = 1e-09)
+```
+
+- Intervalo de confianza del modelo binomial negativa con method wald
+```{r}
+#binomial negativa
+confint(mod.b3,method="Wald")
+```
+- Intervalo de confianza del modelo poisson
+```{r}
+#poisson
+confint(mod.p3)
+```
+
+# Comparaciones
+
+## Binomial negactiva
+- Para el mes 1 con binomial negativa
+```{r}
+m1=emmeans(mod.b3, c("mes", "especie"), at = list(mes = c(1)));m1
+c1=contrast(m1, method = "pairwise",adjust = "tukey");c1
+confint(c1)
+```
+- Cotas inferiores para los significativos del mes 1
+```{r}
+apis_euglo=2.5554
+apis_poly=6.4330
+apis_toxo=6.5162
+trigo_poly=4.8946
+trigo_toxo=4.9778
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,trigo_poly,trigo_toxo)
+ee=c(0.717,1.453,1.734,1.487,1.766  )
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+
+- Para el mes 2 con binomial negativa
+```{r}
+m2=emmeans(mod.b3, c("mes", "especie"), at = list(mes = c(2)));m2
+c2=contrast(m2, method = "pairwise",adjust = "tukey");c2
+confint(c2)
+```
+- Cotas inferiores para los significativos del mes 2
+```{r}
+apis_euglo=2.4132
+apis_poly=5.3224
+apis_toxo=5.3815
+apis_trigo=1.6065
+trigo_poly=3.7159
+trigo_toxo=3.7750
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo,trigo_poly,trigo_toxo)
+ee=c(0.528,1.122,1.297,0.491,1.140,1.317 )
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+- Para el mes 3 con binomial negativa
+```{r}
+m3=emmeans(mod.b3, c("mes", "especie"), at = list(mes = c(3)));m3
+c3=contrast(m3, method = "pairwise",adjust = "tukey");c3
+confint(c3)
+```
+- Cotas inferiores para los significativos del mes 3
+```{r}
+apis_euglo= 2.271 
+apis_poly=4.212 
+apis_toxo=4.247 
+apis_trigo=1.675 
+trigo_poly=2.537 
+trigo_toxo=2.572 
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo,trigo_poly,trigo_toxo)
+ee=c(0.398,0.813,0.885,0.374,0.823,0.896 )
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+- Para el mes 4 con binomial negativa
+```{r}
+m4=emmeans(mod.b3, c("mes", "especie"), at = list(mes = c(4)));m4
+c4=contrast(m4, method = "pairwise",adjust = "tukey");c4
+confint(c4)
+```
+- Cotas inferiores para los significativos del mes 4
+```{r}
+apis_euglo= 2.129  
+apis_poly= 3.101 
+apis_toxo= 3.112 
+apis_trigo= 1.743 
+ 
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo)
+ee=c( 0.391,0.565 ,0.553 ,0.381 )
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+- Para el mes 5 con binomial negativa
+```{r}
+m5=emmeans(mod.b3, c("mes", "especie"), at = list(mes = c(5)));m5
+c5=contrast(m5, method = "pairwise",adjust = "tukey");c5
+confint(c5)
+```
+- Cotas inferiores para los significativos del mes 5
+```{r}
+apis_euglo=1.98660   
+apis_poly=1.99062 
+apis_toxo= 1.97750  
+apis_trigo= 1.81070  
+ 
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo)
+ee=c(0.511,0.483,0.501,0.507 )
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+- Para el mes 6 con binomial negativa
+```{r}
+m6=emmeans(mod.b3, c("mes", "especie"), at = list(mes = c(6)));m6
+c6=contrast(m6, method = "pairwise",adjust = "tukey");c6
+confint(c6)
+```
+**Para el mes 6 no se encontro ningun contraste significativo**
+
+## Poisson
+- Para el mes 1 con poisson
+```{r}
+m1=emmeans(mod.p3, c("mes", "especie"), at = list(mes = c(1)));m1
+c1=contrast(m1, method = "pairwise",adjust = "tukey");c1
+confint(c1)
+```
+- Cotas inferiores para los significativos del mes 1
+```{r}
+apis_euglo=2.421 
+apis_poly=6.593 
+apis_toxo=4.795 
+apis_trigo=1.554 
+euglo_poly=4.172 
+trigo_poly=5.039 
+trigo_toxo=3.241 
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo,euglo_poly,trigo_poly,trigo_toxo)
+ee=c(0.379,1.169,0.817,0.274,1.219,1.190,0.847)
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+
+- Para el mes 2 con poisson
+```{r}
+m2=emmeans(mod.p3, c("mes", "especie"), at = list(mes = c(2)));m2
+c2=contrast(m2, method = "pairwise",adjust = "tukey");c2
+confint(c2)
+```
+- Cotas inferiores para los significativos del mes 2
+```{r}
+apis_euglo=2.309 
+apis_poly=5.433 
+apis_toxo=4.124 
+apis_trigo=1.585 
+euglo_poly=3.124 
+trigo_poly=3.848 
+trigo_toxo=2.539 
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo,euglo_poly,trigo_poly,trigo_toxo)
+ee=c(0.285,0.920,0.633,0.205,0.955,0.935,0.655)
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+- Para el mes 3 con poisson
+```{r}
+m3=emmeans(mod.p3, c("mes", "especie"), at = list(mes = c(3)));m3
+c3=contrast(m3, method = "pairwise",adjust = "tukey");c3
+confint(c3)
+```
+- Cotas inferiores para los significativos del mes 3
+```{r}
+apis_euglo=2.198  
+apis_poly=4.274  
+apis_toxo=3.453 
+apis_trigo=1.617 
+euglo_poly=2.076 
+trigo_poly=2.657 
+trigo_toxo=1.837
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo,euglo_poly,trigo_poly,trigo_toxo)
+ee=c(0.219,0.675,0.461,0.166,0.703,0.688,0.480)
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+- Para el mes 4 con poisson
+```{r}
+m4=emmeans(mod.p3, c("mes", "especie"), at = list(mes = c(4)));m4
+c4=contrast(m4, method = "pairwise",adjust = "tukey");c4
+confint(c4)
+```
+- Cotas inferiores para los significativos del mes 4
+```{r}
+apis_euglo=2.087   
+apis_poly=3.114  
+apis_toxo=2.783 
+apis_trigo=1.648  
+trigo_poly=1.467  
+trigo_toxo=1.135 
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo,trigo_poly,trigo_toxo)
+ee=c(0.207,0.444,0.318,0.176,0.467,0.349)
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+- Para el mes 5 con poisson
+```{r}
+m5=emmeans(mod.p3, c("mes", "especie"), at = list(mes = c(5)));m5
+c5=contrast(m5, method = "pairwise",adjust = "tukey");c5
+confint(c5)
+```
+- Cotas inferiores para los significativos del mes 5
+```{r}
+apis_euglo=1.9756    
+apis_poly=1.9550 
+apis_toxo=2.1119 
+apis_trigo=1.6794  
+ 
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo)
+ee=c(0.258,0.263,0.259,0.230)
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```
+
+- Para el mes 6 con poisson
+```{r}
+m6=emmeans(mod.p3, c("mes", "especie"), at = list(mes = c(6)));m6
+c6=contrast(m6, method = "pairwise",adjust = "tukey");c6
+confint(c6)
+```
+- Cotas inferiores para los significativos del mes 6
+```{r}
+apis_euglo=1.864 
+apis_poly=0.796
+apis_toxo=1.441
+apis_trigo=1.711 
+
+L=cbind(apis_euglo,apis_poly,apis_toxo,apis_trigo)
+ee=c(0.345,0.270,0.333,0.306)
+alpha=0.05
+qz=qnorm(1-alpha); LIM=L-qz*ee
+round(exp(LIM),2)
+```

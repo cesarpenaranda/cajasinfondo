@@ -65,38 +65,78 @@ base_abejas %>% arrange(zona)
 
 - Graficos proporcion de la especie segun finca y mes
 ```{r}
-xyplot(conteo/total~mes|zona,group=especie,type=c("a","p"),data=base_abejas,auto.key=list(columns=5))
+xyplot(conteo/total~mes|zona,group=especie,type=c("a","p"),data=base_abejas,auto.key=list(columns=1))
 ```
 
 - Grafico pendiente general
 ```{r}
 xyplot(conteo~mes,type=c("r","p"),data=base_abejas,auto.key=list(columns=5))
 ```
-**Se oberseva una tendencia al aumento pero minima**
 
-- Grafico pendientes por zona
+
+**Se oberseva una tendencia al aumento pero minima, no aporta mucho creo**
+
+- Grafico pendientes por zona intentando ver si alguna zona tiene un mayor crecimiento
 ```{r}
 xyplot(conteo~mes,group=zona,type=c("r","p"),data=base_abejas,auto.key=list(columns=5))
 ```
-**Hay una tendencia al aumento minima, en finca garzas mas bien hay una tendencia negativa**
-- Grafico pendiente por especie segun zona
-```{r}
-xyplot(conteo~mes|zona,group=especie,type=c("r","p"),data=base_abejas,auto.key=list(columns=5))
 
+
+**Hay una tendencia al aumento minima, en finca garzas mas bien hay una tendencia negativa, esto creo que no aporta mucho**
+
+```{r}
+#Evaluando linealidad
+names(base_abejas)
+xyplot(conteo~mes|zona:especie, type=c("r","p"),data = base_abejas)
 ```
+
+
+**Parece lineal**
+
 # Modelos
 
 - Modelo aleatorio poisson
 ```{r}
-mod.p1=glmer(conteo~especie*mes+(1|zona)+(mes|zona),family = poisson,data = base_abejas)
+mod.p1=glmer(conteo~especie*mes+(1+mes|zona),family = poisson,data = base_abejas)
 summary(mod.p1)
 ```
 
 - Modelo aleatorio binomial negativa
 ```{r}
-mod.b1=glmer.nb(conteo~especie*mes+(1|zona)+(mes|zona),data = base_abejas)
+mod.b1=glmer.nb(conteo~especie*mes+(1+mes|zona),data = base_abejas)
 summary(mod.b1)
 ```
+```{r}
+#modelo poisson
+blmeco::dispersion_glmer(mod.p1)
+```
+
+```{r}
+#modelo binomial negativo
+blmeco::dispersion_glmer(mod.b1)
+```
+- Grafico correlacion entre interceptos y pendientes
+```{r}
+#Correlacion entre pendientes e interceptos
+xyplot(conteo~mes,groups = zona, type=c("r","p"),data = base_abejas)
+```
+
+
+**Graficamente no se observa una correlacion entre pendientes e interceptos**
+```{r}
+#Correlacion binonegativa H0:rho=0
+mod.b1=glmer.nb(conteo~especie*mes+(1+mes|zona),data = base_abejas)
+mod.b11=glmer.nb(conteo~especie*mes+(1|zona)+(0+mes|zona),data = base_abejas)
+anova(mod.b1,mod.b11,test="LRT")
+```
+
+```{r}
+#Correlacion poisson H0:rho=0
+mod.p1=glmer(conteo~especie*mes+(1+mes|zona),family = poisson,data = base_abejas)
+mod.p11=glmer(conteo~especie*mes+(0+mes|zona),family = poisson,data = base_abejas)
+anova(mod.p1,mod.p11,test="LRT")
+```
+
 - Seleccion del modelo a trabajar H0 los dos modelos explican lo mismo
 ```{r}
 anova(mod.p1,mod.b1,test="LRT")
@@ -109,31 +149,44 @@ H0 independencia entre pendientes e interceptos aleatorios
 ```{r}
 mod.b1=glmer.nb(conteo~especie*mes+(1|zona)+(0+mes|zona),data = base_abejas)
 mod.b2=glmer.nb(conteo~especie*mes+(mes|zona),data = base_abejas)
-anova(mod.b1,mod.b2)
+anova(mod.b1,mod.b2,test="LRT")
 ```
 **No hay suficiente evidencia estadistica para rechazar H0**
 
-H0 pendientes aleatorias iguales
+H0 pendientes aleatorias iguales dentro de cada especie
+
+- Grafico de pendientes dentro de cada especie
+```{r}
+xyplot(conteo~mes|especie,group=zona,type=c("r","p"),data=base_abejas,auto.key=list(columns=2))
+```
+
 ```{r}
 #mod.b1=glmer.nb(conteo~especie*mes+(1|zona)+(0+mes|zona),data = base_abejas)
 mod.b3=glmer.nb(conteo~especie*mes+(1|zona),data = base_abejas)
 anova(mod.b1,mod.b3)
 ```
-**No hay suficiente evidencia estadistica para rechazar H0**
+**No hay suficiente evidencia estadistica para rechazar H0, se asumen pendientes iguales dentro de cada especie**
+
+- Probando interaccion entre mes/especie
+```{r}
+# Grafico de interacion entre mes/especie
+xyplot(conteo~mes,group=especie,type=c("r","p"),data=base_abejas,auto.key=list(columns=3))
+```
 
 H0 independencia entre mes y especie
 ```{r}
 mod.b3=glmer.nb(conteo~especie*mes+(1|zona),data = base_abejas)
 mod.b4=glmer.nb(conteo~especie+mes+(1|zona),data = base_abejas)
 anova(mod.b3,mod.b4,test="LRT")
+drop1(mod.b3,test="Chisq")
 ```
-**Se rechaza H0, por lo que mes y especie no son independientes**
+**Se rechaza H0, por lo que mes y especie no son independientes, (hay interaccion entre mes/especie)**
 
 - Comparacion del modelo resultante binomial negativa y modelo del poisson
 
 se le hicieron las mismas pruebas formales al modelo poisson resultando el siguiente modelo:
 
-**mod3=glmer(conteo~especie*mes+(1|zona),family = poisson,data = base_abejas)**
+ **mod3=glmer(conteo~especie*mes+(1|zona),family = poisson,data = base_abejas)**
 
 H0 los dos modelos explican lo mismo
 ```{r}
@@ -143,7 +196,7 @@ anova(mod.b3,mod.p3,test="LRT")
 ```
 **Se rechaza H0 con un p<0.05, el modelo con el menor (AIC=429.52) sigue siendo el binomial negativo, por lo que es el que se ajusta mejor a los datos**
 
-- Parametro de dispercion
+- Parametro de dispercion 
 ```{r}
 #modelo poisson
 blmeco::dispersion_glmer(mod.p3)
@@ -153,6 +206,7 @@ blmeco::dispersion_glmer(mod.p3)
 #modelo binomial negativo
 blmeco::dispersion_glmer(mod.b3)
 ```
+
 **Se observa que el mas cercano a 1 es el de la binomial negativa dado que esta considera la sobredispercion para el modelo**
 
 Dado las pruebas anteriores se decide trabajar con la binomial negativa para las comparaciones y conclusiones
@@ -167,12 +221,17 @@ profiling detected new, lower deviance (deviance diff = 8.06e-05, tolerance = 1e
 - Intervalo de confianza del modelo binomial negativa con method wald
 ```{r}
 #binomial negativa
+summary(mod.b3)$coef
 confint(mod.b3,method="Wald")
 ```
 - Intervalo de confianza del modelo poisson
 ```{r}
-#poisson
+#poisson con profile
 confint(mod.p3)
+```
+```{r}
+#poisson con wald
+confint(mod.p3,method="Wald")
 ```
 
 # Comparaciones

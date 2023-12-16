@@ -1,0 +1,443 @@
+---
+title: "Resumen Medidas repetidas Cesar Peñaranda"
+output: html_document
+date: "2023-12-04"
+---
+
+- Librerias
+```{r}
+library(lattice)
+library(lme4)
+library(emmeans)
+```
+
+## Sueño 
+Se llevó a cabo un estudio para explorar el impacto de la privación del sueño en el tiempo de reacción de conductores de camiones de larga distancia. Se asignó aleatoriamente a los conductores a diferentes grupos, limitando el número de horas de sueño a un máximo específico por noche durante un experimento de 10 días. El enfoque se centró en el grupo donde se restringió el sueño a 3 horas cada noche, con un total de 18 sujetos. Se registró el tiempo de reacción en milisegundos para cada conductor en un día determinado, sin realizar comparaciones entre grupos, sino analizando únicamente este grupo en particular.
+
+Conclusión: en el grupo de conductores a los que se les restringió el número de horas de sueño a 3 horas, no hay una relación estrecha entre el tiempo de reacción al inicio del experimento y la rapidez en que ese tiempo aumenta. Además la privación de sueño afecta a los conductores de diferentes maneras, hay conductores que son más sensibles y conforme pasan los días van perdiendo su capacidad de reaccionar más rápidamente que otros (aumenta el tiempo de reacción a una mayor tasa). Se puede obtener una estimación de la velocidad en que este tiempo de reacción va creciendo en promedio para el grupo en general.
+
+```{r}
+load("bases/sueño.Rdata")
+str(base)
+```
+
+- Relacion entre pendientes e interceptos sacando un lm por sujeto
+```{r}
+beta0=beta1=c()
+id=as.numeric(names(table(base$sujeto)))
+for(i in 1:18) {
+  mod=lm(reac~dias,base[base$sujeto==id[i],])
+         beta0[i]=mod$coef[1]
+         beta1[i]=mod$coef[2]
+}
+```
+
+```{r eval=FALSE}
+#Analisis grafico de correlacion entre pendientes e interceptos
+names(base)
+xyplot(reac~dias,groups = sujeto, type=c("r","p"),data = base)
+```
+
+**Interpretacion:** No parece haber una relación ya que hay líneas que cortan el eje Y en valores similares pero tienen pendientes diferentes
+
+- Grafico de relacion beta0/beta1
+```{r eval=FALSE}
+plot(beta1,beta0)
+abline(lm(beta0~beta1))
+```
+
+```{r}
+cor(beta0,beta1)
+```
+**Interpretacion:** El coeficiente de correlación es bastante bajo y el gráfico no muestra una relación estrecha entre pendientes e interceptos.
+
+- Modelo lineal ordinario / ecuacion resultante
+```{r}
+mod0=lm(reac~dias,data = base)
+mod0$coef
+```
+
+**Ecuacion general**
+$$\hat{y}=251.4+10.5X$$
+
+- Midiendo correlacion
+```{r}
+mod2=lmer(reac~dias+(1+dias|sujeto),data = base,REML=F) #con correlacion
+summary(mod2)$varcor
+```
+**Interpretacion:** Se obtiene una correlación de 0.08 la cual es muy baja como se esperaba de los gráficos.
+
+- Prueba formal de correlacion \(H0: rho=0\), el cero en la parte de las pendientes obliga a que no estime el intercepto junto con la
+pendiente dentro de cada sujeto.
+```{r eval=FALSE}
+mod3=lmer(reac~dias+(1|sujeto)+(0+dias|sujeto),data = base) #sin correlacion
+anova(mod2,mod3,test="LRT")
+```
+**Interpretacion:** Al comparar las deviancias de estos dos modelos se obtiene una diferencia de 0.0639, con un grado de libertad, lo cual arroja una probabilidad asociada de 0.80. No se rechaza la hipótesis nula que establece que no hay correlación entre pendientes e interceptos. Por lo tanto, se asume que las pendientes y los interceptos son independientes y se usa el segundo modelo (mod3).
+
+- Los sujetos tienen la misma pendiente? Para esto se ajusta un modelo donde se elimina la pendiente de la parte aleatoria y luego se compara 
+```{r eval=FALSE}
+#H0 sigma^2_1=0 (interaccion sujeto tiempo)
+mod4=lmer(reac~dias+(1|sujeto),data = base) #Modelo sin la pendiente en la parte aleatoria 
+anova(mod3,mod4,test="LRT")
+```
+**Interpretacion:** Al comparar los dos modelos se obtiene una diferencia de las dos deviancias de 42.1, con 1 grado de libertad y una probabilidad asociada muy pequeña (p<0.001). Por lo tanto, se concluye que los sujetos no tienen la misma pendiente y se prefiere el mod3.
+
+- Interpretacion en terminos del problema
+
+**Interpretacion:** Puesto que cada sujeto tiene una pendiente diferente, se puede esperar que conforme pasan los días, el tiempo de reacción aumenta a una tasa diferente entre los conductores. Esto indica que la privación de sueño afecta de forma diferente a los conductores.
+
+- Ecuacion general del modelo mixto
+```{r}
+mod3=lmer(reac~dias+(1|sujeto)+(0+dias|sujeto),data = base)
+summary(mod3)$coef
+```
+**La ecuación general es igual a la obtenida con la regresión ordinaria:**
+$$\hat{y}=251.4+10.5X$$
+
+- Comparacion de los errores y coeficientes, regrecion ordinaria vs modelo mixto
+```{r}
+lm=summary(mod0)$coef[,2]
+lmer=summary(mod3)$coef[,2]
+cbind(lm,lmer)
+```
+**Interpretacion:** Los errores estándar son más grandes en el modelo mixto, lo cual tiene sentido porque se tienen individuos tomados de forma aleatoria de una población mayor en lugar de considerarlos fijos. De esta forma hay una incertidumbre mayor en las estimaciones de los parámetros la cual se ve reflejada en los errores estándar. Aunque estos resultados son menos precisos con el modelo mixto, son más adecuados que la regresión ordinaria, puesto que reflejan el comportamiento aleatorio de los individuos
+
+- Intervalos de confianza
+
+se obtiene primero los intevalos para las desviaciones estándar de los componentes aleatorios llamados .sig01 para los interceptos
+aleatorios y .sig02 para las pendientes aleatorias, seguida de la desviación estándar
+residual. Luego seguirán los términos de la parte fija que son el intercepto general y la
+pendiente general.
+
+```{r}
+confint(profile(mod3))
+```
+
+**Interpretacion:** Los primeros dos intervalos indican la importancia de los interceptos y pendientes aleatorias, los cuales tienen una variabilidad no despreciable. En la parte fija el coeficiente más importante es la pendiente que, si bien es cierto que puntualmente da igual que con un modelo ordinario, el intervalo cambia puesto que tiene un error estándar más grande. En este caso se espera con 95 % de confianza que, en promedio, para todos los conductores de la población, por cada día adicional el tiempo de reacción promedio aumente entre 7.3 y 13.6 milisegundos.
+
+
+## Ortodoncia
+
+Se llevó a cabo un estudio de ortodoncia para analizar el crecimiento óseo de la maxila o mandíbula en 27 niños (16 hombres y 11 mujeres) durante el período de 8 a 14 años. Cada dos años, se midió la distancia entre la pituitaria y la escotadura pterygomaxilar, puntos fácilmente identificables mediante rayos X. Esta distancia, medida en milímetros, se utilizó como indicador del grado de maduración esquelética. El estudio comparó el ritmo de crecimiento de esta distancia entre hombres y mujeres.
+
+Conclusión: desde que los niños entran al estudio a los 8 años se tiene una
+diferencia importante en la distancia media estudiada entre hombres y mujeres;
+sin embargo, con el tiempo, al ir creciendo esta distancia también se acentúan
+las diferencias.
+
+```{r}
+load("bases/ortodoncia.Rdata")
+base$edad1=base$edad-8
+```
+
+- Gráfico crecimiento de la distancia en función del tiempo.
+```{r eval=FALSE}
+names(base)
+xyplot(distancia~edad,groups = sujeto,type=c("r","p"),data = base)
+```
+
+- Analizando correlacion
+```{r}
+beta0=beta1=c()
+length(table(base$sujeto))
+suj=as.numeric(base$sujeto)
+for(i in 1:27) {
+mod=lm(distancia~edad1,base[suj==i,])
+beta0[i]=mod$coef[1]
+beta1[i]=mod$coef[2]
+}
+cor(beta0,beta1)
+```
+
+**Interpretacion:** En general se ve que las pendientes no van decreciendo conforme aumenta el intercepto. La correlación es -0.2 la cual no es muy alta. No parece haber una relación fuerte entre la distancia a los 8 años y la pendiente de cada niño o niña.
+
+- Grafico de crecimiento de la distancia en funcion del tiempo para sexo/sujeto y para sexo/general
+```{r eval=FALSE}
+names(base)
+xyplot(distancia~edad1|sexo,groups = sujeto,type=c("r","p"),data = base) #sexo/sujeto
+xyplot(distancia~edad1,groups = sexo,type=c("r","p"),data = base,auto.key = list(columns=2)) #sexo/general
+```
+
+
+**Interpretacion:** En los gráficos se puede ver que las líneas de crecimiento solo para hombres o solo para mujeres muestran pendientes muy parecidas dentro de cada grupo. Además, haciendo solo la línea de tendencia para hombres y mujeres (segundo gráfico) se nota un crecimiento más alto para los hombres. Podría ser que la interacción fija entre edad y sexo sea significativa. De todas formas se puede apreciar cómo independientemente de la edad, la distancia promedio para los hombres es siempre mayor que la de las mujeres.
+
+- Probando correlacion
+```{r eval=FALSE}
+names(base)
+# H0: rho=0
+mod1=lmer(distancia~edad1*sexo+(1+edad1|sujeto),data = base)
+mod2=lmer(distancia~edad1*sexo+(1|sujeto)+(0+edad1|sujeto),data = base)
+anova(mod2,mod1,test="LRT")
+```
+**Interpretacion:** Como la probabilidad asociada al comparar los dos modelos es alta (0.96), no se rechaza la hipótesis que dice que no hay correlación entre pendientes e interceptos. Se escoge el mod2 para continuar con el análisis. Luego se descarta que las pendientes sean diferentes entre niños de un mismo sexo. Se hace un modelo que no tenga las pendientes aleatorias (mod3) y se compara con el modelo que sí tenía esas pendientes (mod2).
+
+- Probando si las pendientes son distintas para los ninos dentro de cada sexo
+```{r eval=FALSE}
+#H0: sigma^2_1=0
+mod2=lmer(distancia~edad1*sexo+(1|sujeto)+(0+edad1|sujeto),data = base)
+mod3=lmer(distancia~edad1*sexo+(1|sujeto),data = base)
+anova(mod2,mod3,test="LRT")
+```
+**Interpretacion:** Nuevamente la probabilidad es alta (0.36), y se escoge el modelo más simple que descarta pendientes específicas para cada sujeto. Ahora se verifica si la interacción entre edad y sexo es significativa.
+
+- Probando interaccion entre edad y sexo
+```{r}
+#H0: delta_j=0
+mod3=lmer(distancia~edad1*sexo+(1|sujeto),data = base)#Podemos usar drop porque la prueba es a la parte fija
+drop1(mod3,test="Chisq")
+```
+**Interpretacion:** Al obtener una probabilidad tan baja (0.013), se rechaza la hipótesis de no interacción. Como la interacción sí es significativa, se concluye que la tasa de crecimiento de la distancia no es la misma en niños que en niñas
+
+- Modelo utilizado para las observaciones individuales.
+
+En el modelo que se utiliza para la y, i representa el individuo, j representa
+el sexo y E corresponde a la edad:
+
+$$y_{ij,E}=\beta_0+\beta_1E+\tau_j+\tau^*_jE+\beta_{0,i}+\epsilon_{ij}=(\beta_0+\beta_{o,i})+\tau_j+(\beta_1+\tau^*_j)E+\epsilon_{ij}$$
+
+- Modelo para la media condicional de cada sexo.
+```{r}
+contrasts(base$sexo)
+```
+
+**Hombres**
+$$\mu_{H,T}=\beta_0+ \tau_1+\beta_1E+\delta_1E$$
+**Mujeres**
+$$\mu_{F,T}=\beta_0+\beta_1E$$
+
+- Cuánto crece la distancia cada año en promedio entre los hombres y cuánto crece
+entre mujeres
+
+De los coeficientes de la parte fija se pueden derivar las ecuaciones para los
+promedios estimados de la distancia para hombres y para mujeres.
+```{r}
+summary(mod3)$coef
+```
+Hombres:
+$$\hat{y_H}=(21.20909+1.40653)+(0.47955+0.30483)E=22.61562+0.78438E$$
+
+Mujeres: 
+$$21.20909+0.47955E$$
+**Interpretacion:** De forma puntual, se puede decir que en los hombres, por cada año, la distancia aumenta en promedio 0.784mm, mientras que en las mujeres, esta distancia aumenta en promedio 0.48mm por año. Se puede ver que la tasa de aumento para los niños es mayor.
+
+- Estimacion de la distancia promedio a los 8 años para cada sexo. En cuánto difiere la distancia
+entre hombres y mujeres alos 8 y a los 14
+
+```{r}
+#A los 8
+22.61562-21.20909
+```
+
+```{r}
+#A los 14
+22.61562+0.78438*6
+21.20909+0.47955*6
+27.3219-24.08639
+```
+
+**Interpretacion:** La distancia a los 8 años está dada por los interceptos de las ecuaciones escritas anteriormente. A los 8 años la distancia promedio para los hombres es 22.615mm y para las mujeres 21.209mm, entonces el promedio de esta distancia es 1.406mm mayor para los hombres que para las mujeres. A los 14 años esta diferencia aumenta considerablemente, ya que ahora la distancia promedio para los hombres es 3.235mm mayor que para las mujeres.
+
+## Arbustos 
+
+Se realizó un estudio sobre el impacto de herbívoros y depredadores en la cobertura de arbustos. Se exploraron tres tratamientos para determinar si la reducción en la cobertura de arbustos podría mitigarse con alguno de ellos. Los tratamientos incluyeron un control con depredadores y herbívoros (C), la exclusión de depredadores (nD), y la exclusión de herbívoros (nH), con cuatro parcelas en cada tratamiento. Además, se registraron los niveles de lluvia (en milímetros) en el día de medición para cada parcela. La medición del porcentaje de cobertura se llevó a cabo anualmente de 2001 a 2013.
+
+Conclusión: hay mucha variabilidad en la forma en que la cobertura decrece
+en las distintas parcelas ya que se prueba que no todas tienen el mismo ritmo
+de cambio, sin embargo, como comportamiento promedio por tratamiento, no se
+logra diferenciar entre ellos si este ritmo de cambio es mayor para alguno de los
+tratamientos.
+
+```{r}
+load("bases/arbustos.Rdata")
+base$tiempo=base$año-2001
+#Para ordenar las parcelas debido a que falta la 4,7 y 12 truco para evitar confuciones
+base$parcela=as.numeric(factor(base$parcela))
+```
+
+- Gráfico donde se pueda ver el cambio de cobertura en función del tiempo por parcela sin importar tratamiento
+```{r eval=FALSE}
+xyplot(tcov~tiempo,group=parcela,type=("r"),data = base)
+```
+
+**Interpretacion:** En general, hay una leve tendencia a que las pendientes vayan creciendo
+conforme aumenta el intercepto, sin embargo, la correlación entre pendientes e
+interceptos no es demasiado alta (0.35).
+
+- Entre más alta la cobertura al inicio va a haber un mayor aumento de esa cobertura en el tiempo? (Prueba de correlacion)
+incluyendo la covariable lluvia para reducir ruido
+```{r eval=FALSE}
+#H0: rho=0
+mod1=lmer(tcov~tiempo*trt+lluvia+(1+tiempo|parcela),data = base)
+mod2=lmer(tcov~tiempo*trt+lluvia+(1|parcela)+(0+tiempo|factor(parcela)),data = base)
+anova(mod1,mod2,test="LRT")
+```
+**Interpretacion:** Al hacer la prueba formal para ver si la correlación entre pendientes e interceptos es nula, se tiene que no hay evidencia para rechazar esa hipótesis, por lo que se puede asumir, en lo sucesivo, que ambos parámetros son independientes.
+
+- Gráfico donde para ver el cambio en la cobertura en función del tiempo para cada tratamiento. alguno de los tratamientos hay un mayor decrecimiento de la cobertura hasta el momento?
+```{r}
+names(base)
+xyplot(tcov~tiempo,groups = trt,type=c("r","p"),data=base,auto.key = list(columns=3))
+```
+
+**Interpretacion:** la tendencia general promedio es a bajar de forma muy similar en los tres tratamientos. La que baja más suavemente es la del tratamiento C y las otras dos son muy parecidas
+
+- Modelo
+
+**En el modelo se utiliza i para la parcela, j para el tratamiento, T para el tiempo y L para la lluvia que es una covariable.**
+
+$$y_{ij,T,L}=(\beta_0+\beta_{0,i})+\tau_j+(\beta_1+\tau^*_j+\beta_{1,i})T+\beta_2L+\epsilon_{ij}$$
+
+$$\mu_{j,T,L}=\beta_0+\tau_j+(\beta_1+\tau^*_j)T+\beta_2L$$
+- Usando el modelo, estime cuánto crece o decrece la cobertura cada año en promedio en
+cada tratamiento.
+
+\(H0: \sigma^2_1=0\)
+```{r eval=FALSE}
+mod2=lmer(tcov~tiempo*trt+lluvia+(1|parcela)+(0+tiempo|factor(parcela)),data = base)# Modelo sin correlacion pero con pendientes
+mod3=lmer(tcov~tiempo*trt+lluvia+(1|parcela),data = base)# Sin pendientes aleatorios
+anova(mod3,mod2,test="LRT")
+```
+**Interpretacion:** Se puede rechazar la hipótesis de que estas pendientes son iguales (p<0.05), y se concluye que no todas las rectas son paralelas, es decir, que al pasar el tiempo, la tasa de disminución en la cobertura promedio no se da por igual en todas las parcelas
+con un mismo tratamiento.
+```{r}
+#Grafico
+names(base)
+xyplot(tcov~tiempo|trt,groups = parcela,type=c("r","p"),data = base)
+```
+
+A pesar de la conclusión anterior, se quiere ver cuál es la tendencia de la cobertura a lo largo del tiempo en los distintos tratamientos. Para ver la tendencia por tratamiento se ven los coeficientes fijos tomando en cuenta la interacción entre tiempo y trt.
+```{r}
+mod2=lmer(tcov~tiempo*trt+lluvia+(1|parcela)+(0+tiempo|factor(parcela)),data = base)
+summary(mod2)$coef
+```
+**Para tratamiento C**
+$$55.169672-0.686138T$$
+**Para tratamiento nD**
+$$(55.169672-2.236126374)+(-0.686138+-0.174492)T=52.93355-0.86063T$$
+**Para tratamiendo nH**
+$$(55.169672+3.081868132)+(-0.686138+0.324945)T=58.25154-0.361193T$$
+**Interpretacion:** Las pendientes para periodo según tratamiento son: -0.69 para trt1 (C), -0.86 para trt2 (nD), y -0.36 para trt3 (nH).
+Se ve puntualmente que los tratamientos que presentan decrecimientos más pronunciados son C y nD.
+
+- Se puede concluir que el crecimiento o decrecimiento de la cobertura es más rápido en
+alguno de los tratamientos,basta ver si la interacción entre tiempo y trt está presente.
+```{r}
+drop1(mod2,test="Chisq")
+```
+**Interpretacion:** se obtiene una probabilidad asociada de 0.55, por lo que no existe evidencia para decir que hay interacción y se puede asumir que todos los tratamientos presentan una tendencia decreciente similar.
+
+- Estimación de la tasa de crecimiento general e intervalo de confianza.
+```{r}
+mod4=lmer(tcov~tiempo+trt+lluvia+(1|parcela)+(0+tiempo|parcela),data=base)
+summary(mod4)$coef[2,]
+confint(profile(mod4))
+confint(profile(mod4))[5,]
+```
+
+**Interpretacion:** La tasa de decrecimiento anual se estima en 0.64 %. Con 95 % de confianza se espera que la tasa de decrecimiento anual esté entre 0.21 % y 1.07 % para cualquier tratamiento.
+
+
+## Riqueza
+Se estudian datos de bentos marino de nueve playas (5 muestras por playa) en la costa holandesa en 2002 para analizar la relación entre la riqueza de especies y la altura de muestreo respecto al nivel medio de la marea(NAP). Aunque sería más apropiado un modelo lineal generalizado con distribución Poisson para el conteo de especies, por simplicidad se empleará un modelo con errores normales.
+Ejercicios
+- Archivo riqueza.Rdata.
+```{r}
+load("bases/riqueza.Rdata")
+base$riq=apply(base[,2:76]>0,1,sum)
+```
+
+- Gráfico con una línea de regresión por playa, para determinar relacion lineal
+```{r}
+xyplot(riq~NAP|playa,type=c("p","r"),data = base)
+```
+
+**Interpretacion:** En la mayoría de las playas, los puntos siguen una tendencia bastante lineal, por lo que parece acertado seguir con una regresión lineal.
+
+- Grafico para intentar evaluar la correlacion entre pendientes e interceptos
+```{r}
+xyplot(riq~NAP,groups = playa,type=c("r","p"),data = base)
+```
+
+**Interpretacion:** Hay que observar que el NAP puede tomar valores negativos, por lo que el gráfico puede ser engañoso para visualizar los interceptos, ya que estos deben ubicarse a la altura del NAP igual a cero. Se puede ver que la mayoría de las playas tienen pendientes muy bajas, excepto dos que presentan pendientes muy fuertes y a la vez son las que tienen el intercepto más alto. Esto indica que en esas playas el aumento del NAP provoca un fuerte decrecimiento en la riqueza promedio, mientras que en las otras playas el aumento del NAP hace que la riqueza promedio baje muy poco. Parece que sí existe una correlación no despreciable entre interceptos y pendientes.
+
+- Evaluando corralacion entre pendientes e interceptos
+```{r}
+beta0=beta1=c()
+for(i in 1:9) {
+mod=lm(riq~NAP,base[base$playa==i,])
+beta0[i]=mod$coef[1]
+beta1[i]=mod$coef[2]
+}
+cor(beta0,beta1)
+```
+**Interpretacion:** Parece que sí existe una correlación entre interceptos y pendientes, porquelas playas con pendientes más pronunciadas (aunque negativas) también tienen interceptos más altos. Se puede notar que la correlación entre ambos es -0.63, con lo cual se confirma la observación del gráfico.
+
+\(H0: \rho=0\)
+```{r eval=FALSE}
+mod1=lmer(riq~NAP+(1+NAP|playa),data = base)
+summary(mod1)$varcor
+mod2=lmer(riq~NAP+(1|playa)+(0+NAP|playa),data = base)
+anova(mod1,mod2,test="LRT")
+```
+**Interpretacion:** se rechaza H0 con un p<0.05, se concluye que sí existe correlación entre pendientes
+e interceptos.
+
+- Probando si el NAP tiene un aporte significativo al modelo, probando primero probando si todas las pendientes son iguales
+```{r}
+#H0: sigma^2_1=0
+mod1=lmer(riq~NAP+(1+NAP|playa),data = base)
+mod3=lmer(riq~NAP+(1|playa),data = base)
+anova(mod1,mod3,test="LRT")
+```
+
+**Interpretacion:**  Al realizar esta comparación, se rechaza la hipótesis nula que sugiere que todas las pendientes son iguales. Esto tiene sentido, ya que se observó que las playas con mayor riqueza en el nivel medio de la marea tienden a reducir su riqueza más rápidamente a medida que aumenta el NAP. Dado que no todas las playas tienen la misma pendiente, se justifica mantener el primer modelo (mod1).
+
+
+- Intervalos de confianza de los parametros 
+```{r eval=FALSE}
+mod1=lmer(riq~NAP+(1+NAP|playa),data = base,REML = F)
+confint((mod1))
+```
+
+```{r eval=FALSE}
+              2.5 %    97.5 %
+.sig01      1.959389  6.0172181
+.sig02     -1.000000 -0.3593062
+.sig03      0.440480  3.4051925
+.sigma      2.068354  3.4418049
+(Intercept) 3.971115  9.1793732
+NAP        -4.409507 -1.3556937
+```
+
+**Interpretacion:** En la parte aleatoria .sig01 es la desviación estándar de los interceptos aleatorios, .sig02 es la correlación entre interceptos y pendientes, .sig03 es la desviación estándar de las pendientes aleatorias, y .sigma es la desviación estándar del error. La correlación significativa (-1 a -0.36) indica una fuerte relación entre interceptos y pendientes.
+
+El intercepto refleja la riqueza promedio cuando el NAP es cero (nivel medio de marea). Un mayor valor inicial se asocia con una mayor disminución de riqueza al aumentar el NAP. El coeficiente fijo de NAP sugiere, en términos generales, que un aumento de una unidad en NAP se relaciona con una disminución de 1.3 a 4.4 especies, con un 95 % de confianza. El intercepto general varía entre 3.97 y 9.18, representando el rango esperado de especies promedio en el nivel medio de la marea.
+
+
+- Realizar la prueba de interacción entre playa y NAP, sin considerar la estructura de dependencia de las observaciones
+dentro de una misma playa. con playa como un factor en un modelo lineal ordinario, se utilza el modelo suma para que
+tenga sentido la pendiente general. (mixto vs ordinario)
+
+\(H0:\delta_i=0\) probando interaccion entre playa y NAP lo mismo que probar \(H0:\sigma^2_1=0\) osea interaccion NAP/playa en el modelo mixto
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod4=lm(riq~NAP*factor(playa),data = base)
+drop1(mod4,test="F")
+```
+**Interpretacion:** Si se pone playa como factor y se incluyen interacciones, se puede hacer la prueba para ver si hay interacción entre playa y NAP, y se observa que sí es significativa. La conclusión es la misma que se obtuvo anteriormente, pero la probabilidad asociada se triplica (0.0094 vs 0.0028).
+
+
+- intervalo de 95 % de confianza para la pendiente general.
+```{r}
+#Ordinario
+confint(mod4)[2,]
+```
+**Interpretacion:** La tendencia general del NAP es negativa con un intervalo entre -1.8 y -3.6. Este resultado es similar al obtenido con el modelo mixto (-1.4, -4.4) pero no es igual. De hecho, el intervalo del modelo mixto es más amplio porque permite más variabidad entre las pendientes debido a que las 9 playas son solo una muestra de un conjunto mayor de playas y eso debe considerarse en las posibles pendientes
+
+- Problemas relacionados
+
+El problema principal con un modelo ordinario es que los resultados son válidos
+solo para esas 9 playas. Además, no se está tomando en cuenta la correlación
+que existe en las observaciones dentro de cada playa sino que se asume que son
+independientes.

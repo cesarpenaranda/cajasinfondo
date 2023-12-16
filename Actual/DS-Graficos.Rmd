@@ -3,17 +3,104 @@ title: "Untitled"
 output: html_document
 date: "2023-11-27"
 ---
+
+1. Satisfacción en general con ingreso subjetivo
+```{r}
+diseno= svydesign(ids = ~ 1, data= base,weights = ~ F.mu)
+svychisq(~ CS4+ST1, diseno)
+round(svyby(~I(ST1)==3,~CS4,design=diseno, svyciprop,vartype="ci",method="log"),3)
+#1 no les alcanza
+#2 les alcanza
+```
+
+
+2. Satisfacción con capacidad para moverse con padecimientos cronicos
+
+```{r}
+
+svychisq(~ST6+Padecimientos, diseno)
+round(svyby(~I(ST6)==3,~Padecimientos,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+3. Satisfacción con vivienda con nacionalidad
+```{r}
+svychisq(~ST9+CS6, diseno)
+round(svyby(~I(ST9)==3,~CS6,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+4. Satisfacción con salud mental con sexo.
+
+```{r}
+svychisq(~ST7+CS1, diseno)
+round(svyby(~I(ST7)==3,~CS1,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+5. Felicidad con los aspectos menos amistades
+```{r}
+#con vida en general
+svychisq(~ST1+Felicidad, diseno)
+round(svyby(~I(ST1)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+```{r}
+#con nivel educativo
+svychisq(~ST2+Felicidad, diseno)
+round(svyby(~I(ST2)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#ingresos del hogar
+svychisq(~ST3+Felicidad, diseno)
+round(svyby(~I(ST3)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#amistades
+svychisq(~ST4+Felicidad, diseno)
+round(svyby(~I(ST4)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#relaciones familiares
+svychisq(~ST5+Felicidad, diseno)
+round(svyby(~I(ST5)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#capacidad para moverse
+svychisq(~ST6+Felicidad, diseno)
+round(svyby(~I(ST6)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#salud mental
+svychisq(~ST7+Felicidad, diseno)
+round(svyby(~I(ST7)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#capacidad para aprender
+svychisq(~ST8+Felicidad, diseno)
+round(svyby(~I(ST8)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
+```{r}
+#con vivienda
+svychisq(~ST9+Felicidad, diseno)
+round(svyby(~I(ST9)==3,~Felicidad,design=diseno, svyciprop,vartype="ci",method="log"),3)
+```
+
 ```{r Librerias}
 library(cowplot)
 library(haven)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(survey)
 
 ```
 
 ```{r Cargar la base}
-base <- read_sav("~/ACT23_vf.sav")
+base <- read_sav("bases/ACT23_vf.sav")
 ```
 
 ```{r}
@@ -64,6 +151,7 @@ base1 <- base2 %>%
   mutate(Proporcion = Count / sum(Count)) %>%
   ungroup()
 base1$Proporcion=round(base1$Proporcion,3)
+
 ```
 
 ```{r GRAFICO PARA CUADRO 2}
@@ -131,8 +219,6 @@ grafico1
 - Grafico satisfaccion/cronicos
 
 ```{r}
-#porcentaje de satisfaccion con la vida en general segun ingreso subjetivo
-
 base.filt<- base[base$ST6 != 9, ]
 base.fil=base.filt[base.filt$Padecimientos != 9, ]
 
@@ -161,7 +247,6 @@ grafico2=ggplot(datos_porcentajes2, aes(x =Padecimientos, y = Porcentaje, fill =
        y = "Porcentaje",
        fill = "Satisfacción") +
   theme_minimal()
-
 grafico2
 ```
 

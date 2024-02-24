@@ -1,0 +1,71 @@
+---
+title: "Ejercicio"
+output: html_document
+date: "2023-11-14"
+---
+
+```{r}
+pacientes=c(40,20,30,40,10,30)
+estado=c("mejorado","mejorado","sincambio","sincambio","empeorado","empeorado")
+medicamento=c("conmedicamento","sinmedicamento","conmedicamento","sinmedicamento","conmedicamento","sinmedicamento")
+
+base=data.frame(pacientes,estado,medicamento)
+base
+```
+
+- Grados
+
+**Estado** tiene 3 categorías y **medicamento** tiene 2 categorías, por lo que los grados de libertad podrían ser (3-1)*(2-1) = 2.
+
+- chi de la tabla
+```{r}
+mejora=c(40,20)
+sincambio=c(30,40)
+empeora=c(10,30)
+
+tabla=rbind(mejora,sincambio,empeora)
+colnames(tabla)=c("con","sin")
+tabla
+# Realizar la prueba de chi-cuadrado
+resultado_chi_cuadrado=chisq.test(tabla);resultado_chi_cuadrado
+```
+**X-squared = 17.568** este seria el chi de la tabla
+
+- Frecuencia teorica (dos maneras de hacerlo)
+```{r}
+# Obtener las frecuencias teóricas del resultado
+resultado_chi_cuadrado$expected
+```
+
+```{r}
+# a pie
+sumas_filas = rowSums(tabla) #suma de las filas
+sumas_columnas = colSums(tabla) #suma de las columnas
+
+# Calcular el total de la tabla
+total_tabla = sum(tabla) #osea 170
+
+# Calcular las frecuencias teóricas
+frecuencias_teoricas = outer(sumas_filas, sumas_columnas) / total_tabla
+
+#Por ejemplo para la fila 1 columna 1 (60*80)/170=28.23529 asi funciona, 60 es el total de la fila mejora y 80 el total de columna conmedicamento 170 el total de toda la tabla, asi se hace para cada valor 
+
+# Imprimir las frecuencias teóricas
+print(frecuencias_teoricas)
+```
+- Chi calculado
+```{r}
+# Calcular el estadístico chi-cuadrado
+(chi_cuadrado = sum((tabla - frecuencias_teoricas)^2 / frecuencias_teoricas))
+
+#seria las (frecuencuas observadas - las teoricas)^2 dividido entre las frecuencias teoricas
+```
+**Resultado: 17.56779**
+
+- Se acepta o se rechaza H0 
+
+**Hay suficiente evidencia estadistica para rechazar H0 con un p-value = 0.0001532 y un alpha de 0.025**
+
+- Conclusion 
+
+**Dado los resultados obtenidos se puede esperar que el medicamento tenga un efecto significativo en la recuperacion de los pacientes, por lo que se puede decir que el medicamento resulta ser eficiente**

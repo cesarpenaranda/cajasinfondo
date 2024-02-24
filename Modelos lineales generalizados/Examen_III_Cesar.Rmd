@@ -1,0 +1,211 @@
+---
+title: "Cesar Peñaranda"
+output:
+  word_document: default
+  html_document: default
+date: "2023-12-06"
+---
+```{r}
+library(lattice)
+library(lme4)
+library(emmeans)
+```
+
+1.	Se quiere analizar si el rendimiento académico varía entre colegios diurnos y nocturnos en un período de 3 años. Se toman datos de 20 colegios (13 diurnos y 7 nocturnos) para los años 2019, 2020 y 2021. Los datos están en “base1” del archivo “rend.Rdata”.
+
+- Rendimiento academico
+- nocturno,diurno
+```{r}
+load("rend.Rdata")
+table(base1$año)
+base1$tiempo=base1$año-2019
+table(base1$tiempo)
+```
+
+a.	Analice gráficamente si se puede asumir linealidad entre la respuesta promedio y el tiempo. Debe justificar claramente su respuesta (5 puntos).
+```{r}
+#names(base1)
+xyplot(rendimiento~tiempo|tipo:colegio,type=c("r","p"),data = base1)
+```
+
+**En general la segunda observacion de rendimiento en los colegios es baja para todos los colegios casi sin excepcion, por lo que no podemos asumir linealidad entre la respuesta promedio y el tiempo**
+
+b.	Escriba el modelo matemático asociado, considerando la mejor manera de tomar el tiempo (5 puntos).
+
+**Dado que no logramos observar una linealidad clara se decide tomar el tiempo como factor**
+
+**Modelo matematico asociado:**
+
+$$y_{ijk}=\beta_0+\alpha_i+\tau_h+\delta_ih+u_{0j}+\epsilon_{ijhk}$$
+beta_0 es el intercepto general, alpha_i es el efecto del tipo de colegio, tau_h es el efecto del tiempo, delta_ih es el efecto de interaccion entre tiempo y tipo de colegio, u_0j es el efecto del colegio al inercepto general (cada colegio), donde el componente aleatorio es u_0j ademas \(u_{0j} \sim N(0,\sigma^2_{u0})\) 
+
+
+
+2.	En el mismo contexto del ejercicio anterior, se tienen datos de 40 colegios (27 diurnos y 13 nocturnos) para los años 2014 al 2021.  Los datos están en “base2” del archivo “rend.Rdata”.
+```{r}
+table(base2$año)
+base2$tiempo=base2$año-2014
+table(base2$tiempo)
+table(base2$año1)
+```
+
+a.	Verifique si los interceptos y pendientes aleatorias siguen una distribución normal bivariada o univariada (5 puntos).
+```{r}
+names(base2)
+```
+```{r}
+#Analisando linealidad
+xyplot(rendimiento~tiempo|colegio, type=c("r","p"),data = base2)
+```
+
+**Se obseva una linealidad mas clara que en la base anterior**
+```{r}
+#Analisis grafico
+xyplot(rendimiento~tiempo,groups = colegio, type=c("r","p"),data = base2)
+```
+
+**Se procede a hacer la prueba formal de** 
+$$H0: \rho=0$$
+```{r}
+#H0: rho=0
+mod1= lmer(rendimiento~tiempo*tipo+(1+tiempo|colegio),data = base2)
+mod2= lmer(rendimiento~tiempo*tipo+(1|colegio)+(0+tiempo|colegio),data = base2)
+anova(mod1,mod2,test="LRT")
+
+```
+**Se rechaza H0 con un p<0.05, por lo que no hay independencia entre pendientes e interceptos, por lo que los mismos siguen una distribucion normal bivariada**
+
+
+b.	Dé una interpretación en términos del contexto de lo que significa que haya o no haya correlación entre interceptos y pendientes aleatorias (según lo que concluyó en el punto anterior) (5 puntos).
+```{r}
+summary(mod1)$varcor
+```
+**Segun lo que se concluye en la parte anterior se observa una correlacion negativa entre pendientes e interceptos, por lo que a lo largo del tiempo de estudio se observa que colegios con un alto rendimiento al inicio tuvieron una tendencia decreciente por lo que su rendimiento fue disminuyendo, mientras que colegios con un bajo rendimiento al incio tuvieron una tendencia creciente, por lo que su rendimiento fue mejorando a lo largo del tiempo**
+
+
+
+
+
+
+
+##################
+
+
+
+
+
+
+
+3.	Se hizo un estudio para ver el efecto del tiempo y la temperatura de almacenamiento de la pulpa de naranja sobre su vida útil. Se usa la luminosidad como variable para medir la vida útil de la pulpa. Se espera que con el paso del tiempo la pulpa vaya perdiendo luminosidad. Un valor más alto de luminosidad significa que la pulpa es más clara y, por lo tanto, refleja que su estado es mejor.
+Se comparan dos temperaturas de almacenamiento (-19.5 y -8.5).  Se toman varios lotes de pulpa que se van midiendo en varios días de almacenamiento.  De cada lote se toman muestras de pulpa de forma sucesiva en 7 tiempos diferentes (0, 62, 90, 120, 150, 240 y 300 días de almacenamiento).  Se quiere analizar la tendencia de la luminosidad en el tiempo y comparar esa tendencia entre las dos temperaturas.
+
+Se colocan 6 lotes de pulpa en 2 tambores, un tambor para cada temperatura, es decir, 3 lotes para cada tambor, por lo que habrá 3 lotes con cada una de las temperaturas.
+
+- ecfecto del tiempo y temperatura(-19.5 y -8.5)
+- res=luminocidad
+
+Se cuenta con el siguiente modelo escrito en R.  
+
+mod=lmer(LUMI~Temp*Tiempo+(1|unidad))
+
+a.	Explique cuál es la unidad aleatoria de este modelo (4 puntos).
+
+
+**Para este caso la unidad aleatoria seria el lote el cual vemos nombrado como unidad, dado que las observaciones dentro de los mismos estan correlacionadas ademas de que al ser lotes posiblemente son una muestra de una poblacion mayor, ademas aunque se menciona el tambor, donde se realizan las medidas(sujeto) es al lote donde este:**
+$$u_{0j}\sim N(0,\sigma^2_{u0})$$
+b.	Escriba el modelo matemático asociado al que se está estimando en R. Incluya todas explicaciones necesarias de los coeficientes, variables y distribuciones (5 puntos).
+
+**El modelo es el siguiente:**
+$$y_{ijk}=\beta_0+\alpha_i+\delta_iT+u_{0,j}+\epsilon_{ijk}$$
+beta_0 es el intercepto general, alpha_i es el efecto de la temperatura, delta_i es el efecto de interaccion entre temperatura y tiempo, u_0j es el efecto del lote (cada lote) al intercepto general, donde el componente aleatorio es u_0,j ademas: \(u_{0,j} \sim N(0,\sigma^2_{u0})\) 
+
+c.	Haga un gráfico a mano alzada (no tiene que hacerlo en R, puede hacerlo en papel o en cualquier programa de su elección) donde ilustre lo que se tiene en el modelo y se vean los datos de las unidades aleatorias claramente.  Suponga que todos los parámetros incluidos en este modelo son significativos. El gráfico debe tener todas las indicaciones para que se pueda leer adecuadamente y no se tenga que adivinar nada (5 puntos).
+
+
+**El grafico se entrego a mano**
+
+4.	Se quiere analizar el efecto del tipo de lente (bifocal y progresivo) sobre la visión de los pacientes. Se toman los expedientes de un grupo de pacientes que han asistido a revisión oftalmológica durante 4 visitas a lo largo de un período máximo de 43 meses (poco más de 3 años). Ya que los pacientes no se realizan los exámenes de la vista en intervalos iguales, se toma el tiempo que ha transcurrido desde el primer examen en meses. La variable respuesta está dada en dioptrías.
+Los datos están en el archivo “vision.Rdata”. Asuma que no existe correlación entre interceptos y pendientes aleatorias.
+
+```{r}
+load("vision.Rdata")
+str(base)
+table(base$meses)
+```
+
+a.	Verifique el supuesto de pendientes aleatorias iguales. Escriba la hipótesis que debe poner a prueba y realice la verificación (8 puntos).
+$$H0: \sigma^2_{u1}=0$$
+```{r}
+mod1=lmer(dioptria~meses*lente+(1|paciente)+(0+meses|paciente),data = base)
+mod2=lmer(dioptria~meses*lente+(1|paciente),data = base)
+anova(mod1,mod2,test="LRT")
+```
+**Se rechaza H0 con un p<0.05, por lo que se asume que dentro de cada tipo de lente las pendientes son distintas para todos los individuos**
+
+```{r}
+#Analisis grafico
+xyplot(dioptria~meses|lente,groups = paciente,type=c("r","p"),data = base )
+```
+
+b.	Explique qué implica el resultado anterior en el contexto del estudio que se presenta (4 puntos). 
+
+**Para este caso dentro de cada tipo de lente las pendientes son distintas para todos los individos, esto nos indica que el tipo de lente afecta de manera distinta a lo largo del tiempo a cada paciente, asi teniendo algunos un ritmo de crecimiento (o decrecimiento para otros) mas pronunciado o leve segun el paciente (afecta a los pacientes de diferentes maneras), no se observa una relacion estrecha entre las dioptrias al inicio del estudio y la rapidez con la que esta decrece o crece a lo largo del tiempo**
+
+
+5.	Una ingeniera de calidad diseñó un estudio para determinar cómo se ve **afectada la textura del yogurt** según el **tipo de premezcla que se utiliza** y también el impacto que tiene la **velocidad de mezcla**. Para el estudio se seleccionaron **12 lotes de premezclas** de yogurt, 4 de cada uno de los 3 tipos de premezclas **(TM1, TM2 y TM3)**. Luego, cada lote se dividió en 6 partes para ser mezcladas a distintas velocidades **(150, 160, 170, 180, 190 y 200 revoluciones por minuto)**. La variable respuesta corresponde a la **textura medida** por un experto en una escala de 0 a 50, donde valores bajos representan una textura suave y cremosa, y valores altos una textura más dura o congelada. La ingeniera está interesada en ver si la tendencia de la textura conforme aumenta la velocidad de mezcla es similar para los tres tipos de premezcla. 
+Los datos se encuentran en el archivo “yogurt.Rdata”.
+
+```{r}
+load("yogurt.Rdata")
+str(yogurt)
+base=yogurt
+table(base$lote,base$tipom)
+table(base$lote,base$velocidad)
+```
+
+a.	Verifique si la tendencia de la textura sucede al mismo ritmo en los tres tipos de premezcla conforme aumenta la velocidad. Asuma que para cada lote de un mismo tipo de premezcla la tendencia de la textura conforme aumenta la velocidad de mezcla es la misma. Escriba la hipótesis que debe poner a prueba y realice la verificación (8 puntos).
+
+**Dado que las pendientes dentro de cada tipo de premezcla son iguales, asumimos que anteriormente no habia correlacion **
+**Por lo que la hipotesis a probar es la de interaccion siendo la siguiente**
+$$H0: \delta_j=0$$ **La interaccion entre velocidad/tipo premezcla es = 0**
+```{r}
+names(base)
+mod1=lmer(textura~velocidad*tipom+(1|lote),data = base)
+drop1(mod1,test = "Chisq") # Usamos drop por ser la parte fija la puesta a prueba
+```
+**Con la prueba anterior se rechaza H0 con un p<0.05, por lo que si hay interaccion entre velocidad y tipo de premezcla, por lo que la tendencia de la textura no sucede al mismo ritmo en los tres tipos de premezcla conforme aumenta la velocidad**
+
+```{r}
+#Descripsion grafica 
+xyplot(textura~velocidad,groups = tipom,type=c("r","p"),data = base,auto.key = list(columns=3))
+```
+
+
+**Graficamente se observa que la tencia de TM3 es mas suave, mientras que las de TM2 y TM1 son mas pronunciadas**
+
+
+b.	Determine para cuál tipo de premezcla se da un mayor cambio de la textura conforme aumenta la velocidad de mezcla. Haga la comparación de forma puntual (no debe realizar pruebas de hipótesis).  Explique en qué consiste ese cambio (6 puntos).
+
+```{r}
+round(summary(mod1)$coef,3)
+contrasts(base$tipom)
+```
+**Cada uno fue sacado de la siguiente manera**
+
+**Para tipo de premezcla TM1**
+$$\hat{y}_1=38.583+(-0.160)V=38.583-0.160V$$
+**Para tipo de premezcla TM2**
+$$\hat{y}_2=(38.583+25.833)+(-0.160+-0.092)V= 64.416-0.252V$$
+**Para tipo de premezcla TM3**
+$$\hat{y}_3=(38.583+-24.083)+(-0.160+0.131)V=14.5-0.029V $$
+
+**Interpretacion:** Las pendientes para velocidad segun tipo de premezcla son: -0.160 para TM1, -0.252 para TM2 y -0.029 TM3, se ve puntualmente que el tipo de mezcla que presenta un mayor cambio de la textura conforme aumenta la velocidad de mezcla es TM2 (decrece). este cambio lo que me indica es que por cada aumento de 10 revoluciones por minuto  la tasa de textura decrece 2.52 para TM2
+
+
+
+
+
+
+
+
+

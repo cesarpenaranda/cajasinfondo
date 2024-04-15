@@ -1,0 +1,83 @@
+---
+title: "Evaluacion practica 1"
+author:
+  - Cesar Peñaranda
+  - Keyla Zuñiga
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-04-07"
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(LearnBayes)
+``` 
+
+Considere los datos del Capıtulo 1, Ejemplo 3 en las notas del curso. Ver
+la explicacion que aparece al inicio del ejemplo. En este ejemplo se busca
+hacer inferencia de la probabilidad de que un recien nacido sea niño (p).
+Usando una distribucion previa uniforme en (0, 1), asumiendo una grilla de
+tamano 1000 y una semilla (seed=10):
+
+Los siguientes datos simulan el sexo de 200 recién nacidos, en donde 1 denota niño y 0 denota niña.
+```{r}
+set.seed(10)
+recien_n <- rbinom(n = 200,size = 1,prob = 111/200)
+table(recien_n)
+```
+```{r}
+# Estableciendo distribucion previa
+set.seed(10)
+previa = runif(1000, min = 0, max = 1)
+p = seq(0, 1, length.out = 1000)
+previa.norn=previa/sum(previa)
+# Grafico
+plot(p,previa.norn, type = "p", ylab="Probabilidad previa")
+```
+```{r}
+# Calculo de la posterior 
+s=122 # Exitos Ninos 
+f=78 # N-Exitos Ninas
+datos <- data.frame(p = p, previa = previa)
+datos <- datos%>% mutate(likelihood = p^(s)*(1-p)^(f)) %>% mutate(posterior = likelihood*previa) %>%
+  mutate(posterior = posterior/sum(posterior)) %>% mutate(previa = previa/sum(previa))
+#round(datos,2)
+```
+Comparación grafica:
+```{r}
+# Primer conjunto de datos
+plot(datos$p, datos$posterior, type="p", xlab = "p", ylab = "Probability", main = "Comparación:", col="purple")
+# Segundo conjunto de datos
+lines(datos$p, datos$previa, col = "salmon",type="p")
+# Leyenda
+legend("topright", legend = c("Posterior", "Previa"), col = c("purple", "salmon"), lty = 1)
+```
+
+¿Que valor de p maximiza la distribucion posterior?
+```{r}
+datos$p[which.max(datos$posterior)]
+```
+2. Usando la funcion sample y (1), calcule una muestra de tamaño
+10000 de la distribucion posterior y calcule el intervalo de credibilidad al 90 % para p. Interprete.
+
+```{r}
+set.seed(10)
+muestra<- sample(datos$p,size = 10000,replace = T,prob = datos$posterior)
+hist(muestra)
+quan=quantile(muestra,probs = c(0.05,0.95))
+#Interpretacion
+cat("La probabilidad de que un recien nacido sea niño, va a estar entre:",round(quan[1],2),"y",round(quan[2],2),"con un 90% de probabilidad")
+```
+
+3) Usando la muestra anterior y (2), estime la probabilidad posterior de
+que un recien nacido fuera de la muestra sea niño, dados los datos
+disponibles
+
+```{r}
+y <- rbinom(10000, 1, muestra)
+prop = table(y)/10000
+cat("La probabilidad posterior de que un recien nacido fuera de la muestra sea niño es de :",prop[2])
+```
+
+

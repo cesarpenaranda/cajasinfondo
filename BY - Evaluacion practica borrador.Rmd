@@ -1,0 +1,177 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-02"
+---
+
+
+# Evaluacion practica 1
+Considere los datos del Capıtulo 1, Ejemplo 3 en las notas del curso. Ver
+la explicacion que aparece al inicio del ejemplo. En este ejemplo se busca
+hacer inferencia de la probabilidad de que un recien nacido sea niño (p).
+Usando una distribucion previa uniforme en (0, 1), asumiendo una grilla de
+tamano 1000 y una semilla (seed=10): 
+
+Librerías:
+```{r}
+library(tidyverse)
+library(LearnBayes)
+```
+
+## Ejemplo 3 (Evaluación Práctica 1)
+
+Los siguientes datos simulan el sexo de 200 recién nacidos, en donde 1 denota niño y 0 denota niña.
+
+```{r,echo=FALSE}
+set.seed(10)
+recien_n <- rbinom(n = 200,size = 1,prob = 111/200)
+table(recien_n)
+```
+
+```{r}
+f=c(78,122)
+t=200
+names=c("niña","niño")
+prop=f/t
+h=cbind(f,prop)
+row.names(h)=names;h
+```
+
+
+1. Calcule la distribucion posterior de p. ¿Que valor de p maximiza la
+distribucion posterior?
+## Estableciendo distribucion previa
+```{r}
+set.seed(10)
+datos=runif(1000, min = 0, max = 1)
+
+# Grafico
+hist=hist(datos, breaks = 10, main = "Distribución Uniforme", xlab = "Valores")
+p=hist$mids
+counts=hist$counts
+previa <- counts /sum(counts) 
+plot(p, previa, type = "h", ylab="Probabilidad previa")
+```
+
+```{r}
+s=122
+f=78
+datos_tot <- data.frame(p = p, previa = previa)
+datos_tot <- datos_tot%>% mutate(posterior = previa* p^(s)*(1-p)^(f)) %>%
+  mutate(posterior = posterior/sum(posterior)) 
+round(datos_tot,2)
+```
+
+## Comparación:
+```{r}
+# Primer conjunto de datos
+plot(datos_tot$p, datos_tot$posterior, type="l",xlab = "p", ylab = "Probability", main = "Comparación:",col="blue")
+# Segundo conjunto de datos
+lines(datos_tot$p, datos_tot$previa, col = "red")
+# Leyenda
+legend("topright", legend = c("Posterior", "Previa"), col = c("blue", "red"), lty = 1)
+```
+## ¿Que valor de p maximiza la distribucion posterior?
+```{r}
+datos_tot$p[which.max(datos_tot$posterior)]
+```
+
+
+
+
+# Con una segunda escogencia de la previa
+```{r}
+cuantiles <- quantile(datos, probs = c(0.5, 0.90))
+quantile1 <- list(p = .5,x=.5) 
+quantile2 <- list(p=.9,x=.90)
+beta.select(quantile1,quantile2)
+sum(datos<0.5)/1000
+sum(datos<0.9)/1000
+```
+# Comparacion
+```{r}
+s=122
+f=78
+a=1
+b=1
+
+
+x_values <- seq(0, 1, length.out = 1000)
+df <- data.frame(x = x_values,
+                 Prior = dbeta(x_values, a, b),
+                 Likelihood = dbeta(x_values, s + 1, f + 1),
+                 Posterior = dbeta(x_values, a + s, b + f))
+
+
+# Primer conjunto de datos
+plot(df$x, df$Likelihood, type="l",xlab = "p", ylab = "Density", main = "Comparación:",col="orange",lwd=5) 
+# Segundo conjunto de datos 
+lines(df$x, df$Prior, col = "purple")
+lines(df$x, df$Posterior, col = "blue")
+# Leyenda
+legend("topright", legend = c("Posterior", "Previa","Likelihood"), col = c("blue", "purple","orange"), lty = 1)
+```
+```{r}
+#Verificacion con learnbayes
+datos_tot <- data.frame(p = p, previa = previa)
+datos_tot2 <- datos_tot %>% mutate(Likelihood = dbeta(p, s + 1, f + 1)) %>% mutate(posterior =Likelihood*previa)%>%
+  mutate(posterior = posterior/sum(posterior))
+round(datos_tot2,2)
+data = c(s, f)
+post = pdisc(p, previa, data)
+round(cbind(p, previa, post),2)
+```
+
+## ¿Que valor de p maximiza la distribucion posterior? en este caso
+```{r}
+df$x[which.max(df$Posterior)]
+```
+2. Usando la funcion sample y (1), calcule una muestra de tamaño
+10000 de la distribucion posterior y calcule el intervalo de credibilidad al 90 % para p. Interprete.
+
+```{r}
+s=122
+f=78
+datos_tot <- data.frame(p = p, previa = previa)
+datos_tot <- datos_tot%>% mutate(posterior = previa* p^(s)*(1-p)^(f)) %>%
+  mutate(posterior = posterior/sum(posterior)) 
+round(datos_tot,2)
+```
+
+```{r}
+set.seed(10)
+muestra<- sample(datos_tot$p,size = 10000,replace = T,prob = datos_tot$posterior)
+hist(muestra)
+quantile(muestra,probs = c(0.05,0.95))
+```
+
+
+3. Usando la muestra anterior y (2), estime la probabilidad posterior de
+que un recien nacido fuera de la muestra sea niño, dados los datos
+disponibles
+```{r}
+hist=hist(muestra,breaks = 10)
+# Grafico
+p=hist$mids
+counts=hist$counts
+previa <- counts /sum(counts) 
+plot(p, previa, type = "l", ylab="Probabilidad previa")
+
+```
+```{r}
+s=122
+f=78
+datos_tot <- data.frame(p = p, previa = previa)
+datos_tot <- datos_tot%>% mutate(posterior = previa* p^(s)*(1-p)^(f)) %>%
+  mutate(posterior = posterior/sum(posterior)) 
+round(datos_tot,2)
+```
+
+```{r}
+# Primer conjunto de datos
+plot(datos_tot$p, datos_tot$posterior, type="l",xlab = "p", ylab = "Probability", main = "Comparación:",col="blue")
+# Segundo conjunto de datos
+lines(datos_tot$p, datos_tot$previa, col = "red")
+# Leyenda
+legend("topright", legend = c("Posterior", "Previa"), col = c("blue", "red"), lty = 1)
+```

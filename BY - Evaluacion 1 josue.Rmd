@@ -1,0 +1,71 @@
+---
+title: "Evaluacion Practica 1 Bayes"
+author: "Josue"
+date: '2024-04-02'
+output: html_document
+---
+
+```{r}
+library(LearnBayes)
+library(ggplot2)
+library(tidyverse)
+```
+
+Considere los datos del Capitulo 1, Ejemplo 3 en las notas del curso. Ver
+la explicacion que aparece al inicio del ejemplo. En este ejemplo se busca
+hacer inferencia de la probabilidad de que un recien nacido sea niño (p).
+Usando una distribucion previa uniforme en (0, 1), asumiendo una grilla de
+tamano 1000 y una semilla (seed=10):
+
+1) Calcule la distribucion posterior de p. ¿Que valor de p maximiza la
+distribucion posterior? 
+
+```{r}
+datos <- c(1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1,1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0,0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0,1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0)
+```
+
+
+```{r}
+set.seed(10)
+n <- 1000
+p <- seq(0, 1, length.out = n)
+prior <- runif(1000,0,1)
+plot(p, prior, type = "h", ylab="Probabilidad previa")
+```
+
+
+```{r}
+likelihood <- p^(sum(datos))*(1-p)^(length(datos)-sum(datos))
+posterior <- prior* likelihood
+posterior <-posterior/sum(posterior)
+posterior1<-format(posterior, scientific = FALSE)
+posterior1<-round(as.numeric(posterior), digits = 2)
+plot(p,posterior,type = "p")
+max_p <- p[which.max(posterior)];max_p 
+tabla=data.frame(p,prior,posterior1);tabla
+```
+2) Usando la funcion sample y (1), calcule una muestra de tamano
+10000 de la distribucion posterior y calcule el intervalo de credibilidad al 90 % para p. Interprete.
+
+```{r}
+set.seed(10)
+posterior_muestra <- sample(p, size = n, replace = TRUE, prob = posterior)
+hist(posterior_muestra)
+credibilidad <- quantile(posterior_muestra, c(0.05, 0.95));credibilidad
+```
+3) Usando la muestra anterior y (2), estime la probabilidad posterior de
+que un recien nacido fuera de la muestra sea niño, dados los datos
+disponibles
+
+```{r}
+y <- rbinom(1000 ,1 , posterior_muestra)
+table(y)
+freq <- table(y)
+ys <- as.integer(names(freq))
+predprob <- freq / sum(freq);predprob
+```
+
+
+
+
+

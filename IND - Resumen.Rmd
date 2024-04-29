@@ -1,0 +1,205 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-29"
+---
+
+## Conceptos
+
+- Variable: Una característica o atributo que puede cambiar o variar en una investigación o estudio.
+- Constructo: Un concepto abstracto o teórico que se intenta medir o entender mediante variables observables.
+- Dato: Una observación o valor específico obtenido mediante medición o recolección de información.
+- Dato estadístico: Un dato numérico que se utiliza para describir características de una población o muestra.
+- Metadato: Información que describe, contextualiza o proporciona detalles sobre otros datos.
+- Indicador: Una medida cuantitativa o cualitativa que representa o sugiere una condición o fenómeno.
+- Índice: Una combinación ponderada de varios indicadores para resumir una condición o fenómeno más amplio.
+- Escala: Un conjunto de valores o categorías utilizados para medir o clasificar características o actitudes.
+- Sistema de indicadores: Un conjunto organizado de indicadores que se utilizan para evaluar o monitorear un fenómeno o sistema específico.
+- Proceso estadistico: metodo de recoleccion de los datos, censos, encuestas, registros, etc.
+
+## Indicadores absolutos vs. relativos
+
+### Indicadores absolutos
+Los indicadores absolutos expresan una cantidad numérica, como el número de unidades de una determinada cifra.
+
+Ejemplos:
+- Cantidad de casos de COVID.
+- Número de grupos abiertos en un curso.
+
+### Indicadores relativos
+Los indicadores relativos facilitan comparaciones entre grupos, resumen información y expresan relaciones.
+
+## Números relativos
+
+### Razón
+- Se define como el cociente de dos variables donde los valores del numerador y del denominador son independientes y ninguno está contenido en el otro.
+
+### Proporción
+- Es el cociente de dos variables donde el numerador está contenido en el denominador.
+
+### Tasa
+- Es un tipo de proporción que considera la variable tiempo.
+- En el numerador se define el número de elementos que sufrieron un evento o fenómeno, y en el denominador están todos los elementos en riesgo de sufrir ese evento o fenómeno.
+- Las tasas brutas se calculan para toda la población.
+- Las tasas específicas se calculan para un subgrupo específico en riesgo de presentar el evento, como tasas por edad, sexo, raza, ocupación, entre otros.
+
+## Indicador proxy
+
+Es una variable utilizada como sustituto o representación de otra variable difícil de medir directamente, pero que tiene relación con la variable de interés.
+
+Ejemplos:
+- El caso del ingreso y el consumo de energía.
+- El caso del ingreso y el número de artefactos en el hogar.
+## Qué es un indicador?
+
+- Un indicador es una forma de resumir, medir y cuantificar un fenómeno, así como su evolución.
+- Sirve como puente entre la ciencia y los tomadores de decisiones, como la política pública.
+- Puede presentarse de diversas formas, como números absolutos, razones, proporciones, tasas, porcentajes, medidas de resumen (promedios) e índices.
+- Refleja consecuencias del pasado y características de la intensidad de un hecho para determinar su evolución.
+- Su principal función es apoyar la toma de decisiones y la planificación, especialmente a mediano y largo plazo.
+- También se utilizan para la evaluación de desempeño, seguimiento de planes y proyectos.
+- Permite monitorear y realizar ajustes correctivos en procesos.
+## Que debe responder
+- ¿Qué?
+- ¿Para qué?
+- ¿Cómo?
+- ¿Cuándo? (¿cada cuánto?)
+- ¿Quién va a medir?
+- ¿Cómo se va a difundir?
+
+## Características de los indicadores
+
+- Simples.
+- Relevantes (útiles para la toma de decisiones).
+- Pertinentes.
+- Prácticos (medibles con los recursos y el tiempo disponibles).
+- Independientes.
+- Verificables (con cálculos adecuados y metodología claramente documentada).
+
+## Indicadores según Medición
+
+- Cuantitativos: representación numérica de un proceso, medida de cantidad (responden a preguntas de cuánto, cada cuánto).
+- Cualitativos: describen algo que ha sucedido, respondiendo a preguntas de cuándo, quién, dónde, cómo y por qué (generalmente a través de entrevistas). Brindan información sobre la presencia o ausencia de algún fenómeno y se utilizan para mediciones de calidad (por ejemplo, bueno, regular, malo).
+
+## Según nivel de intervención o etapa del proceso productivo
+
+- De insumo: evalúan y dan seguimiento a los recursos utilizados y disponibles para la ejecución de un programa o actividad (por ejemplo, gasto en atención médica).
+- De proceso: permiten saber cómo se están llevando a cabo las actividades, como el número de actividades realizadas o el seguimiento de actividades programadas.
+- De producto: evalúan la cantidad y calidad de bienes y servicios producidos como resultado de una acción o programa.
+- De resultado: miden las medidas de salida después de una intervención.
+- Indicadores de impacto: evalúan los efectos que una acción pueda tener a mediano o largo plazo.
+
+## Según jerarquía
+
+- De gestión: también llamados "internos", se utilizan para medir la relación entre los insumos y los procesos.
+- Estratégicos: se utilizan para evaluar productos, efectos e impactos y se ubican al final del proceso.
+
+## Indicadores según calidad
+
+- Eficacia: mide el grado de cumplimiento de los objetivos y metas establecidas a través de los productos o servicios prestados en relación a resultados obtenidos, sin hacer referencia al costo de consecución de los mismos.
+- Eficiencia: examina el uso de recursos y la productividad.
+
+## Ejemplo
+
+- Tasa de esperanza de vida de la población adulta mayor. 
+
+- Porcentaje de presupuesto institucional asignado para la compra de vacunas contra la gripe estacionaria, durante el 2018.
+
+-Tasa de variación de contagio de gripe estacionaria en personas adultas mayores, para el 2018 respecto al 2017, a nivel nacional. 
+
+- Porcentaje de dosis de inmunización suministradas en el I semestre del 2018, a los centros de Salud para la prevención de la gripe estacionaria en personas adultas mayores. 
+
+- Porcentaje de personas adultas mayores inmunizadas contra la gripe estacionaria, durante el 2018, a nivel nacional. 
+
+##Ficha Metodológica:
+
+1. **Título del Indicador**: Nombre descriptivo del indicador.
+
+2. **Definición**: Explicación clara y concisa del significado del indicador y cómo se mide.
+
+3. **Fuente de Datos**: Indicación de la fuente de los datos utilizados para calcular el indicador.
+
+4. **Metodología de Cálculo**: Descripción detallada de cómo se calcula el indicador, incluyendo las fórmulas matemáticas utilizadas, si las hay.
+
+5. **Periodicidad**: Frecuencia con la que se actualizan los datos y se calcula el indicador (por ejemplo, mensual, trimestral, anual, etc.).
+
+6. **Unidades de Medida**: Especificación de las unidades en las que se expresa el indicador.
+
+7. **Limitaciones y Consideraciones**: Identificación de cualquier limitación en la metodología de cálculo o en los datos utilizados que puedan afectar la interpretación del indicador.
+
+8. **Referencias**: Cualquier referencia bibliográfica o enlace a documentos relevantes relacionados con la metodología utilizada.
+
+##Ficha de Divulgación:
+
+1. **Título del Indicador**: Nombre descriptivo del indicador.
+
+2. **Definición**: Breve explicación del significado del indicador en un lenguaje accesible para el público general.
+
+3. **Propósito del Indicador**: Explicación de por qué el indicador es relevante y qué aspectos de la realidad intenta medir.
+
+4. **Ejemplos de Aplicación**: Ejemplos concretos de cómo se utiliza el indicador y por qué es importante para la toma de decisiones.
+
+5. **Interpretación**: Orientación sobre cómo interpretar los valores del indicador y qué implicaciones tienen.
+
+6. **Fuentes de Datos**: Mención de la fuente de los datos utilizados para calcular el indicador.
+
+7. **Limitaciones y Consideraciones**: Información sobre cualquier limitación o factor importante a tener en cuenta al interpretar el indicador.
+
+8. **Gráficos o Visualizaciones**: Inclusión de gráficos u otras visualizaciones que ayuden a comprender el comportamiento del indicador a lo largo del tiempo o en diferentes contextos.
+
+9. **Referencias**: Cualquier referencia bibliográfica o enlace a documentos relevantes que proporcionen más información sobre el indicador y su contexto de aplicación.
+
+## Ruta metodológica para construir indicadores
+
+### Etapa I: Preparación
+1. Formación del equipo.
+2. Capacitación del equipo.
+3. Revisión del contexto institucional, pertinencia nacional y experiencia internacional.
+4. Revisión de marcos conceptuales y enfoques metodológicos.
+5. Toma de decisiones sustantivas previas.
+
+### Etapa II: Diseño y elaboración
+6. Elaboración de un primer listado de indicadores.
+7. Revisión de fuentes y disponibilidad de información para construir indicadores.
+8. Desarrollo de hoja metodológica.
+9. División en equipos temáticos.
+10. Selección de indicadores definitivos.
+11. Diseño de ficha de divulgación.
+12. Elaboración del producto definitivo de divulgación.
+13. Elaboración de ficha de transmisión de datos.
+14. Elaboración de bitácora estadística.
+15. Lanzamiento del sistema de indicadores.
+
+### Etapa III: Institucionalización y actualización del sistema de indicadores
+16. Formación de un equipo estable.
+17. Fomento del uso de indicadores.
+18. Actualización periódica del sistema de indicadores.
+19. Desarrollo de nuevos indicadores según necesidades y cambios en el contexto.
+
+## Algunas diferencias entre Hojas metodológicas y fichas de divulgación
+
+Las hojas metodológicas contienen información para que los expertos puedan valorar la utilidad y pertinencia de los indicadores, antes de seleccionarlos. Algunos elementos que están en las hojas metodológicas pero no en las fichas de divulgación son:
+
+- Limitaciones.
+- Método de captura de datos.
+- Periodo de serie de tiempo actual disponible.
+- Relación con políticas públicas/internacionales.
+- Contactos internos.
+- Forma de transmisión de datos.
+
+## Criterios técnicos
+
+- ¿Qué tan actualizados están los datos?
+- ¿Con qué frecuencia se publican?
+- ¿Tienen el nivel de desagregación deseado?
+- ¿Incluyen metadatos?
+
+## Criterios de expertos (validación social)
+
+- Talleres.
+- Mesas de trabajo.
+
+### Definición de criterios y puntajes
+
+Se recomienda usar la misma escala (por ejemplo, 0-5 o 1-3) para todos los criterios.
+Se debe usar la misma dirección (por ejemplo, 0 nada – 5 mucho) para todos los criterios.

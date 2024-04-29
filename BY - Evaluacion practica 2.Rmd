@@ -1,0 +1,71 @@
+---
+title: "Evaluacion practica 2"
+author:
+  - Cesar Peñaranda
+  - Keyla Zuñiga
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-04-21"
+---
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(LearnBayes)
+library(ggplot2)
+``` 
+
+Supongamos que se toma una muestra aleatoria de una distribucion exponencial con media \(λ\). Si asignamos una previa no informativa \(g(λ) ∝ 1/λ\), entonces la densidad posterior cumple:
+$$g(λ | datos ) ∝ λ^{−n−1}exp(−s/λ)$$
+
+donde \(n\) es el tamano de la muestra y \(s\) es la suma de las observaciones. Por otro lado
+se sabe que si transformamos λ a θ = 1/λ, entonces θ tiene una densidad gamma con
+parametro de forma \(n\) y parametro de tasa \(s\). (Una densidad gamma con forma α y tasa β
+es proporcional a \(h(x) = x^{α−1}exp(−βx).\))
+
+
+1. En una ilustracion de prueba de vida, se prueban cinco bombillas con tiempos de quemado observados (en horas) de 751, 594, 1213, 1126 y 819. Simule 1000 valores de la distribucion posterior de θ.
+```{r}
+n=5
+s=sum(c(751, 594, 1213, 1126,819))
+alpha=n
+beta=s
+post = rgamma(1000, shape = alpha, rate = beta)
+hist(post,breaks=100,main = "θ",xlab="") 
+
+```
+
+2. Al transformar estos valores simulados, obtenga una muestra simulada de la distribucion posterior de λ.
+```{r}
+lambda.post= 1/post
+hist(lambda.post,breaks = 100, main = "λ",xlab = "")
+```
+
+3. Estime la probabilidad posterior de que λ exceda las 1000 horas. Interprete
+```{r}
+prob = sum(lambda.post>1000)/1000
+cat("La probabilidad posterior de que λ exceda las 1000 horas es:", prob)
+```
+
+4. Grafique la probabilidad posterior predictiva de un tiempo de quemado que no
+pertenece a la muestra de las cinco bombillas.
+
+```{r}
+predict=rexp(n=1000,rate=post)
+h = hist(predict,breaks=30, plot = F)
+lambda.predic= h$mids
+prob.predic=h$counts/sum(h$counts)
+plot(lambda.predic,prob.predic,type = "l", main = "Probabilidad predictiva para duracion de las bombillas", col= "red",lwd = 3,ylab="Probabilidad",xlab = "Horas")
+```
+
+5. Usando el resultado anterior, calcule un intervalo de credibilidad al 90 % para la
+prediccion posterior del tiempo de quemado de una bombilla. Interprete.
+
+```{r}
+q = quantile(lambda.post,c(0.05,0.95))
+cat("Apartir del resultado anterior el intervalo de credibilidad al 90% para la predicción posterior del tiempo de quemado de una bombilla esta contenido entre:", round(q[1]), " y ", round(q[2]), "horas")
+```
+
+
+

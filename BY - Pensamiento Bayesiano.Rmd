@@ -134,7 +134,7 @@ Intervalo de credibilidad para $p$:
 qbeta(c(0.05, 0.95), a + s, b + f)
 ```
 
-en donde se infiere que $p$ tiene una probabilidad del 95% de estar ubicado entre esos dos valores. El resultado anterior que es exacto, se puede aproximar usando simulación:
+en donde se infiere que $p$ tiene una probabilidad del 90% de estar ubicado entre esos dos valores. El resultado anterior que es exacto, se puede aproximar usando simulación:
 
 ```{r}
 ps <- rbeta(1000, a + s, b + f)

@@ -1,0 +1,42 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-18"
+---
+
+Primer ejemplo
+```{r}
+verde=c(8,8.5,8,11.5,11,10,9,9.5,9,10)
+azul=c(5,5.5,5,5.2,4.8,5.8,5,5.5,5.3,4.9)
+rojo=c(4,4.5,4,7.5,7,6,5,5.5,5,5)
+predic=seq(1,10,by=1)
+
+x= rbind(verde,rojo,azul)
+dim(x)
+round(cor(t(x)),2)
+plot(predic,x[1,],type = "l",col="green", ylim = c(0, 12),main = "ejemplo1",ylab = "")
+lines(predic, x[2,], type = "l", col = "red")
+lines(predic, x[3,], type = "l", col = "blue")
+
+#Ejemplo 2
+x1=x
+x1[1,10]=15
+x1
+dim(x1)
+1-round(cor(t(x1)),2) #distancias
+
+plot(predic,x1[1,],type = "l",col="green", ylim = c(0, 12),main = "ejemplo2",ylab = "")
+lines(predic, x1[2,], type = "l", col = "red")
+lines(predic, x1[3,], type = "l", col = "blue")
+```
+
+```{r}
+# Lo ultimo que hicimos
+x2=t(x1)
+d=matrix(data=0,nrow = 3,ncol = 3)
+for (i in 1:10) {
+  base= x2[-i,]
+d=d+(1-cor(base))
+}
+d/10
+```

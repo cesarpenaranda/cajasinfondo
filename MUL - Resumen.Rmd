@@ -1,0 +1,57 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-25"
+---
+
+# LAB2 CLUSTERS
+
+1. **BASICOS**
+```{r}
+load("precalculo.Rdata")
+base1=base[,c(19,20,21,22,24)] #subset de las variables de interes
+as.matrix()#Convertir distancias a matriz
+as.dist()#Convertir matriz a distancias
+```
+
+2. **DISTANCIAS ENTRE INDIVIDUOS**
+
+**PASOS BASE**
+```{r}
+#Paso base para dos individuos matricialmente
+x1=base1[1,] #Individuo 1
+x2=base1[2,] #Individuo 2
+d=as.matrix(x1-x2,ncol=1) #Creacion de columna de distancia 
+d=t(d) #Asegurarnos que el vector de distancias se vea en forma de columna
+```
+
+**DISTANCIAS**
+```{r}
+#Nota: los resultados de las funciones son en objeto distancia
+d.EUCLIDEA=sqrt(t(d)%*%d)
+d.EUCLIDEA=dist(base1) #Funcion
+
+d.MAHALANOBIS= sqrt(t(d)%*%solve(S)%*%d)
+d.MAHALANOBIS=D2.dist(base1,S) #Funcion #NECESARIO library("biotools") #NECESARIO S=var(base1)
+
+d.MANHATAN=as.matrix(x1-x2); sum(abs(MANHATAN))
+d.MANHATAN=dist(base1,method = "manhattan") #Funcion 
+```
+
+**DISTANCIA ENTRE GRUPOS**
+```{r}
+#Donde d=objeto de distancias entre individuos (EUCLIDEA,MAHALANOBIS,MANHATAN)
+
+VECINO.MAS.CERCANO= hclust(d,method = "single")
+VECINO.MAS.LEJANO= hclust(d,method = "complete")
+SALTO.PROMEDIO=hclust(d,method = "average")
+DISTANCIA.DE.WARD= hclust(d,method = "ward.D")
+
+```
+
+**DENDOGRAMA**
+```{r}
+#Donde cs=agrupacion de distancia entre grupos e individuos deseada
+plot(cs, xlab="", main="DISTANCIA GRUPOS/DISTANCIA INDIVIDUOS", ylab="Distancia", sub="")
+```
+

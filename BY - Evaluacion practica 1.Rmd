@@ -80,4 +80,3 @@ prop = table(y)/10000
 cat("La probabilidad posterior de que un recien nacido fuera de la muestra sea niño es de :",prop[2])
 ```
 
-

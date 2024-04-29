@@ -1,0 +1,114 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-26"
+---
+
+```{r}
+#Visualisando filas con NA
+subset_con_na <- base1_stem[apply(base1_stem, 1, function(x) any(is.na(x))), ]
+```
+
+```{r}
+#Eliminando las filas con NA
+base1_stem=na.omit(base1_stem)
+```
+
+```{r}
+#Visualizando finlas con NA base 2
+subset_con_na2 <- base2_stem[apply(base2_stem, 1, function(x) any(is.na(x))), ]
+```
+
+
+```{r}
+# Cambiando nombres de columnas de las bases
+colnames(base1_stem) <- c("CODIGOS1", "CARRERA1", "STEM1")
+colnames(base2_stem) <- c("ESCUELA_CODIGO2", "CODIGOS2", "CARRERA2", "STEAM2.0", "STEAM2.2")
+
+# Crear un data frame vacío para almacenar los resultados
+base3_stem <- data.frame(ESCUELA_CODIGO2 = character(),
+                         CODIGOS1 = character(),
+                         CODIGOS2 = character(),
+                         CARRERA1 = character(),
+                         CARRERA2 = character(),
+                         STEAM1   = character(),
+                         STEAM2.0 = character(),
+                         STEAM2.2 = character()
+                         )
+
+# Iterar sobre cada fila de base1_stem
+for (i in 1:nrow(base1_stem)) {
+  # Iterar sobre cada fila de base2_stem
+  for (j in 1:nrow(base2_stem)) {
+    # Verificar si el CODIGO de base1_stem coincide con CODIGOS2 de base2_stem
+    if (base1_stem$CODIGOS1[i] == base2_stem$CODIGOS2[j]) {
+      # Si hay coincidencia, copiar los datos de las dos bases a base3_stem
+      base3_stem[nrow(base3_stem) + 1, ] <- c( 
+        base2_stem[j, "ESCUELA_CODIGO2"],
+        base1_stem[i, "CODIGOS1"],
+        base2_stem[j, "CODIGOS2"],
+        base1_stem[i, "CARRERA1"],
+        base2_stem[j, "CARRERA2"],
+        base1_stem[i, "STEM1"   ],
+        base2_stem[j, "STEAM2.0"],
+        base2_stem[j, "STEAM2.2"])
+      # Salir del bucle interno una vez que se ha encontrado una coincidencia
+      break
+    }
+  }
+}
+```
+
+```{r}
+# Crear un data frame vacío para almacenar las filas sin coincidencias
+base3_stem_no_coincidencias <- data.frame(ESCUELA_CODIGO2 = character(),
+                                          CODIGOS1 = character(),
+                                          CARRERA1 = character(),
+                                          STEM1   = character(),
+                                          stringsAsFactors = FALSE  # Para evitar la conversión a factores
+)
+
+# Variable para indicar si se encontraron coincidencias
+coincidencias <- FALSE
+
+# Iterar sobre cada fila de base1_stem
+for (i in 1:nrow(base1_stem)) {
+  # Iterar sobre cada fila de base2_stem
+  for (j in 1:nrow(base2_stem)) {
+    # Verificar si el CODIGO de base1_stem coincide con CODIGOS2 de base2_stem
+    if (base1_stem$CODIGOS1[i] == base2_stem$CODIGOS2[j]) {
+      # Si hay coincidencia, marcar que se encontraron coincidencias
+      coincidencias <- TRUE
+      # Salir del bucle interno una vez que se ha encontrado una coincidencia
+      break
+    }
+  }
+  # Si no se encontraron coincidencias, agregar la fila de base1_stem a base3_stem_no_coincidencias
+  if (!coincidencias) {
+    base3_stem_no_coincidencias <- rbind(base3_stem_no_coincidencias, base1_stem[i, c("CODIGOS1", "CARRERA1", "STEM1")])
+  }
+  # Reiniciar la variable de coincidencias para la próxima iteración
+  coincidencias <- FALSE
+}
+
+
+```
+
+```{r}
+# Cargar la librería
+library(openxlsx)
+
+# Ruta y nombre de archivo para base3_stem
+archivo_base3 <- "base3_stem.xlsx"
+
+# Ruta y nombre de archivo para base3_stem_no_coincidencias
+archivo_base3_no_coincidencias <- "base3_stem_no_coincidencias.xlsx"
+
+# Guardar base3_stem como archivo Excel
+write.xlsx(base3_stem, archivo_base3, rowNames = FALSE)
+
+# Guardar base3_stem_no_coincidencias como archivo Excel
+write.xlsx(base3_stem_no_coincidencias, archivo_base3_no_coincidencias, rowNames = FALSE)
+
+```
+

@@ -1,0 +1,420 @@
+---
+title: "Resumen Bayes"
+output: html_document
+date: "2024-05-05"
+---
+
+**Parametrizar**
+
+- Hace uso de los siguientes conceptos:
+
+  + Datos
+
+  + Evento incierto
+
+  + Parametrizar: P(describir una simplificación de la realidad)
+
+$$P(\text{evento incierto} | \text{datos})$$
+
+Interpretación: Probabilidad de tener un buen modelo dado la información disponible.
+
+**Pasos según Bayes, método científico**
+
+1. Defina la pregunta de investigación.
+2. Vea la información disponible.
+   - ¿Es suficiente para contestar la pregunta?
+     - Si: concluya, decida y tome acciones.
+     - No: siga al paso 3.
+3. Determine qué tipo de información adicional se necesita.
+   - Diseñe un estudio.
+   - Diseñe un experimento.
+4. Haga el estudio en 3.
+5. Use los datos en 4 para mejorar lo que se tiene hasta el momento.
+
+Información previa: Paso 2.
+Información posterior: Pasos 4-5.
+
+**Teoremas**
+$$P(A|B)=\frac{P(A\cap B)}{P(B)}$$
+$$P(B|A)=\frac{P(B\cap A)}{P(A)}$$
+
+- Regla de suma 
+ 
+$$P(A\cup B)=P(A)+P(B)-P(A\cap B)$$
+
+- Regla de multiplicacion
+ 
+$$P(A\cap B)=P(A)\cdot P(B|A)$$
+$$P(A\cap B)=P(B)\cdot P(A|B)$$
+
+**Teorema de bayes**
+
+$$\text{informacion posterior} \propto \text{informacion previa} \propto \text{verosimilitud (datos)}$$
+$$P(\theta|y)=P(y|\theta)*P(\theta)$$
+\(P(\theta|y)\) -> Modelo completo
+
+\(P(y|\theta)\) -> Verosimilitud (peso en informacion/cuanto confio en los datos dado un parametro)
+
+\(P(\theta)\) -> Prob. marginal del parametro
+
+
+**Modelo de probabilidad completo**
+
++ \((x,y)\) -> Cantidades observables - informacion
+
++ \((\theta)\) -> Cantidad no observables - guardable - parametro 
+
++ \(y\) -> Evalua
+
++ \(Y\) -> Variable aleatoria
+
+$$(\text{componen los modelos}|\text{parametros})$$
+
+**Distribucion posterior**
+$$P(\theta|y,x)$$
+
+\((\theta)\) -> no observable
+
+\((x,y)\) -> observable
+
+3. Metricas de evaluacion de modelos
+
+**Inferencia estadistica:** Obtener conclusiones de informacio (muestra/poblacion)
+
+**Intercambiabilidad:** 
+
+Muestra: \(y_1,...,y_n\) 
+
+Para facilitar el analisis de modelo completo: \(y_1,...,y_n\) es intercambiable 
+
+distribucion conjunta de \(y_1,..,y_n\) es invariante a cambios en los indices
+
+**Ejemplo:** Cuando los datos son independientes
+
+\(f(y_1,...,y_n)=f(y_1)***f(y_n)\)
+
+\(f(y_1,...,y_n)=f(y_{d_1})***f(y_{d_n})\)
+
+\(d_1=\text{cambios en los indices}\)
+
+Algo es intercambiable si puedo cambiar el orden de la fila
+
+**Modelo gerargico**
+
+van a existir capas de informacion en los modelos
+
+Primera capa:
+
+\(Poisson(\mu_i)\)
+
+\(i:Ebais\) -> Primer capa que observo
+
+Segunda capa: describir la media
+
+\(log(\mu_i)=(clima+vacunas+edad.promedio)\)
+
+**Distribucion predictiva previa**
+$$P(y)=\int P(\theta)*P(y|\theta)d\theta$$
+**Consecuencia de la regla de bayes (prediccion)**
+
+\(y\) es desconocida pero observable
+
+\(\Theta=\)espacio parametrico
+
+\(\tilde{y}=\) prediccion
+
+\(P(y)=\int_{\Theta} \text {modelo completo}\)
+
+\(P(\tilde{y}|y)=\int_{\Theta} P(\tilde{y}|\theta)*P(\theta|y)\)
+
+\(P(\tilde{y}|\theta)\) -> Versimilitud
+
+\(P(\theta|y)\) -> Posterior
+
+\(\tilde{y}\) es independiente \(y\) dado el parametro
+
+**Ejemplo:**  Prediccion para \(y\sim ber(\theta)\) 
+$$P(\tilde{y}=1|y)=E[\theta|y]$$
+$$P(y=1)=\theta$$
+$$P(y=0)=1-\theta$$
+
+**ODDS relativos**
+
+comparacion de un evento con su complemento 
+
+si \(\theta_1,\theta_2\): dos parametros
+
+$$\frac{P(\theta_1)}{P(\theta_2)}$$
+
+odds previos de \(\theta_1\) vs \(\theta_2\)
+ 
+**Interpretación:** Un odds relativo mayor que \(1\) indica que el evento representado por \(\theta_1\) es más probable que el evento representado por \(\theta_2\). Si el odds relativo es igual a \(1\), significa que las probabilidades de ambos eventos son iguales. Si el odds relativo es menor que \(1\), entonces el evento representado por \(\theta_2\) es más probable que el evento representado por \(\theta_1\).
+
+**Ejemplo: con un odd de 1.34**
+
+Un odds relativo de \(1.34\) significa que el evento representado por \(\theta_1\) es aproximadamente \(1.34\) veces más probable que el evento representado por \(\theta_2\).
+
+**Principios de verosimilitud**
+
+Para un conjunto de datos, si hay dos modelos de probabilidad \(P(\theta|y)\) que tienen la misma versosimilitud entonces ambos modelos generara la misma evidencia para \(\theta\) - informacion
+
+**Modelos de un parametro**
+
+- Binomial
+- Normal
+- Exponencial
+- Poisson 
+
+**Supuestos**
+- Intercambiabilidad o independencia para sintetizar la informacion contenida en \(y_1,...,y_n\) basta con tomar 
+$$y=\sum y_i$$
+
+- La escogencia de las previas no es unica y esta sujeta a parametrizaciones
+
+
+ademas el estimador bayesiano es un promedio ponderado de la media empirica (mle) y la media de la previa
+conforme el tamaño de muestra aumenta el estimador bayesiano se parece al frecuentista
+
+**Criterios para seleccionar previas**
+
+1. Interpretacion basada en la poblacion se selecciona la previa basada en todas las posibilidades donde vive el parametro
+
+\(0<\theta<1\) -> \(Unif(0,1)\)
+
+2. Interpretacion basada en el estado del conocimiento, se selecciona la previa usando estudios previos
+
+**Propiedades de esperanza condicionada o de la torre**
+
+\(\theta\): parametro aleatorio (bayes)
+
+$$E[E[\theta|y]]=E[\theta]$$
+
+\(E[]\) -> con respecto a \(y\)
+
+\(E[\theta|y]\) -> con respecto a \(\theta\)
+
+**Interpretacion:** la media de la media posterior es el valor esperado del parametro
+
+$$Var(\theta)=E[Var(\theta|y)]+Var[E(\theta|y)]$$
+
+\(Var(\theta)\) -> Var previa
+
+\(Var(\theta|y)\) -> Var posterior 
+
+**Interpretacion:** La varianza posterior es en promedio mas pequeña que la varianza previa 
+
+\(Var(\theta)\geq Promedio[Var(\theta|y)]\)
+
+Esto permite obtener estimadores \(\theta\) cada vez + precisos 
+
+**Familias conjugadas propiedad**
+
+Si la distribucion posterior tiene la misma forma parametrica que la distribucion previa decimos que la previa es una familia conjugada para la verosimilitud
+
+
+**Modelo normal con varianza conocida**
+
+Una unica observacion donde \(y\): observacion
+
+- Modelo
+
+\(y\sim N(\theta,\sigma^2)\), \(\sigma^2\): fijo (conocido)
+
+$$P(y|\theta) = \frac{1}{\sigma \sqrt{2\pi}} e^{ -\frac{1}{2\sigma^2}(y-\mu)^2 }$$
+
+\(P(y|\theta)\) -> es la verosimilitud normal en este caso
+
+- Previa normal
+$$P(\theta) \propto exp[-\frac{1}{2\tau_0^2} (\theta-\mu_0)^2]$$
+
+\(\mu_0\) y \(\tau_0^2\)-> son hiperparametros
+
+**Bayes:**
+
+$$P(\theta|y) \propto P(y|\theta)*P(\theta)$$
+$$P(\theta|y) \propto exp[-\frac{1}{2\sigma^2} (y-\theta)^2-\frac{1}{2\tau_0^2} (\theta-\mu_0)^2]$$
+
+$$P(\theta|y) \propto exp[-\frac{1}{2\tau_1^2} (\theta-\mu_1)^2]$$
+
+donde:
+
+$$\text{media posterior}=\mu_1=\frac{\frac{1}{\tau_0^2}\mu_0+\frac{1}{\sigma^2}y}{\frac{1}{\tau_0^2}+\frac{1}{\sigma^2}}=E[\theta|y]$$
+
+- Precision:
+$$\frac{1}{\tau_1^2}=\frac{1}{\tau_0^2}+\frac{1}{\sigma^2}$$
+
+\(\frac{1}{\tau_0^2}\) -> precision de la previa
+
+\(\frac{1}{\sigma^2}\) -> presicion de los datos
+
+Si la presicion previa es muy alta el estimador bayesiano es igual a la media de la previa
+
+Asuma que la prediccion de \(y\) es bajo la esperanza condicional
+
+- Prediccion de \(\tilde{y}\): \(P(\tilde{y}|y)\)
+
+Con la version de propiedad de la torre
+
+$$E[\tilde{y}|y]=E[E[\tilde{y}|\theta,y]|y]$$
+Donde si quiero predecir uso \(\mu\) posterior de manera que de lo anterior obtenemos lo siguiente:
+$$E[\tilde{y}|y]=E[\theta|y]=\mu_1$$
+Por otra parte
+$$Var(\tilde{y}|y)=E[Var(\tilde{y}|\theta,y)|y]+Var(E[\tilde{y}|\theta,y]|y)$$
+$$Var(\tilde{y}|y)=Var(\theta|y)+E[\sigma^2|y]$$
+$$Var(\tilde{y}|y)=\tau_1^2+\sigma^2$$
+donde:
+
+\(\tau_1^2\) -> var del modelo
+
+\(\sigma^2\) -> var del individuo
+
+
+**Caso para multiples observaciones**
+
+Muestra: \((y_1,...,y_n)\)
+
+Identicamente distribuidos \(y_i\sim N(\theta,\sigma^2)\)
+
+asuminos la misma previa 
+$$P(\theta|y) \propto P(y|\theta)*P(\theta)$$
+$$P(\theta|y) \propto \prod_{i=1}^{n} P(y_i | \theta)*P(\theta)$$
+$$P(\theta|y) \propto \prod_{i=1}^{n} P(y_i | \theta)*P(\theta)$$
+$$P(\theta|y) \propto exp[-\frac{1}{2\tau_0^2} (\theta-\mu_0)^2] *\prod_{i=1}^{n}exp[-\frac{1}{2\sigma^2}(y_i-\theta)^2]$$
+$$P(\theta|y) \propto exp[-\frac{1}{2}(\frac{(\theta-\mu_0)^2}{\tau_0^2}+\frac{1}{\sigma^2}\sum_{i=1}^n(y_i-\theta)^2)]$$
+
+Como \(\bar{y}\) es un estadistico suficiente 
+
+$$\bar{y}|\theta,\sigma^2 \sim N(\theta,\frac{\sigma^2}{n})$$
+
+aplicando el desarrollo anterior pero utilizando \(\bar{y}\) en vez de \(y\) por lo que sutituimos \(\sigma^2\) por \(\frac{\sigma^2}{n}\) por lo que el desarrollo queda de la siguiente manera:
+
+$$\mu_n=\frac{\frac{\mu_0}{\tau^2}+\frac{n}{\sigma^2}\bar{y}}{\frac{1}{\tau_0^2}+\frac{n}{\sigma^2}}=\text{media posterior}$$
+
+- Presicion para este caso:
+
+$$\frac{1}{t^2_n}=\frac{1}{\tau_0^2}+\frac{n}{\sigma^2}$$
+**Caso Normal con varianza desconocida **
+
+Asumimos \(y_i\) independiente e identicamente distribuidas donde \(y_i\sim N(\theta,\sigma^2)\) y \(\theta\): conocido y \(\sigma^2\): desconocido y aleatorio, si \(y=(y_1,...,y_n)\)
+
+
+$$P(y|\sigma^2) =\prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}} e^{ -\frac{1}{2\sigma^2}(y_i-\theta)^2 }$$
+
+$$P(y|\sigma^2)\propto \sigma^{-n}exp(-\frac{n}{2\sigma^2}v)$$
+
+donde \(v=\frac{1}{n}\sum_{i=1}^n (y_i-\theta)^2\) es el estadistico suficiente
+
+asuma que \(\sigma^2\sim Gamma-Inv(\alpha,\beta)\)
+
+
+Aplicamos bayes
+
+$$P(\sigma^2|y)\propto P(\sigma^2)*P(y|\sigma^2)$$
+$$P(\sigma^2|y)\propto (\sigma^2)^{-(\alpha+1)}e^{-\beta/\sigma^2} *\sigma^{-n}e^{-nv/2\sigma^2}$$
+
+$$P(\sigma^2|y)\propto (\sigma^2)^{-(\alpha+1+n)}e^{-(\beta+\frac{nv}{2})/\sigma^2}$$
+
+$$\sigma^2|y \sim Gamma-Inv(\alpha+n,\beta+\frac{nv}{2})$$
+
+**Pasos hasta el momento**
+
+- Previa
+
+- Verosimilitud 
+
+- Estadistico suficiente 
+
+- Bayes
+
+- Reconocimiento 
+
+**Caso con la chi**
+
+\(x\sim \chi^2_v\) -> \(\frac{1}{x}\sim Inv-\chi^2_v\)
+
+Una \(Inv-\chi^2_v\) es una \(Gamma-Inv\) con \(\alpha=v/2\) y \(\beta=1/2\)
+
+**Escalamiento**
+
+Si \(Z\sim N(0,1)\) entonces \(\sigma Z\sim N(0,1)\) es una normal escalada 
+
+Para la \(\chi^2\) inversa escalada tenemos los siguientes parametros \(\sigma_0^2\): es el parametro de escala y \(v_0\): grados de libertad dado que si \(y \sim Inv-\chi_{v0}^2\) entonces \(\sigma_0y \sim Inv-\chi^2(v_0,\sigma_0^2)\) es una inversa chi escalada
+
+Recordatorio \(y_1,...,y_n \sim N(\theta,\sigma^2)\)
+
+con previa \(\sigma^2\sim Inv-\chi^2(v_0,\sigma_0^2)\)
+$$P(\sigma^2) \propto (\frac{\sigma_0^2}{\sigma^2})^{\frac{v_0}{2}+1}*exp(\frac{-v_0\sigma_0^2}{2\sigma^2})$$
+
+con posterior 
+$$P(\sigma^2|y) \propto P(\sigma^2)P(y|\sigma^2)$$
+donde \(P(y|\sigma^2) \propto (\sigma^2)^{-n/2}exp(-\frac{nv}{2\sigma^2})\)
+
+$$P(\sigma^2|y) \propto (\sigma^2)^{-(\frac{n+v_0}{2}+1)} *exp(\frac{-(nv+v_0\sigma_0^2)}{2\sigma^2})$$
+
+$$\sigma^2|y \sim Inv-\chi^2(v_0+n,\frac{nv+v_0\sigma^2_0}{v_0})$$
+
+$$(\sigma^2)^{-(\frac{n+v_0}{2}+1)} *exp(\frac{-v_0*(\frac{nv+v_0\sigma^2_0}{v0})}{2\sigma^2})$$
+donde \((\frac{nv+v_0\sigma^2_0}{v0})\) es mi parametro de escala
+
+**Ejemplo ejercicio de compu**
+
+\(d_i\sim N(0,\sigma^2)\)
+
+\(v=128902\)
+
+asuminos \(\sigma^2\sim Inv-\chi^2(v_0=1)\) -> \((v_0=1,\sigma^2_0=1)\) estos son una escogencia arbitraria
+
+ademas \(\sigma^2|d_i \sim Inv-\chi^2((v_0=1)+(n=672),\frac{nv+(v_0=1)(\sigma^2_0=1)}{(v_0=1)})\)
+
+$$\propto Inv-\chi^2(673,(nv=\sigma^2_1)+1)$$
+
+**Procedimiento**
+
+- Genero 1000 \(\sigma^2 \sim \chi_{673}\)
+- Se calcula \(z=1/\sigma^2\)
+- Se calcula \(\sigma_1*z\) donde \(\sigma_1=\sqrt{nv+1}\)
+
+**Caso poisson**
+
+Pequeña anotacion 
+
+La diferencia entre la escala y la tasa en una distribución exponencial se refiere a cómo se caracteriza la distribución y cómo se relacionan con los parámetros de la misma.
+
+1. **Tasa (o tasa de ocurrencia):** En una distribución exponencial, la tasa, representada por \(\lambda\), indica la tasa media de ocurrencia de un evento por unidad de tiempo o espacio. Por ejemplo, si estamos modelando el tiempo entre llegadas de autobuses y \(\lambda = 0.2\), esto significa que, en promedio, llega un autobús cada \(5\) minutos (\(1/0.2\)).
+
+2. **Escala (o tiempo medio de espera):** La escala, representada por \(\beta\), se refiere al tiempo medio de espera antes de que ocurra un evento. La escala es simplemente el inverso de la tasa, es decir, \(\beta = \frac{1}{\lambda}\). Utilizando el mismo ejemplo, si la tasa es \(\lambda = 0.2\), entonces la escala sería \(\beta = \frac{1}{0.2} = 5\) minutos. Esto indica que el tiempo medio de espera entre eventos es de \(5\) minutos.
+
+En resumen, la tasa y la escala son dos formas de describir la misma distribución exponencial, pero se expresan de manera diferente. La tasa representa la frecuencia de ocurrencia de eventos por unidad de tiempo o espacio, mientras que la escala representa el tiempo medio de espera entre eventos.
+
+\(y_1,...,y_n\) donde \(y_i\sim Poisson(x_i\theta)\) aqui poiss es una conjugada con \(\theta\sim Gamma(\alpha,\beta)\),  \(x_i\): es la expancion \(\theta\): es la tasa y en caso de que fuera \(\frac{1}{\theta}\): seria la escala. 
+la posterior para esta anotacion queda de la forma \(\theta|y \sim Gammma(\alpha+\sum_{i=1}^{n}y_i,\beta + \sum_{i=1}^{n} x_i)\)
+
+Prosiguiendo 
+
+\(y \sim Poisson(\theta)\), \(\theta\): tasa
+
+\(P(y|\theta)=\frac{\theta^ye^{-\theta}}{y!}/) 
+
+si \(y=(y_1,...,y_n)\)
+
+$$P(y|\theta)=\prod_{i=1}^{n}\frac{\theta^{y_i}e^{-\theta}}{y_i!}$$
+
+$$P(y|\theta)\propto \theta^{t(y)}e^{-n\theta}$$
+donde \(\sum_{i=1}^n y_i=n\bar{y}\)
+
+la gamma es familia conjugada de la poisson \(\theta\sim Gamma(\alpha,\beta)\)
+
+$$P(\theta)\propto \theta^{\alpha-1}e^{-\theta/\beta}$$
+
+- posterior 
+$$P(\theta|y) \propto P(\theta)*P(y|\theta)$$
+
+$$P(\theta|y)\propto\theta^{\alpha-1} e^{-\theta\beta}*\theta^{t(y)}e^{-n\theta} $$
+
+$$P(\theta|y)\propto\theta^{\alpha+t(y)-1} e^{-\theta(n+\beta)} $$
+
+$$\theta|y \sim Gamma(\alpha+n\bar{y},n+\beta)$$
+**Probabilidad predictiva previa**
+
+$$P(y)=\frac{P(y|\theta)*P(\theta)}{P(\theta|y)}=\frac{Poisson(y|\theta)*Gamma(\theta|\alpha,\beta)}{Gamma(\theta|\alpha+y,1+\beta)}$$
+$$P(y)=\frac{\Gamma(\alpha+y)\beta^{\alpha}}{\Gamma(\alpha)y!(1+\beta)^{\alpha+y}}$$

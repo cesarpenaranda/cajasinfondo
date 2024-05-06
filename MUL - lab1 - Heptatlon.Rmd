@@ -101,6 +101,7 @@ KMO(R)
 ```{r}
 v=apply(base1,2,var)
 round(v,2)
+
 ```
 
 
@@ -147,7 +148,7 @@ basec=scale(base1,scale=F) # Centrando las variables, osea restandole la media a
 Z1= basec%*%vec[,1];Z1
 ```
 
-+	Obtenga la variancia de Z1.  ¿Le parece familiar este número? !!! que porque me era familiar?
++	Obtenga la variancia de Z1.  ¿Le parece familiar este número?
 ```{r}
 var(Z1)
 ```
@@ -162,7 +163,6 @@ lampda[1]/sum(lampda)*100
 +	Observe los coeficientes que usó para formar Z1 y explique cuáles variables tienen mayor peso en la conformación de esta nueva variable.  ¿Por qué sucede esto? ¿Es adecuado esto? !!! Porque sucedia esto? 
 ```{r}
 v1=round(vec[,1],2)
-v1
 round(v1/sum(v1)*100,1)
 ```
 
@@ -363,7 +363,7 @@ round(R3-R,1)
 
 20.	Obtenga la correlación entre cada variable original y Z1a o Z1b (use los datos).
 ```{r}
-cor(base2,Z1a)
+cor(base1,Z1a)
 ```
 
 

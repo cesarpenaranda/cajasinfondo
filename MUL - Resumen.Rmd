@@ -3,13 +3,153 @@ title: "Untitled"
 output: html_document
 date: "2024-04-25"
 ---
+# LAB1 COMPONENTES PRINCIPALES
+
+1. **BASICOS**
+
+- Recordar que todas las variables tengan la misma direccion
+- Observar correlaciones
+- Observar valores extremos
+- Eliminarlos en caso de ser necesario 
+- Verificar correlaciones sin el valor extremo
+- Al estandarizar las variables asumimos que trabajaremos con correlaciones
+
+```{r}
+base$variable=max(base$variable)-base$variable #Asi le damos la misma direccion 
+```
+
+**CORRELACIONES**
+```{r}
+cor1=cor(base)
+```
+
+**GRAFICACION DE CORRELACIONES**
+```{r}
+corrgram(base, lower.panel=panel.pts,order=T) #Grafico de las correlaciones normal 
+
+suppressWarnings(corrgram(base, lower.panel=panel.pts, upper.panel=panel.conf,
+diag.panel=panel.density,order=T)) #Con intervalos de confianza #suppress es para suprimir errores
+```
+
+**LEVERAGE PARA EVALUAR VALORES EXTREMOS**
+```{r}
+hat=hat(base);hat #Funcion para sacar los valores leverage
+plot(hat)
+lim=2*mean(hat);lim #El límite para detectar un valor extremo es 2 veces la media de ellos
+abline(h=lim,col="Red")
+```
+
+**FILTRAR VALORES EXTREMOS**
+```{r}
+base1=base[hat(base)<lim,] #Una forma mas automatica de filtrar el valor extremo
+```
+
+**DETERMINANTE**
+```{r}
+R=cor(base1) #Matriz de correlaciones
+S=var(base1) #Matriz de covarianzas
+det(R)
+```
+
+**EVALUAR SI VALE LA PENA LLEVAR A CABO UN PCA**
+```{r}
+cortest.bartlett(R,n=nrow(base1)) #R es la matriz de correlaciones #Necesario library(psych) #n es la cantidad de individuos
+KMO(R)
+```
+
+**VERIFICACION DE VARIABILIDAD**
+```{r}
+v=apply(base1,2,var) #Ver directamente las varianzas
+sum(v) #Variabilidad total 
+```
+
+**DESCOMPOSICION ESPECTRAL (VALORES PROPIOS)**
+```{r}
+espec=eigen(s)
+lampda=espec$val #Valores propios
+vec=espec$vec #Vector propio
+```
+
+**VALORES/VECTORES PROPIOS**
+```{r}
+lampda=espec$val
+round(lampda,3)
+
+vec=espec$vec
+round(vec,3)
+
+```
+
+**CENTRADO DE VARIABLES Y OBTENCION DE COMPONENTES (Z)**
+```{r}
+basec=scale(base1,scale=F) #Centrado de variables, osea restandole la media a los valores de cada variable #scale=T estandariza osea divide entre la media
+
+Z1= basec%*%vec[,1];Z1 #Obtener el primer componente
+var(Z1) #Varianza del primer componente #Esta es igual al primer valor propio del vector de valores propios
+```
+
+**VARIABILIDAD TOTAL EXPLICADA POR COMPONENTE/VERIFICACION DE PESOS PARA CREACION DEL COMPONENTE**
+```{r}
+lampda[1]/sum(lampda)*100
+
+v1=round(vec[,1],2)
+round(v1/sum(v1)*100,1)
+```
+
+**COMPONENTES PRINCIPALES AUTOMATICAMENTE**
+```{r}
+pca1=prcomp(base1) #Recordar que este me la desviacion estandar por lo que hay que **2 para ver la variabilidad
+round(pca1$sdev,2)**2 #Variabilidad de cada componente
+round(pca1$rotation,2) #Pesos de cada componente
+summary(pca1) #Porcentajes de variabilidad explicada por cada componente
+```
+
+**ESTANDARIZACION**
+```{r}
+v1=scale(base1$vallas,scale = T) #Para estandarizar una variable 
+scale(base1,scale = T) #Para toda la base 
+```
+**ANALISIS PCA CON VAR ESTANDARIZADAS**
+```{r}
+#Obtencion de los valores propios
+espec1=eigen(R) #Donde R es la matriz de correlaciones
+lambda1=espec1$val
+#Forma automatica
+pca1=prcomp(base1,scale=T) #PCA con la estandarizacion
+lambda2=pca1$sdev**2
+
+#Contruccion de componentes
+Z1=base3%*% eigen(R)$vectors[,1] #Manuealmente #a1=round(pca1$rotation[,1],2)
+Z1a=pca1$x[,1] #Manera automatica
+cbind(Z1,Z1a)
+```
+
+**BIPLOT**
+```{r}
+biplot(pca1,cex=0.6)
+```
+
+**NUMERO DE COMPONENTES GRAFICO**
+```{r}
+plot(pca1,type="l") #plot(pca$sdev^2)
+```
+**CONTRUCCION DE MATRIZ DE CORRELACIONES APARTIR DE LOS COMPONENTES**
+```{r}
+A=pca1$rot
+L=diag(pca1$sdev**2)
+R1=A%*%L%*%t(A)
+
+#correlaciones a partir del primer valor propio y el primer vector propio
+pca1$rotation[,1]*sqrt(eigen(cor(base1))$values[1])
+```
+
 
 # LAB2 CLUSTERS
 
 1. **BASICOS**
 ```{r}
 load("precalculo.Rdata")
-base1=base[,c(19,20,21,22,24)] #subset de las variables de interes
+base1=base[,c(19,20,21,22,24)] #Subset de las variables de interes
 as.matrix()#Convertir distancias a matriz
 as.dist()#Convertir matriz a distancias
 ```
@@ -38,7 +178,7 @@ d.MANHATAN=as.matrix(x1-x2); sum(abs(MANHATAN))
 d.MANHATAN=dist(base1,method = "manhattan") #Funcion 
 ```
 
-**DISTANCIA ENTRE GRUPOS**
+3. **DISTANCIA ENTRE GRUPOS**
 ```{r}
 #Donde d=objeto de distancias entre individuos (EUCLIDEA,MAHALANOBIS,MANHATAN)
 
@@ -53,5 +193,70 @@ DISTANCIA.DE.WARD= hclust(d,method = "ward.D")
 ```{r}
 #Donde cs=agrupacion de distancia entre grupos e individuos deseada
 plot(cs, xlab="", main="DISTANCIA GRUPOS/DISTANCIA INDIVIDUOS", ylab="Distancia", sub="")
+```
+
+4. **K-MEDIAS y K-MEDOIDS**
+
+**BASICO**
+```{r}
+apply(base1,2,var) #Verificar varianzas si son similares no estandarizamos
+diag(S) #S=var(base1)
+```
+
+
+**SUMA DE CUADRADOS DENTRO DE GRUPOS**
+```{r}
+#Funcion
+#Grupo=sample(1:k,n, replace = TRUE) #n=nrow(base1) #k=grupos deseados
+scdg = function(base, grupo) {
+  k = length(unique(grupo))
+  sc = 0
+  for (i in 1:k) {
+    mat = base[grupo==i,] # Seleccione solo los datos del grupo k-ésimo
+    centroide = apply(mat,2,mean) # Calcular el centroide de mat
+    sc = sc + sum(as.matrix(dist(rbind(centroide,mat)))[1,-1]**2)# Suma de las distancias euclídeas al cuadrado entre los elementos de mat y el centroide
+  }
+  return(sc)
+}
+```
+
+**CALCULO DE CENTROIDES FUNCION**
+```{r}
+#Funcion centroid, si alguna variable no es numerica, la funcion no servira
+centro.mat=function(base,grupo){
+k=length(unique(grupo))
+nc=ncol(base)
+matc= matrix(NA,nrow = k,ncol = nc)
+for(i in 1:k){
+  smatc= base[grupo==i,]  #base de interes
+  matc[i,]= apply(smatc,2,mean) #calculo del centroide
+}
+return(matc)
+}
+```
+**GRAFICO PARA DOS VARIABLES**
+```{r}
+plot(datos$variable1,datos$variable2,col=grupo,pch=18)
+points(matc,pch="*",col=c(1,2,3),cex=2) #c(1,2,3) numero de grupos #matc centroides
+```
+
+**DISTANCIA CENTROIDE A LOS PUNTOS**
+
+```{r}
+distancias=function(datos,matc){
+matc=as.data.frame(matc)
+names(matc)=names(datos)
+k=nrow(matc)
+n=nrow(datos)
+d1=as.matrix(dist(rbind(datos,matc)))
+d2=d1[1:n,(n+1):(n+k)]
+return(d2)
+}
+```
+
+**REACIGNACION DE GRUPOS APARTIR DE LAS DISTANCIAS A LOS CENTROIDES**
+```{r}
+grupo1=c()
+for (i in 1:107) grupo1[i]=which.min(d2[i,]) #107 numero de filas #d2 matriz de distancias de los centroides 
 ```
 

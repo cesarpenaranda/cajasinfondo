@@ -1,0 +1,63 @@
+---
+title: "Evaluacion practica 3"
+author:
+  - Cesar Peñaranda
+  - Keyla Zuñiga
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-05-01"
+---
+
+**Instrucciones:**
+Resuelva las siguientes preguntas y adjunte sus soluciones y procedimientos de R en formato PDF únicamente. La evaluación se realiza en parejas y ambas personas deben enviar la solución vía Mediación Virtual. Cada ítem vale lo mismo.
+
+Esta es una modificación del Ejercicio 3 de la sección 4.8 del Albert. Les recomiendo realizar también el ejercicio original como práctica.
+
+La siguiente tabla muestra los registros de accidentes en 1998 compilados por el Departamento de Seguridad Vial y Vehículos Motorizados de Florida.
+```{r}
+equipo_seguridad <- c("Ninguno", "Cinturón de seguridad")
+fatal <- c(1601, 510)
+no_fatal <- c(162.527, 412.368)
+
+lesiones <- data.frame(Equipo_de_Seguridad_en_Uso = equipo_seguridad,
+                       Fatal = fatal,
+                       No_Fatal = no_fatal)
+print(lesiones)
+
+```
+
+Denote el número de accidentes y fatalidades cuando no se utilizaba ningún equipo de seguridad como \(n_N\) y  \(y_N\) , respectivamente. De manera similar,  \(n_S\)  y  \(y_S\)  denotan el número de accidentes y fatalidades cuando se usaba un cinturón de seguridad. Supongamos que  \(y_N\)  y  \(y_S\)  son independientes, con  \(y_N\)  distribuido como binomial\(( n_N, p_N )\) y  \(y_S\)  distribuido como binomial \(( n_S, p_S )\). Supongamos una previa uniforme en el vector de probabilidades \(( p_N, p_S )\). Se puede comprobar que  \(p_N\)  y  \(p_S\)  tienen distribuciones posteriores beta independientes:  \(p_N \sim Beta(y_N + 1, n_N - y_N + 1)\)  y  \(p_S \sim Beta(y_S + 1, n_S - y_S + 1)\) .
+
+1. Simule 1000 valores de la distribución posterior conjunta de  \((p_N, p_S)\) .
+```{r}
+n_N=1601
+y_N=162.527
+n_S=510
+y_S=412.368
+
+p_N=rbeta(n = 1000 ,shape1 =y_N+1 ,shape2 = n_N-y_N+1)
+p_S=rbeta(n = 1000 ,shape1 =y_S+1 ,shape2 = n_S-y_S+1)
+```
+
+2. Utilizando la muestra anterior, construya un histograma del riesgo relativo  \(p_N / p_S\) . Encuentre un intervalo de credibilidad al 95 % de este riesgo relativo e interpértelo.
+```{r}
+h=hist(p_N / p_S,plot = F)
+count=h$counts
+mid=h$mids
+plot(mid,count/1000,type = "h",main = "Riesgo Relativo",ylab = "probs",xlab = "")
+q=quantile(p_N / p_S,c(0.025,0.975))
+cat("Las personas tienen entre",round(q[1],3)*100,"% y" ,round(q[2],3)*100,"%  más probabilidades de morir en un accidente si no llevan puesto el cinturón de seguridad, con un 95% de probabilidad")
+```
+3. Construya un histograma de la diferencia en riesgos  \(p_N - p_S\) .
+```{r}
+h=hist(p_N - p_S,plot = F)
+count=h$counts
+mid=h$mids
+plot(mid,count/1000,type = "h",main = "Diferencia en riesgos",ylab = "probs",xlab = "")
+```
+
+4. Calcule la probabilidad posterior de que la diferencia en riesgos exceda 0.
+```{r}
+sum((p_N - p_S)>0)/1000
+```

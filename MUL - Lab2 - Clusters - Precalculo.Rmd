@@ -171,3 +171,545 @@ plot(cs, xlab="", main="Distancia de Ward Mahalanobis", ylab="Distancia", sub=""
 cs=hclust(d.MANH,method = "ward.D")
 plot(cs, xlab="", main="Distancia de Ward Manhatan", ylab="Distancia", sub="")
 ```
+
+
+### Algoritmos K-Medias y K-Medoids
+
+9. Antes de aplicar el método de k-medias, es importante observar las varianzas de las variables de percepción. Compare estas varianzas y decida si es necesario estandarizar las variables antes de realizar el análisis de conglomerados.
+```{r}
+apply(base1,2,var) #Se ven similares
+diag(S)
+#boxplot(base1)
+```
+
+10. A continuación, se presenta una función que calcula la Suma de Cuadrados Dentro de los Grupos (SCDG) a partir de una base de variables y una variable de grupos:
+
+```{r}
+scdg = function(base, grupo) {
+  k = length(unique(grupo))
+  sc = 0
+  for (i in 1:k) {
+    mat = base[grupo==i,] # Seleccione solo los datos del grupo k-ésimo
+    centroide = apply(mat,2,mean) # Calcular el centroide de mat
+    sc = sc + sum(as.matrix(dist(rbind(centroide,mat)))[1,-1]**2)# Suma de las distancias euclídeas al cuadrado entre los elementos de mat y el centroide
+  }
+  return(sc)
+}
+```
+
+Inicie con una asignación en 3 grupos de forma aleatoria:
+
+```{r}
+RNGkind(sample.kind = "Rounding") #solo para establecer la semilla 
+set.seed(10)
+n=nrow(base1)
+grupo = sample(1:3,n, replace = TRUE) #Crecion de vector aleatorio de grupos
+table(grupo)
+```
+```{r}
+#Calculo de centroides
+matc= matrix(NA,nrow = 3,ncol = 5)
+
+k=3
+for(i in 1:k){
+  smatc= base1[grupo==i,]
+  matc[i,]= apply(smatc,2,mean) #calculo del centroide
+}
+round(matc,1)
+```
+
+Aplique la función a la base para obtener la SCDG asociada a ese agrupamiento. Luego, cambie el agrupamiento usando `set.seed(20)` y calcule nuevamente la SCDG.
+```{r}
+scdg(base1,grupo)
+set.seed(20)
+grupo = sample(1:3,n, replace = TRUE)
+scdg(base1,grupo)
+```
+
+
+11. haga una base llamada "datos" que tiene solo las dos primeras variables y utilizando la asignación de grupos obtenida con `set.seed(15)`:
+```{r}
+set.seed(15)
+datos=base1[,1:2]
+grupo=sample(1:3,nrow(base1),T)
+
+```
+Calcule la SCDG
+```{r}
+scdg(datos,grupo)
+```
+
+ Obtenga los centroides:
+```{r}
+#Ejemplo de clase
+matc= matrix(NA,nrow = 3,ncol = 2)
+
+k=3
+for(i in 1:k){
+  smatc= datos[grupo==i,]
+  centroid= apply(smatc,2,mean)
+  matc[i,]= centroid
+}
+round(matc,1)
+```
+
+
+```R
+centros = matrix(nrow = 3, ncol = k)
+for (j in 1:k) {
+  centros[, j] = tapply(datos[, j], grupo, mean)
+}
+```
+
+Realice un gráfico con 3 colores para diferenciar los grupos y agregue los centroides.
+```{r}
+plot(datos$Expectativas,datos$Evaluacion,col=grupo,pch=18)
+points(matc,pch="*",col=c(1,2,3),cex=2)
+```
+
+
+
+Calcule la distancia de cada punto a cada uno de los 3 centroides y redefina los grupos. 
+```{r}
+matc=as.data.frame(matc)
+names(matc)=names(datos)
+d1=as.matrix(dist(rbind(datos,matc)))
+round(d1,3) #Recordar estos son distancias, al agregar los centroides consigo la distancia de estos a todos los puntos
+```
+```{r}
+d2=d1[1:107,108:110] #puedo sacar las filas o las columnas de interes osea las ultimas 3 filas o las ultimas 3 columnas
+```
+
+```{r}
+grupo1=c()
+for (i in 1:107){
+  grupo1[i]=which.min(d2[i,])
+}
+plot(datos$Expectativas,datos$Evaluacion,col=grupo1,pch=18)
+points(matc,pch="*",col=c(1,2,3),cex=2)
+```
+
+Compare los grupos (`grupo1` vs `grupo`).
+```{r}
+table(grupo,grupo1)
+```
+
+Si alguno de los puntos se mueve, repita el procedimiento; de lo contrario, termine.
+
+```{r}
+#Funcion centroid
+centro.mat=function(base,grupo){
+k=length(unique(grupo))
+nc=ncol(base)
+matc= matrix(NA,nrow = k,ncol = nc)
+for(i in 1:k){
+  smatc= base[grupo==i,]  #base de interes
+  matc[i,]= apply(smatc,2,mean) #calculo del centroide
+}
+return(matc)
+}
+```
+
+
+```{r}
+#Funcion reasignacion grupos
+grupos=function(datos,matc){
+matc=as.data.frame(matc)
+names(matc)=names(datos)
+k=nrow(matc)
+n=nrow(datos)
+d1=as.matrix(dist(rbind(datos,matc)))
+d2=d1[1:n,(n+1):(n+k)]
+grupos=c()
+for (i in 1:n) {
+  grupos[i]=which.min(d2[i,])
+}
+return(grupos)
+}
+```
+
+```{r}
+#Iteracion 0
+set.seed(15)
+grupo=sample(1:3,nrow(base1),T)
+matc=centro.mat(datos,grupo)
+grupo1=grupos(datos,matc)
+table(grupo,grupo1)
+scdg(datos,grupo)
+scdg(datos,grupo1)
+```
+```{r}
+#Iteracion 1
+matc2=centro.mat(datos,grupo1)
+grupo2=grupos(datos,matc2)
+table(grupo1,grupo2)
+scdg(datos,grupo)
+scdg(datos,grupo1)
+scdg(datos,grupo2)
+```
+```{r}
+#Iteracion 2
+matc3=centro.mat(datos,grupo2)
+grupo3=grupos(datos,matc3)
+table(grupo2,grupo3)
+scdg(datos,grupo)
+scdg(datos,grupo1)
+scdg(datos,grupo2)
+scdg(datos,grupo3)
+
+```
+```{r}
+#Iteracion 3
+matc4=centro.mat(datos,grupo3)
+grupo4=grupos(datos,matc4)
+table(grupo3,grupo4)
+scdg(datos,grupo)
+scdg(datos,grupo1)
+scdg(datos,grupo2)
+scdg(datos,grupo3)
+scdg(datos,grupo4)
+```
+```{r}
+#iteracion 0
+plot(datos$Expectativas,datos$Evaluacion,col=grupo,pch=18,main = "iteracion 0")
+points(matc,pch="*",col=c(1,2,3),cex=2)
+```
+```{r}
+#iteracion 2
+plot(datos$Expectativas,datos$Evaluacion,col=grupo1,pch=18,main = "iteracion 2")
+points(matc,pch="*",col=c(1,2,3),cex=2)
+```
+```{r}
+#iteracion 3
+plot(datos$Expectativas,datos$Evaluacion,col=grupo2,pch=18,main = "iteracion 3")
+points(matc2,pch="*",col=c(1,2,3),cex=2)
+```
+
+```{r}
+#iteracion 4
+plot(datos$Expectativas,datos$Evaluacion,col=grupo4,pch=18,main = "iteracion 4")
+points(matc3,pch="*",col=c(1,2,3),cex=2)
+```
+
+
+Muestre la secuencia de gráficos y también muestre un gráfico de la evolución de la SCDG.
+```{r}
+SCDGS=c(scdg(datos,grupo),scdg(datos,grupo1),scdg(datos,grupo2),scdg(datos,grupo3),scdg(datos,grupo4))
+plot(SCDGS,type = "b",xlab = "iteracion")
+```
+12. Continúe con todas las variables en `base1`. Obtenga las SCDG usando los siguientes pasos:
+
+```{r}
+SCDG1 = c()
+for (k in 1:8) SCDG1[k] = kmeans(base1, centers = k)$tot.withinss
+```
+
+13. Grafique los valores del SCDG contra el número de grupos. Utilice `type="b"` para ver la forma de codo.
+```{r}
+plot(SCDG1,type = "b",xlab = "numero de grupos")
+```
+Observe cuántos grupos se recomiendan a partir de este gráfico.
+
+Obtenga el gráfico automático usando la función `fviz_nbclust` de la librería `factoextra`, indicando `method = "wss"` para que utilice el criterio de suma de cuadrados dentro de grupos.
+
+```{r}
+library(factoextra)
+d=dist(base1)
+fviz_nbclust(base1,kmeans,method = "wss",diss = d)
+```
+
+14. Obtenga el agrupamiento con k-medias usando 3 grupos:
+
+```{r}
+km = kmeans(base1, centers = 3)
+```
+
+15. Utilice la función `pam` de la librería `cluster` para obtener un agrupamiento con 3 clusters usando el método de k-medoides:
+
+```{r}
+library(cluster)
+kmedoids = pam(base1, 3)
+```
+
+Use la variante de k-medoides para grandes conjuntos de datos. Como esta base no es tan grande
+se hará con 2 muestras, pero si la base fuera suficientemente grande se acostumbra a hacerlo con 50
+muestras o más. Use la función clara de la librería cluster, donde se indica en k el número de grupos,
+en metric el tipo de distancia entre individuos, por ejemplo, metric = "manhattan", también tiene la
+posibilidad de estandarizar los datos dentro de la función haciendo stand=T, se indica el número de
+muestras en samples, además debe indicarse pamLike=T para que use el algoritmo PAM
+```{r}
+
+clara1=clara(base1,metric ="euclidean",k = 3,samples = 2,pamLike = T,stand = T)
+```
+
+
+16. Obtenga el agrupamiento por k-medias a partir de los centroides de los grupos creados por un método jerárquico. Utilice la función `hkmeans` de la librería `factoextra`, indicando la distancia entre individuos en `hc.metric`, el método aglomerativo en `hc.method` y el número de grupos en `k`. Hágalo con la distancia euclidiana y método Ward.
+```{r}
+hkm=hkmeans(base1,hc.metric = "euclidean",hc.method = "ward.D",k = 4)
+
+```
+
+### CREACIÓN DE LOS GRUPOS O CLÚSTERS
+
+17. Obtenga una variable categórica con 3 grupos que indique el clúster al que se ha asignado a cada individuo. Hágalo para los agrupamientos usando siempre la distancia Euclidiana entre individuos, y usando los tres tipos de distancia entre grupos (single, complete, average). El corte se hace de la siguiente manera:
+
+```{r}
+cs= hclust(d,method = "single")
+clust.single = cutree(cs, k=3)
+table(clust.single)
+plot(cs, xlab="", main="DISTANCIA GRUPOS/DISTANCIA INDIVIDUOS", ylab="Distancia", sub="")
+```
+
++ Haga lo mismo para `clust.complete`, `clust.av` y `clust.ward`
+```{r}
+c.com= hclust(d,method = "complete")
+clust.complete=cutree(c.com,k=3)
+table(clust.complete)
+plot(c.com, xlab="", main="DISTANCIA GRUPOS/DISTANCIA INDIVIDUOS", ylab="Distancia", sub="")
+```
+```{r}
+c.av= hclust(d,method = "average")
+clust.av=cutree(c.av,k=3)
+table(clust.av)
+plot(c.av, xlab="", main="DISTANCIA GRUPOS/DISTANCIA INDIVIDUOS", ylab="Distancia", sub="")
+```
+```{r}
+c.ward= hclust(d,method = "ward.D")
+clust.ward=cutree(c.ward,k=3)
+table(clust.ward)
+plot(c.ward, xlab="", main="DISTANCIA GRUPOS/DISTANCIA INDIVIDUOS", ylab="Distancia", sub="")
+```
+
+
+18. Obtenga la variable categórica con 3 grupos para el método de k-medias. En este caso el corte se hace:
+
+```{r}
+clust.km = km$cluster
+```
+
++ Obtenga los grupos que se obtienen por k-medoides, por clara y por k-medias jerárquico.
+```{r}
+clust.kmedoid=kmedoids$cluster
+clust.clara=clara1$cluster
+clust.hkm=hkm$cluster
+```
+
+19. Compare los clústers obtenidos con los diferentes métodos haciendo tablas cruzadas. Identifique individuos que se mueven de un clúster a otro cuando se usan diferentes métodos.
+```{r}
+table(clust.km,clust.kmedoid)
+table(clust.av,clust.clara)
+```
+
++ Use la correlación entre correlogramas con las funciones `dendlist` y `cor.dendlist` de la librería `dendextend`. Primero tiene que convertir los resultados del agrupamiento jerárquico en un objeto tipo dendograma con la función `as.dendrogram` y ponerlos en una lista con `dendlist`. Luego esta lista de dendogramas la pone en la función `cor.dendlist`, indicando `method="cophenetic"`.
+```{r}
+library(biotools)
+d.EUCLIDEA=dist(base1) 
+d.MAHALANOBIS=D2.dist(base1,S)
+d.MANHATAN=dist(base1,method = "manhattan")
+```
+
+```{r}
+cs= hclust(d.EUCLIDEA,method = "single")
+csM= hclust(d.MAHALANOBIS,method = "single")
+csMan= hclust(d.MANHATAN,method = "single")
+c.com= hclust(d.EUCLIDEA,method = "complete")
+cM.com= hclust(d.MAHALANOBIS,method = "complete")
+cMan.com= hclust(d.MANHATAN,method = "complete")
+c.av= hclust(d.EUCLIDEA,method = "average")
+cM.av= hclust(d.MAHALANOBIS,method = "average")
+cMan.av= hclust(d.MANHATAN,method = "average")
+c.w= hclust(d.EUCLIDEA,method = "ward.D")
+cM.w= hclust(d.MAHALANOBIS,method = "ward.D")
+cMan.w= hclust(d.MANHATAN,method = "ward.D")
+```
+
+```{r}
+library(dendextend)
+
+corden=cor.dendlist(dendlist("cs"=as.dendrogram(cs),"csM"=as.dendrogram(csM),"csMan"=as.dendrogram(csMan),"c.com" =as.dendrogram(c.com),"cM.com"=as.dendrogram(cM.com),"cMan.com"=as.dendrogram(cMan.com),"c.av"=as.dendrogram(c.av),"cM.av"=as.dendrogram(cM.av),"cMan.av"=as.dendrogram(cMan.av),"c.w"=as.dendrogram(c.w),"cM.w"=as.dendrogram(cM.w),"cMan.w"=as.dendrogram(cMan.w)))
+round(corden,1)
+```
+
+
++ Obtenga la SCDG de los resultados por k-medias, k-medoides, clara y k-medias jerárquico.
+```{r}
+scdg(base1,clust.km)
+scdg(base1,clust.kmedoid)
+scdg(base1,clust.clara)
+scdg(base1,clust.hkm)
+```
+
+
+### CARACTERIZACIÓN DE LOS GRUPOS
+
+20. Se pueden caracterizar los grupos usando las variables originales. Compare los grupos obtenidos con alguno de los métodos. Use boxplots de las variables de percepción.
+
+```{r}
+p <- ncol(base1)
+for (i in 1:p) {
+  boxplot(base1[[i]] ~ clust.km, xlab = "Grupo", ylab = colnames(base1)[i])
+}
+
+```
+
+21. También se pueden usar componentes principales si estos explican un alto porcentaje de variabilidad. Haga una visualización de las agrupaciones resultantes de k-medias. Use la función `fviz_cluster` de la librería `factoextra` de la siguiente forma: También se pueden usar componentes principales si estos explican un alto porcentaje de variabilidad. Obtenga los puntajes de los primeros dos componentes principales basados en la matriz de correlaciones. Grafique estos puntajes y ponga colores según clúster obtenido con el vecino más cercano (por ejemplo) y etiquete los individuos según orden en la base1.
+
+```{r}
+fviz_cluster(km, base1, show.clust.cent = TRUE,
+             ellipse.type = "euclid", repel = TRUE) +
+  labs(title = "Resultados K-medias") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
++ Haga el gráfico usando 4 o 5 clústers con k-medias.
+```{r}
+#con 4 clusters
+fviz_cluster(kmeans(base1,centers = 4), base1, show.clust.cent = TRUE,
+             ellipse.type = "euclid", repel = TRUE) +
+  labs(title = "Resultados K-medias") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+```{r}
+#con 5 clusters
+fviz_cluster(kmeans(base1,centers = 5), base1, show.clust.cent = TRUE,
+             ellipse.type = "euclid", repel = TRUE) +
+  labs(title = "Resultados K-medias") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
++ Haga un gráfico de componentes principales para visualizar el agrupamiento por k-medoides.
+
+```{r}
+#con 5 clusters
+fviz_cluster(kmedoids, base1, show.clust.cent = TRUE,
+             ellipse.type = "euclid", repel = TRUE) +
+  labs(title = "Resultados K-medias") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
++ Para hacer el gráfico de componentes principales cuando se ha realizado el agrupamiento con un método jerárquico, debe usarse previamente la función `eclust`, donde se indica la distancia entre individuos en `hc_metric`, la distancia entre grupos en `hc_method`, el número de grupos en `k`. El resultado se usa luego para hacer el gráfico en `fviz_cluster`. Por ejemplo,
+
+```{r}
+c.w2 = eclust(base1, k=3,"hclust", hc_metric = "euclidean", hc_method = "ward.D", nboot = 2)
+```
+
+```{r}
+fviz_cluster(c.w2, base1, show.clust.cent = TRUE,
+             ellipse.type = "euclid", repel = TRUE) +
+  labs(title = "Resultados K-medias") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+22. Compare los clústers con otras variables que no se usaron en la creación de los clústers. Por ejemplo, compare los clústers según el sexo, la zona, la edad del estudiante, el gusto hacia la matemática, el tipo de colegio, el gusto por la carrera de ciencias económicas en la que se encuentra matriculado, así como la nota de admisión a la UCR.
+
+### MÉTODOS DIFUSOS
+
+23. La función `fanny` (análisis difuso) de la librería `cluster` permite aplicar el algoritmo de agrupamiento c-means (FCM). El parámetro `diss=T` se utiliza cuando se trabaja a partir de una matriz de distancias; de lo contrario, se usa `diss=F` cuando se trabaja con los datos originales. Se debe indicar en `metric` la distancia entre individuos, en `k` el número de grupos, y en `stand` si se quiere estandarizar los datos. Aplique este método con la distancia euclidiana para 3 grupos.
+
+```{r}
+fcm=fanny(base1,3,diss = F,metric = "euclidean",stand = F)
+```
+
++ Observe que da un mensaje de advertencia, el cual está relacionado con que el algoritmo no logra diferenciar muy claramente la pertenencia a cada grupo. Observe la pertenencia con `fcm$membership`, donde `fcm` es el nombre que le dimos al objeto resultante del agrupamiento.
+```{r}
+fcm$membership
+```
+
+
++ Para remediar este problema, intente usando otra distancia como Manhattan.
+
+```{r}
+fcm=fanny(base1,3,diss = F,metric = "manhattan",stand = F)
+```
+```{r}
+fmc$membership
+```
+
+
++ Ahora no da el problema anterior, pero indica que el algoritmo no converge. Aumente el número de iteraciones hasta que converja con `maxit`.
+```{r}
+fcm=fanny(base1,3,diss = F,metric = "manhattan",stand = F,maxit=10000)
+```
+
++ Observe la pertenencia a los grupos.
+```{r}
+fcm$membership
+```
+
++ Note que hay individuos que tienen probabilidades de pertenencia muy similares en varios grupos. Esto es una indicación de que hay muchos puntos frontera (difusos). Para medir el nivel de difusión, calcule el índice de Dunn; valores normalizados próximos a 0 indican que la estructura tiene un alto nivel difuso y valores próximos a 1 lo contrario. Para esto use `fcm$coef`.
+```{r}
+fcm$coef
+```
+
++ A partir de la matriz de pertenencia, diseñe una forma de automatizar la búsqueda de individuos cuyas dos probabilidades de pertenencia no difieren más de una cierta cantidad, por ejemplo, 10%. Esto le permitirá encontrar aquellos individuos que están en la frontera.
+
++ Obtenga los grupos que da este método y compárelos con los obtenidos con k-medias.
+```{r}
+clust.fcm=fcm$cluster
+table(clust.km,clust.fcm)
+```
+
++ Si no hay diferencias en los agrupamientos, ¿qué ventaja tiene haber hecho el método difuso?
+
+### NÚMERO DE GRUPOS
+
+24. Evalúe el número de grupos usando el método de la silueta para k-medias. En el punto 13. se usó la función `fviz_nbclust` de la librería `factoextra`, con `method = "wss"`. Cambie el método ahora por `method = "silhouette"`.
+```{r}
+fviz_nbclust(base1,kmeans,method = "silhouette",diss = d)
+```
+
++ En el caso de clustering jerárquico, es necesario cortar el árbol para cada uno de los valores de k antes de calcular los coeficientes de silueta. Se corta el árbol con un número determinado de k y se aplica a esta poda la función `silhouette`, cuyo resultado se guarda en un objeto llamado `s`, y la silueta promedio se obtiene con `summary(s)[[4]]`. Obtenga la silueta promedio para valores de k en el rango de 2 a 15 y haga un gráfico con los resultados.
+```{r}
+sil.k=c()
+n.clust=2:15
+for(i in 1:length(n.clust)){
+s=silhouette(cutree(c.com,n.clust[i]),get_dist(x = base1, method = "euclidean"))
+sil.k[i]=summary(s)[[4]]
+}
+data.frame(clusters = 2:15, silueta = sil.k) %>%
+ggplot(aes(x = clusters, y = silueta)) +
+geom_line() +
+geom_point() +
+scale_x_continuous(breaks = 2:15) +
+theme_bw()
+
+```
+
+25. Obtenga el estadístico GAP con la función `fviz_nbclust` pero cambie el método ahora por `method = "gap"`.
+```{r}
+fviz_nbclust(base1,kmeans,method = "gap",diss = d)
+```
+
+26. Use la función `NbClust` de la librería del mismo nombre para encontrar los diferentes indicadores que existen para determinar el número óptimo de clusters. Indique: `min.nc = 2`, `max.nc = 10`, `method = "kmeans"`, `index = "alllong"`. Haga el gráfico de los resultados con la función `fviz_nbclust`.
+
+```{r}
+```
+
+### VALIDACIÓN
+
+27. El uso combinado de las funciones `eclust` y `fviz_silhouette` de la librería `factoextra` permiten obtener los coeficientes de silueta de forma sencilla. La función `eclust`, gracias a su argumento `FUNcluster`, facilita el uso de múltiples algoritmos de clustering mediante una misma función (internamente llama a las funciones kmeans, hclust, pam, clara, etc). Use las siguientes instrucciones:
+
+```{r}
+library(factoextra)
+km1 = eclust(base1, FUNcluster = "kmeans", k = 3, hc_metric = "euclidean", nstart = 50, graph = F)
+fviz_silhouette(sil.obj = km1, print.summary = TRUE) 
+```
+
+28. Use la función `cluster.stats` de la librería `fpc` para calcular el índice de Dunn. Indique el objeto de distancias y la variable de agrupamiento obtenida con alguno de los métodos, por ejemplo, k-medias. Use `$dunn` para extraer el índice de Dunn.
+
+```{r}
+library(fpc)
+```
+
+### MAPA DE CALOR
+
+29. Use la función `heatmap` para hacer un mapa de calor. Use la siguiente instrucción:
+
+```{r}
+heatmap(base1, scale = "none",
+        distfun = function(x){dist(x, method = "euclidean")},
+        hclustfun = function(x){hclust(x, method = "ward.D")},
+        cexRow = 0.7)
+```

@@ -203,9 +203,3 @@ Las hojas metodológicas contienen información para que los expertos puedan val
 
 Se recomienda usar la misma escala (por ejemplo, 0-5 o 1-3) para todos los criterios.
 Se debe usar la misma dirección (por ejemplo, 0 nada – 5 mucho) para todos los criterios.
-
-
-a.	Mapa de CR a nivel cantonal donde las burbujas muestran el total de hogares con NBI. 
-b.	Ficha que muestre el numero Total de hogares y ficha que muestre el numero total de hogares con NBI
-HogNBI = SUM('censo_hogares (1)'[NBI - Copia])
-NumHogar = SUM('censo_hogares (1)'[ID_HOGAR])

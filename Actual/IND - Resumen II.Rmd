@@ -1,0 +1,231 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-29"
+---
+
+**Indicador:**
+Es una medida o dato específico que se utiliza para evaluar una variable o condición concreta.
+
+**Índice:**
+Es un conjunto de indicadores combinados en una fórmula matemática que proporciona una medida 
+global o resumen de una condición o fenómeno.
+
+**Indicador vs Índice:**
+Un indicador es un dato individual, mientras que un índice es una combinación de varios indicadores 
+para proporcionar una evaluación más amplia.
+
+**Para qué sirven?**
+Indicadores: Medir y evaluar condiciones específicas o variables concretas, proporcionando información 
+detallada.
+
+Índices: Resumir múltiples indicadores en una medida global, facilitando la comparación y el seguimiento 
+de tendencias generales.
+
+**Indicador compuesto:**
+Los indicadores compuestos son combinaciones matemáticas de varios indicadores, cuyos componentes 
+pueden tener diferentes unidades de medida y pesos no evidentes.
+
+**Objetivos del uso de índices:**
+1.Resumir conceptos y fenómenos complejos.
+2.Monitorear proyectos y políticas públicas.
+3.Identificar necesidades.
+4.Facilitar la comparación internacional.
+5.Mejorar la comunicación con usuarios no especializados.
+
+**Problemas y limitaciones de los índices:**
+1.Riesgo de mala interpretación política.
+2.Conclusiones simplistas por parte de los tomadores de decisiones.
+3.Decisiones subjetivas en su construcción.
+4.Uso intensivo de datos.
+5.Posibilidad de omitir dimensiones importantes difíciles de medir.
+
+**Operacionalización de un concepto mediante un índice:**
+1. Marco conceptual
+2. Selección de variables
+3. Tratamiento de valores faltantes
+4. Análisis multivariado
+5. Identificación de valores atípicos
+6. Normalización de datos
+7. Asignación de ponderadores
+8. Métodos de agregación
+9. Análisis de incertidumbre y sensibilidad 
+
+
+**Marco conceptual:**
+Operacionalizar conceptos para hacerlos observables.
+Definir dimensiones o componentes que describan el fenómeno.
+Ejemplos: IDH, IPM.
+
+**Selección de variables:**
+Dimensiones incluyen una o varias variables.
+Variables pueden existir o necesitar creación.
+Selección con técnicas estadísticas: correlaciones, tablas bivariadas, análisis factorial.
+
+
+**Valores faltantes:**
+Decidir si se eliminan o no.
+Analizar su comportamiento.
+Evaluar necesidad de imputación.
+Decisiones según tipo y gravedad.
+
+
+**Por qué hay faltantes?**
+El indicador/índice/variable no se midió o no se reportó.
+
+**Tipos de valores faltantes:**
+MCAR (Missing Completely at Random): Valores faltantes sin relación con ninguna variable observada o 
+no observada.
+MAR (Missing at Random): Valores faltantes relacionados con variables observadas, pero no con las 
+faltantes.
+NMAR (Not Missing at Random): Valores faltantes relacionados con las propias razones de estar 
+faltantes.
+
+RECORDAR QUITAR ID PARA APLICAR CUALQUIER TÉCNICA.
+
+**Imputación:*
+Simple
+  → Hot deck
+  → Cold deck
+  → Media/moda/mediana
+  → Regresión (se deben cumplir los supuestos y utilizar un step(mod), revisar el R2)
+  → Knn (method=”cart” si no converge)
+Múltiple
+  → Mice
+
+
+**Análisis multivariado:**
+Relacionar estructura de datos con el marco teórico.
+Identificar subgrupos de individuos o indicadores (análisis entre unidades y variables).
+
+**Identificar valores atípicos:**
+Observar datos inusuales con valores muy altos o bajos.
+Acciones: Investigar su origen y determinar si son errores o datos genuinos.
+Identificación: Utilizar métodos estadísticos como el rango intercuartílico o gráficos de caja.
+
+**Normalización:**
+Proceso de estandarización métrica del conjunto de datos. 
+Se necesita entender las escalas y unidades de medida en que se expresan los indicadores. 
+Ajuste en caso de que los datos sigan distribuciones asimétricas. 
+Técnicas: ranking, z-scores, re escalamiento (min-max), etc.
+
+**Ponderaciones:**
+Determinan el peso de variables en dimensiones y de dimensiones en el índice general.
+La asignación requiere criterio experto (es compleja).
+Sin fundamentos claros, se asignan pesos equiproporcionales.
+Ejemplos: 
+Pesos equiproporcionales 
+Consulta expertos 
+Cálculos entre distancia a objetivos (subjetivo) 
+
+Análisis de componentes principales PCA, OJO: cuando se usa PCA y ya se normalizó la base
+previamente, se utiliza scale=F, porque si se utiliza scale=T, normaliza la base con z scores. Además, para 
+este examen siempre se agarra el primer componente.
+
+**Métodos de agregación** 
+Combina variables en dimensiones y dimensiones en el índice. Ejemplos: suma de rankings, media 
+aritmética ponderada (más común), media geométrica.
+
+**Validación, análisis de incertidumbre y sensibilidad:**
+Validación: El índice logra medir y comunicar correctamente el fenómeno estudiado. La validación se 
+debe ir haciendo en todas las etapas. Técnicas: criterio experto, análisis de ítem (correlaciones, índices vs 
+cada componente), validación externa (con otros indicadores)
+Análisis de incertidumbre y sensibilidad
+
+**Construcción de escalas, para qué sirven y técnicas:**
+Facilitan la interpretación.
+Técnicas: criterio experto, promedio y desviación estándar, percentiles.
+
+**Presentación y diseminación de índices e indicadores (por qué es importante, cómo deben ser los resultados y la presentación)**
+Importante porque los tomadores de decisiones tienen poco tiempo para realizar análisis en detalle.
+Los resultados tienen que ser claros y concisos.
+La presentación debe ser capaz de identificar posibles situaciones “extraordinarias” que requieran 
+intervención.
+
+**Se presentan con:**
+1. Tablas
+2. Gráficos de barras
+3. Listas de orden mostrando cambios, aumentos o disminuciones
+4. Gráficos lineales semáforos (rojo, amarillo, verde)
+5. Infografía
+6. Pictogramas
+7. Gráficos de radar o telaraña
+8. Mapas
+
+VALIDACIÓN es para ver qué tan robusto es mi indicador, si no se mueve demasiado, es robusto:
+
+**Sensibilidad vs incertidumbre:**
+Sensibilidad: veo cómo me afecta la varianza, cuánta varianza extra tengo cuando voy cambiando 
+ponderación o normalización.
+Incertidumbre: cambio el tipo de normalización o ponderación, y veo si tiene un impacto, si mi indicador 
+no se altera demasiado quiere decir que es robusto
+
+
+
+**IPC**
+
+Que es: el indice de precios al consumidor (IPC) es un indicador economico que mide la variacion de los precios de una canasta de bienes y servicios representativa del consumo de los hogares.
+
+Para que sirve: sirve para evaluar la inflacion o deflacion, permitiendo a los gobiernos y bancos centrales tomar desiciones de politica economica y ajustar salarios, pensiones y contratos
+
+Cuales son los niveles de agregacion: 15 divisiones, 43 grupos, 81 clases, 132 subclases, 289 articulos 
+
+Como funciona el muestreo para el IPC: el diseno de la muestra se define en dos etapas, en la primera se aplica el Muestreo irrestricto aleatorio (MIA) para calcular los tamanos de muestra por articulo y en una segunda etapa se implemeta la distribucion por cuotas para los estableciomientos en los distritos de la cobertura geografica
+
+Cuales son los porcentajes de recoleccion segun la region de planificacion: el 65% de los precios se recolentan en la region central y 35% en las otras regiones, esta distribucion se deriva de la concentracion de establecimientos.
+
+Interpretacion: para el mes de abril, hubo un cambio del 0.33% de los precios generales de la canasta de consumo del ipc, a comparacion del mes de mayo.
+
+
+**COINR**
+
+Introducción
+COINr es un paquete de R para construir y analizar indicadores compuestos. Antes de continuar, aquí hay algunos recursos útiles:
+
+Sitio de documentación de COINr (que también explica cómo instalar COINr)
+Repositorio de COINr en GitHub (donde puedes enviar problemas o sugerencias)
+COINr te permite construir y analizar indicadores compuestos, pero el punto de partida es un conjunto de datos (inicial) de indicadores y metadatos de indicadores, incluyendo la estructura (marco conceptual) del índice.
+
+Para los fines de esta demostración, construiremos un indicador compuesto desde cero. La idea es demostrar también los principios de construir una canalización de datos reproducible, que es importante para la reproducibilidad, el control de calidad y la transparencia. ¡También ahorra mucho tiempo para cualquier ajuste y actualización futura!
+
+Formateo para COINr
+Para ingresar los datos en COINr necesitamos construir dos tablas:
+
+Los datos de los indicadores (iData)
+Los metadatos de los indicadores, incluyendo la estructura del índice (iMeta)
+Estas tablas, los detalles de su construcción y mucha otra información, se pueden encontrar en la documentación en línea de COINr. Cuando las tablas estén construidas, usaremos COINr para construir el indicador compuesto.
+
+iData
+El primer data frame, iData especifica el valor de cada indicador, para cada unidad. También puede contener atributos adicionales y metadatos de las unidades, por ejemplo, grupos, nombres y variables denominativas (variables que se usan para ajustar los efectos de tamaño de los indicadores).
+
+
+iMeta
+El data frame iMeta especifica todo sobre cada columna en iData, incluyendo si es un indicador, un grupo, o algo más; su nombre, sus unidades y dónde aparece en la estructura del índice. iMeta también requiere entradas para cualquier agregado que se creará al agregar indicadores.
+
+Esta tabla requiere cierta construcción manual. Tenemos que definir los códigos de los indicadores, nombres, direcciones y la estructura del índice. La estructura de la tabla iMeta es un poco más complicada que la tabla iData, pero se explica a fondo en la documentación de COINr.
+
+Análisis inicial
+Ahora estamos listos para usar COINr. Para usar COINr tenemos que comenzar construyendo una “moneda” (coin), que es un objeto que contiene toda la información sobre nuestro indicador compuesto (datos, estructura, resultados, etc.).
+
+En COINr hay muchas opciones para el tratamiento de datos, incluyendo cambiar el número de puntos winsorizados, el tipo de transformación no lineal, e incluso construir tu propio procedimiento de tratamiento de outliers usando otros paquetes. Los detalles sobre el tratamiento de datos están en la documentación en línea.
+
+En COINr hay muchas opciones alternativas de normalización, incluyendo:
+
+Puntuaciones Z
+Rangos
+Rangos percentiles
+Puntuaciones Borda
+Distancia al objetivo
+Distancia a una unidad de referencia
+Puntos de referencia
+Usar un método de normalización personalizado
+
+La función de agregación utilizará los pesos que se ingresaron en la tabla iMeta al principio. Sin embargo, puedes crear nuevos conjuntos de pesos y almacenarlos en la moneda, y también reponderar usando enfoques de PCA o optimización. Más información sobre esto se encuentra en el capítulo relevante de la documentación
+
+Alternativas de agregación incorporadas en COINr son:
+
+Media geométrica (baja compensación)
+Media armónica (compensación aún menor)
+El método Copeland
+Usar tu propia función personalizada
+Para este último, esto nos permite usar métodos de agregación avanzados como DEA y otros; algunos enfoques interesantes están disponibles en el paquete compind - un ejemplo de uso de esto con COINr está aquí.

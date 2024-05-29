@@ -54,7 +54,7 @@ diag.panel=panel.density,order=T)) # Utilice suppress ya que el grafico da un er
 **Esto se podria deber a que estos deportes comparten las mismas habilidades necesarias**
 
 3. Identifique un valor extremo usando los “leverage” a partir de la matriz $H=X(X^TX)^{-1}X^T$.
-Del curso de Regresión recuerde que los “leverage” se llaman “hatvalues” en R y el límite para detectar un valor extremo es 2 veces la media de ellos.  La función para obtener los "leverage" es `hat`.
+Del curso de Regresión recuerde que los “leverage” se llaman “hatvalues” en R y el límite para detectar un valor extremo es 2 veces la media de ellos.La función para obtener los "leverage" es `hat`.
 
 ```{r}
 hat=hat(base);hat

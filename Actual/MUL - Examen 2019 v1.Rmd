@@ -1,0 +1,74 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-23"
+---
+
+##Pregunta 1 A
+
+```{r}
+Cincinnatti=c(6.4,16.8)
+Cleveland=c(14.5,18.7)
+Dallas=c(18.4,41.0)
+Detroit=c(14.7,31.1)
+cols=c("asesinatos","violaciones")
+
+df=rbind(Cincinnatti,Cleveland,Dallas,Detroit)
+colnames(df)=cols;df
+grupo1=c(2,1,2,2)
+
+```
+
+```{r}
+#Centroides
+    b1=df[grupo1==1,]
+    centro1=b1
+    b2=df[grupo1==2,]
+    centro2=apply(b2,2,mean)
+    
+    
+    matc=rbind(centro1,centro2)
+```
+
+```{r}
+#reasignacion de grupos
+k=2
+n=4
+d1=as.matrix(dist(rbind(df,matc)))
+d2=d1[1:4,5:6]
+grupos=c()
+for (i in 1:n){
+  grupos[i]=which.min(d2[i,])
+}
+
+grupos
+```
+
+## Pregunta 2 A
+
+```{r}
+john.stand=c((3.57-2.7222)/sqrt(0.2466),(1.80-1.7974)/sqrt(0.0025),(16.23-13.2752)/sqrt(2.0829),(2.96-2.1117)/sqrt(0.7232))
+names(john.stand)=c("vallas","saloalto","tiro","car200")
+john.stand
+```
+## Pregunta 2 B
+```{r}
+lambda=2.73
+des=sqrt(lambda)
+des*1
+des*2
+```
+## Preunta 2 D
+```{r}
+PCA1=c(-0.57,-0.38,-0.51,-0.51)
+sum(john.stand*PCA1)
+```
+
+##Pregunta 2 F
+```{r}
+lambda=c(2.73,0.76,0.38,0.12)
+100*(lambda/sum(lambda))
+68.421053+19.047619
+```
+
+

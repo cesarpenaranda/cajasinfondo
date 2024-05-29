@@ -1,0 +1,139 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-22"
+---
+```{r}
+load("datos.Rdata")
+```
+
+#Pregunta 3 A
+```{r}
+#Funcion centroid
+centros= function(base,grupo){
+  k=length(unique(grupo))
+  nc=ncol(base)
+  matc=matrix(NA,nrow = k,ncol = nc)
+  for(i in 1:k){
+    smatc=base[grupo==i,]
+    matc[i,]=apply(smatc,2,mean)
+  }
+  return(matc)
+}
+#base=crimen2[,-3]
+grupo1=crimen2$grupo
+matc=centros(base,grupo1)
+matc
+```
+
+```{r}
+grupos= function(datos,matc){
+  matc=as.data.frame(matc)
+  names(matc)=names(datos)
+  k=nrow(matc)
+  n=nrow(base)
+  d1=as.matrix(dist(rbind(datos,matc)))
+  d2=d1[1:n,(n+1):(n+k)]
+  grupos=c()
+  for(i in 1:n){
+    grupos[i]=which.min(d2[i,])
+  }
+  return(grupos)
+}
+
+grupos2=grupos(base,matc)
+table(grupos2)
+table(grupo1,grupos2)
+base[grupos2==1,]
+base[grupos2==2,]
+```
+## Pregunta 3 B
+```{r}
+scdg=function(base,grupo){
+  k=length(unique(grupo))
+  sc=0
+  for(i in 1:k){
+    mat=base[grupo==i,]
+    centroide=apply(mat,2,mean)
+    sc=sc+sum(as.matrix(dist(rbind(centroide,mat)))[1,-1]**2)
+  }
+  return(sc)
+}
+scdg(base,grupo1)
+scdg(base,grupos2)
+```
+
+## Pregunta 4 A
+```{r}
+base.pais=covid[c("Austria","Bolivia","Belgium","Brazil","Chile","Colombia", "Costa Rica", "Uruguay"),]
+d=(1-cor(t(base.pais)));d=as.dist(d);d
+```
+## Pregunta 4 B
+```{r}
+cs.single=hclust(d,method = "single")
+plot(cs.single)
+cs.comp=hclust(d,method = "complete")
+plot(cs.single)
+cs.av=hclust(d,method = "average")
+plot(cs.av)
+c.w=hclust(d,method = "ward.D")
+plot(c.w)
+
+clust=cutree(cs.single,k=2)
+table(clust)
+```
+
+```{r}
+base.estan=scale(base.pais,scale = T)
+x=1:365
+plot(x,base.estan[c("Austria"),],type = "l")
+lines(x,base.estan[c("Belgium"),],col="red")
+```
+```{r}
+plot(x,base.estan[c("Brazil"),],type = "l",ylim = c(-3,3))
+lines(x,base.estan[c("Colombia"),],col="red")
+lines(x,base.estan[c("Costa Rica"),],col="blue")
+lines(x,base.estan[c("Uruguay"),],col="green")
+```
+## Pregunta 5 A
+
+```{r}
+PC1=c(
+-0.433,
+0.626,
+0.648,
+-0.027)
+
+PC2=c(
+0.160,
+0.350,
+-0.268,
+-0.883
+)
+
+PC3=c(
+0.884,
+0.294,
+0.313,
+0.182
+)
+
+PC4=c(
+-0.072,
+0.631,
+-0.640,
+0.432
+)
+
+lambda=c(1.781, 1.196, 0.812,0.211)
+
+A=cbind(PC1,PC2,PC3,PC4)
+
+L=diag(lambda)
+R1=A%*%L%*%t(A);R1
+```
+#Pregunta 5 C
+```{r}
+round(-0.3206*c(0.160,0.350,-0.268,-0.883),3)
+```
+

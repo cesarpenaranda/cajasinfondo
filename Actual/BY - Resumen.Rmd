@@ -3,6 +3,115 @@ title: "Resumen Bayes"
 output: html_document
 date: "2024-05-05"
 ---
+Por supuesto, aquí tienes una lista completa de distribuciones continuas y discretas con ejemplos de su posible uso y para qué fenómenos se utilizan:
+
+**Distribuciones Continuas:**
+
+1. **Distribución Normal (Gaussiana)**:
+   - **Uso**: Modela variables continuas que tienden a agruparse alrededor de un valor central. Es muy utilizada debido al teorema del límite central y su relación con el error aleatorio en muchas medidas.
+   - **Ejemplo**: Puede usarse para modelar la altura de una población, donde la mayoría de las personas tienen una altura cercana a la media, con pocas personas muy altas o muy bajas.
+
+2. **Distribución Exponencial**:
+   - **Uso**: Modela el tiempo entre eventos sucesivos en un proceso de Poisson, es decir, eventos que ocurren de manera continua e independiente en el tiempo. Es útil para modelar eventos que ocurren aleatoriamente con una tasa constante.
+   - **Ejemplo**: Se utiliza para modelar el tiempo entre llegadas de clientes a un mostrador de servicio.
+
+3. **Distribución Uniforme**:
+   - **Uso**: Modela una variable continua donde cada valor dentro de un rango dado es igualmente probable.
+   - **Ejemplo**: Se usa en problemas donde todas las posibilidades dentro de un rango tienen la misma probabilidad de ocurrencia, como el lanzamiento de un dado no sesgado.
+
+4. **Distribución Gamma**:
+   - **Uso**: Modela tiempos de espera, procesos de desgaste o tasas de eventos en el tiempo.
+   - **Ejemplo**: Se utiliza en la industria para modelar tiempos de espera, como el tiempo entre fallos de un sistema.
+
+5. **Distribución de Chi-cuadrado**:
+   - **Uso**: Modela la distribución de la suma de los cuadrados de variables aleatorias normales estándar independientes. Es útil en pruebas de hipótesis y en la construcción de intervalos de confianza para la varianza de una población normal.
+   - **Ejemplo**: Se usa en análisis de varianza (ANOVA) para probar si hay diferencias significativas entre las medias de varios grupos.
+
+6. **Distribución t de Student**:
+   - **Uso**: Se utiliza para estimar la media de una población cuando el tamaño de la muestra es pequeño y/o la desviación estándar de la población es desconocida. También se utiliza en pruebas de hipótesis sobre la media de una población.
+   - **Ejemplo**: Se utiliza en pruebas t para comparar las medias de dos grupos de datos independientes.
+
+7. **Distribución F de Fisher-Snedecor**:
+   - **Uso**: Modela la relación entre dos varianzas muestrales y se utiliza en análisis de varianza (ANOVA) y en pruebas de regresión.
+   - **Ejemplo**: Se utiliza en análisis de regresión para probar si el modelo de regresión es significativo.
+
+**Distribuciones Discretas:**
+
+1. **Distribución de Poisson**:
+   - **Uso**: Modela la cantidad de eventos que ocurren en un intervalo de tiempo o espacio, cuando los eventos ocurren de manera independiente y a una tasa constante.
+   - **Ejemplo**: Se utiliza para modelar el número de llamadas recibidas por un centro de atención telefónica en un intervalo de tiempo fijo, como por ejemplo, el número de llamadas por hora.
+
+2. **Distribución Binomial**:
+   - **Uso**: Modela el número de éxitos en una secuencia de ensayos independientes, donde cada ensayo tiene solo dos posibles resultados (éxito o fracaso).
+   - **Ejemplo**: Se utiliza para modelar el número de veces que una moneda sale cara en un cierto número de lanzamientos, o el número de clientes que compran un producto de dos opciones en un día de ventas.
+
+3. **Distribución de Bernoulli**:
+   - **Uso**: Es un caso especial de la distribución binomial donde solo hay un ensayo. Modela un ensayo con dos resultados posibles (éxito o fracaso) con una probabilidad fija.
+   - **Ejemplo**: Puede utilizarse para modelar el resultado de un solo lanzamiento de una moneda, donde el éxito sería obtener cara y el fracaso sería obtener cruz.
+
+4. **Distribución Geométrica**:
+   - **Uso**: Modela el número de ensayos independientes necesarios hasta que ocurra el primer éxito en una secuencia de ensayos de Bernoulli.
+   - **Ejemplo**: Puede usarse para modelar el número de veces que se debe lanzar una moneda hasta que salga cara por primera vez.
+
+5. **Distribución Hipergeométrica**:
+   - **Uso**: Modela el número de éxitos en una muestra aleatoria sin reemplazo, donde cada ensayo tiene dos posibles resultados y el número total de éxitos y fracasos en la población es finito.
+   - **Ejemplo**: Se utiliza para modelar el número de elementos defectuosos en una muestra aleatoria extraída de un lote de productos.
+
+6. **Distribución Multinomial**:
+   - **Uso**: Es una generalización de la distribución binomial para múltiples categorías. Modela el número de veces que ocurre cada una de varias categorías en una serie de ensayos independientes.
+   - **Ejemplo**: Se utiliza en genética para modelar la distribución de genotipos en una población, donde hay más de dos posibles genotipos.
+
+7. **Distribución de Poisson Multivariada**:
+   - **Uso**: Extiende la distribución de Poisson a múltiples variables aleatorias, donde cada una representa el número de eventos en una región específica o en un intervalo de tiempo.
+   - **Ejemplo**: Se utiliza en estudios epidemiológicos para modelar el número de casos de enfermedades infecciosas en diferentes regiones geográficas durante un período de tiempo.
+  
+  
+Suponga que tiene que explicar a un estadístico frecuentista el papel de la probabilidad predictiva posterior en el pensamiento bayesiano y las ventajas que este concepto ofrece. Desarrolle tres ideas para lograr con éxito su explicación.
+
+**Actualización continua de creencias:**
+La probabilidad predictiva posterior en el pensamiento bayesiano representa la incertidumbre sobre eventos futuros después de observar los datos.
+Proporciona una distribución completa que refleja esta incertidumbre, en contraste con estimaciones puntuales frecuentistas.
+**Evaluación completa de la incertidumbre:**
+Permite evaluar toda la distribución posterior, ofreciendo una visión completa de la incertidumbre asociada con las predicciones.
+**Flexibilidad para incorporar nueva información:**
+Se actualiza fácilmente con nuevos datos, permitiendo una adaptación continua y mejoras en las predicciones sin necesidad de reiniciar el análisis desde cero.
+
+
+Suponga que tiene que explicar a un estadístico frecuentista el papel de la probabilidad predictiva previa en el pensamiento bayesiano y las ventajas que este concepto ofrece. Desarrolle tres ideas para lograr con éxito su explicación.
+
+**Consideración de incertidumbre previa:**
+La probabilidad predictiva previa en el pensamiento bayesiano cuantifica la incertidumbre previa sobre eventos futuros antes de observar nuevos datos.
+**Mejora de la toma de decisiones:**
+Permite decisiones más informadas, integrando información previa y nueva de manera sistemática, especialmente en situaciones de datos limitados.
+**Flexibilidad y adaptabilidad**:
+Ofrece flexibilidad para expresar y actualizar creencias iniciales a medida que se obtiene nueva información, en contraste con supuestos rígidos frecuentistas sobre la distribución de datos.
+
+Suponga que tiene que explicar a un estadístico frecuentista el papel de la verosimilitud en el pensamiento bayesiano y las ventajas que este concepto ofrece. Desarrolle tres ideas para lograr con éxito su explicación.
+
+**Medición de la compatibilidad de los datos:** La verosimilitud en el pensamiento bayesiano mide qué tan probable son los datos observados bajo diferentes valores del parámetro, lo que facilita la evaluación de la plausibilidad de esos valores.
+**Integración de información previa y actualizada:** La verosimilitud se combina con la distribución a priori para calcular la distribución posterior, permitiendo una actualización coherente de nuestras creencias sobre el parámetro después de observar los datos.
+**Flexibilidad y comparación de modelos:** La verosimilitud proporciona flexibilidad para abordar diferentes tipos de modelos y permite la comparación formal entre ellos, facilitando la selección del modelo más adecuado y la obtención de conclusiones más informadas.
+
+Suponga que tiene que explicar a un estadístico frecuentista el papel de la distribución posterior en el pensamiento bayesiano y las ventajas que este concepto ofrece. Desarrolle tres ideas para lograr con éxito su explicación.
+
+**Actualización de creencias:** La distribución posterior en el pensamiento bayesiano representa la actualización de nuestras creencias sobre un parámetro después de observar datos. Esto permite incorporar la incertidumbre de manera intuitiva y continua en el análisis estadístico.
+**Fusión de información:** La distribución posterior integra de manera coherente la información previa con la evidencia empírica, ofreciendo una forma sistemática de combinar conocimientos previos con nuevos datos.
+**Inferencia robusta y flexible:** La distribución posterior proporciona herramientas para realizar inferencias robustas y flexibles, incluyendo estimaciones puntuales, intervalos de credibilidad y comparaciones formales entre modelos, lo que permite abordar una variedad de preguntas de interés práctico de manera transparente.
+
+Suponga que tiene que explicar a un estadístico frecuentista el papel de la distribución previa en el pensamiento bayesiano y las ventajas que este concepto ofrece. Desarrolle tres ideas para lograr con éxito su explicación.
+
+**Incorporación de conocimiento previo:** La distribución previa en el pensamiento bayesiano permite utilizar información previa sobre los parámetros del modelo antes de observar los datos, lo que es útil cuando se dispone de conocimiento experto o creencias sólidas sobre el problema.
+**Regularización y manejo de datos escasos:** La distribución previa actúa como un regularizador, suavizando las estimaciones de los parámetros y evitando problemas de sobreajuste, especialmente en situaciones con datos limitados o modelos complejos.
+**Actualización continua de creencias:** El enfoque bayesiano permite actualizar continuamente las creencias a medida que se observan más datos, proporcionando una toma de decisiones más dinámica y adaptable en comparación con los enfoques frecuentistas, que a menudo generan estimaciones puntuales sin incorporar nuevas evidencias de manera sistemática.
+
+
+**Partes de un modelo bayesiano**
+
+**Distribución Previa:** Es la creencia inicial sobre los parámetros de un modelo estadístico antes de observar los datos. Enfoques frecuentistas tienden a verla como una distribución hipotética o una suposición inicial basada en el conocimiento previo del estadístico sobre el problema. Por ejemplo, si estás modelando la tasa de éxito de un tratamiento médico, la distribución previa podría representar tu creencia inicial sobre cuál podría ser esa tasa de éxito basada en estudios previos o experiencia clínica.
+
+**Verosimilitud:** Es la probabilidad de observar los datos dados los parámetros del modelo. Enfoques frecuentistas la interpretan como una función de los datos, tratándola como una medida de la calidad del ajuste entre los datos observados y los parámetros propuestos. Por ejemplo, si estás evaluando un modelo de regresión lineal, la verosimilitud cuantifica qué tan probable son los datos observados bajo el modelo de regresión específico.
+
+**Distribución Posterior:** Es la actualización de la distribución previa después de observar los datos. Enfoques frecuentistas pueden interpretarla como la distribución de los parámetros del modelo después de incorporar la información contenida en los datos. Esencialmente, combina la información inicial (distribución previa) con la información observada (verosimilitud) para proporcionar una nueva creencia sobre los parámetros. Por ejemplo, después de recolectar datos sobre la tasa de éxito de un tratamiento, la distribución posterior podría proporcionar una estimación más precisa de esa tasa de éxito.
 
 **Parametrizar**
 
@@ -49,6 +158,8 @@ $$P(A\cap B)=P(B)\cdot P(A|B)$$
 
 **Teorema de bayes**
 
+$$P(A_i|B) = \frac{P(B|A_i) \cdot P(A_i)}{P(B|A_i) \cdot P(A_i) + P(B|\neg A_i) \cdot P(\neg A_i)}$$
+
 $$\text{informacion posterior} \propto \text{informacion previa} \propto \text{verosimilitud (datos)}$$
 $$P(\theta|y)=P(y|\theta)*P(\theta)$$
 \(P(\theta|y)\) -> Modelo completo
@@ -77,7 +188,7 @@ $$P(\theta|y,x)$$
 
 \((x,y)\) -> observable
 
-3. Metricas de evaluacion de modelos
+**Metricas de evaluacion de modelos**
 
 **Inferencia estadistica:** Obtener conclusiones de informacio (muestra/poblacion)
 

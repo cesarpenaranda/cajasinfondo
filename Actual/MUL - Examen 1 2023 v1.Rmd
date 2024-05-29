@@ -1,0 +1,161 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-22"
+---
+
+## Pregunta 1
+
+```{r}
+lambda= c(2.73,0.76,0.38,0.13)
+lambda1=lambda[1]
+desv1=sqrt(lambda1)
+c(desv1,desv1*2,desv1*3,desv1*4)
+-c(desv1,desv1*2,desv1*3,desv1*4)
+```
+
+# Pregunta 2 B
+```{r}
+desv=c(1.3352, 1.1022, 0.9034, 0.8158, 0.7216)
+lambda=desv^2
+plot(lambda)
+(lambda[1:5]/sum(lambda))*100
+ 35.65538+24.29703+16.32272 
+```
+## Pregunta 4
+
+```{r}
+load("datos1.Rdata")
+```
+
+```{r}
+eB=eigen(B1)
+plot(eB$vectors[,1:2]%*%diag(sqrt(eB$values[1:2])),xlab = "coordenada1",ylab = "coordenada2");
+text(eB$vectors[,1:2]%*%diag(sqrt(eB$values[1:2])),labels = 1:10,pos = 4)
+```
+## Pregunta 5 A
+
+```{r}
+#Grupo inicial
+grupo1=senti1$grupo
+table(grupo1)
+```
+```{r}
+#Funcion centroid
+centros=function(base,grupo){
+  k=length(unique(grupo))
+  nc=ncol(base)
+  matc=matrix(NA,nrow = k,ncol = nc)
+  for(i in 1:k){
+    smatc=base[grupo==i,]
+    matc[i,]=apply(smatc,2,mean)
+  }
+  return(matc)
+}
+```
+
+```{r}
+# Funcion reasignacion grupos
+grupos=function(datos,matc){
+  matc=as.data.frame(matc)
+  names(matc)=names(datos)
+  k=nrow(matc)
+  n=nrow(datos)
+  d1=as.matrix(dist(rbind(datos,matc)))
+  d2=d1[1:n,(n+1):(n+k)]
+  grupos=c()
+  for(i in 1:n){
+    grupos[i]=which.min(d2[i,])
+  }
+  return(grupos)
+}
+```
+
+```{r}
+#base=senti1[,-6]
+matc1=centros(base,grupo1)
+grupo2=grupos(base,matc1)
+table(grupo2)
+table(grupo1,grupo2)
+which(senti1$grupo!=grupo2)
+```
+```{r}
+matc1
+```
+
+## Pregunta 5 B
+```{r}
+#Funcion medoid
+medoid= function(base,grupo){
+  k=length(unique(grupo))
+  id=c()
+  for(i in 1:k){
+    smatc=base[grupo==i,]
+    id[i]=which.min(colMeans(as.matrix(dist(smatc))))
+  }
+  return(as.matrix(base[id,]))
+}
+medoid(base,grupo1)
+```
+## Pregunta 5 C
+```{r}
+sdcg=function(base,grupo){
+  k=length(unique(grupo))
+  sc=0
+  for(i in 1:k){
+    mat=base[grupo==i,]
+    centroide=apply(mat,2,mean)
+    sc=sc+sum(as.matrix(dist(rbind(centroide,mat)))[1,-1]^2)
+  }
+return(sc)
+}
+sdcg(base,grupo1)
+sdcg(base,grupo2)
+```
+
+## Pregunta 5 D
+```{r}
+ditancias=function(datos,grupo){
+  k=length(unique(grupo))
+  n=nrow(datos)
+  
+  d1=as.matrix(dist(rbind(datos,matc)))
+  d2=d1[1:n,(n+1):(n+k)]
+  return(d2)
+  
+}
+ditancias(base,matc1)
+```
+
+
+```{r}
+baseg1=base[grupo1==1,]
+baseg2=base[grupo1==2,]
+d12=as.matrix(dist(rbind(baseg1,baseg2),method = "manhattan"))
+
+mean(d12[1:10,11:20])
+```
+## Pregunta 6 A
+```{r}
+cor=corpais1
+d = (1-cor)
+d=as.dist(d);d
+min(d)
+```
+
+## Pregunta 6 B
+```{r}
+cs.sin=hclust(d,method = "single")
+plot(cs.sin)
+cs.com=hclust(d,method = "complete")
+plot(cs.com)
+cs.ave=hclust(d,method = "average")
+plot(cs.ave)
+cs.ward=hclust(d,method = "ward.D")
+plot(cs.ward)
+```
+
+
+
+
+

@@ -609,6 +609,7 @@ fviz_cluster(c.w2, base1, show.clust.cent = TRUE,
 23. La función `fanny` (análisis difuso) de la librería `cluster` permite aplicar el algoritmo de agrupamiento c-means (FCM). El parámetro `diss=T` se utiliza cuando se trabaja a partir de una matriz de distancias; de lo contrario, se usa `diss=F` cuando se trabaja con los datos originales. Se debe indicar en `metric` la distancia entre individuos, en `k` el número de grupos, y en `stand` si se quiere estandarizar los datos. Aplique este método con la distancia euclidiana para 3 grupos.
 
 ```{r}
+#fanny(base1,...,diss=F) pero si tenfo fanny(d,diss=T) donde d=dist(base)
 fcm=fanny(base1,3,diss = F,metric = "euclidean",stand = F)
 ```
 
@@ -621,10 +622,10 @@ fcm$membership
 + Para remediar este problema, intente usando otra distancia como Manhattan.
 
 ```{r}
-fcm=fanny(base1,3,diss = F,metric = "manhattan",stand = F)
+fcm=fanny(base1,3,diss = F,metric = "manhattan",stand = F) #stand= si estandarisamos o no
 ```
 ```{r}
-fmc$membership
+fcm$membership
 ```
 
 
@@ -640,10 +641,10 @@ fcm$membership
 
 + Note que hay individuos que tienen probabilidades de pertenencia muy similares en varios grupos. Esto es una indicación de que hay muchos puntos frontera (difusos). Para medir el nivel de difusión, calcule el índice de Dunn; valores normalizados próximos a 0 indican que la estructura tiene un alto nivel difuso y valores próximos a 1 lo contrario. Para esto use `fcm$coef`.
 ```{r}
-fcm$coef
+fcm$coef #cerca de cero esta fatal cerca de 1 bien, nos fijamos especialmente en el normalizado
 ```
 
-+ A partir de la matriz de pertenencia, diseñe una forma de automatizar la búsqueda de individuos cuyas dos probabilidades de pertenencia no difieren más de una cierta cantidad, por ejemplo, 10%. Esto le permitirá encontrar aquellos individuos que están en la frontera.
++ A partir de la matriz de pertenencia, diseñe una forma de automatizar la búsqueda de individuos cuyas dos probabilidades mas alta de pertenencia no difieren más de una cierta cantidad, por ejemplo, 10%. Esto le permitirá encontrar aquellos individuos que están en la frontera.
 
 + Obtenga los grupos que da este método y compárelos con los obtenidos con k-medias.
 ```{r}
@@ -679,12 +680,19 @@ theme_bw()
 
 25. Obtenga el estadístico GAP con la función `fviz_nbclust` pero cambie el método ahora por `method = "gap"`.
 ```{r}
-fviz_nbclust(base1,kmeans,method = "gap",diss = d)
+fviz_nbclust(base1,kmeans,method = "gap",diss = d) #gap alto es bueno
 ```
 
 26. Use la función `NbClust` de la librería del mismo nombre para encontrar los diferentes indicadores que existen para determinar el número óptimo de clusters. Indique: `min.nc = 2`, `max.nc = 10`, `method = "kmeans"`, `index = "alllong"`. Haga el gráfico de los resultados con la función `fviz_nbclust`.
 
 ```{r}
+library(NbClust)
+numero_clusters <- NbClust(data = base1, distance = "euclidean", min.nc = 2,
+max.nc = 10, method = "kmeans", index = "alllong")
+
+```
+```{r}
+numero_clusters
 ```
 
 ### VALIDACIÓN
@@ -694,8 +702,14 @@ fviz_nbclust(base1,kmeans,method = "gap",diss = d)
 ```{r}
 library(factoextra)
 km1 = eclust(base1, FUNcluster = "kmeans", k = 3, hc_metric = "euclidean", nstart = 50, graph = F)
-fviz_silhouette(sil.obj = km1, print.summary = TRUE) 
+fviz_silhouette(sil.obj = km1, print.summary = TRUE) #a mayor silueta promedio cera mejor porque indica que los cluster se serparan 
 ```
+```{r}
+library(factoextra)
+km1 = eclust(base1, FUNcluster = "kmeans", k = 5, hc_metric = "euclidean", nstart = 50, graph = F)
+fviz_silhouette(sil.obj = km1, print.summary = TRUE) #a mayor silueta promedio cera mejor porque indica que los cluster se serparan 
+```
+los que vemos negativos son los que estan super mal clasificados, son los que van asia abajo en comparacion con los demas 
 
 28. Use la función `cluster.stats` de la librería `fpc` para calcular el índice de Dunn. Indique el objeto de distancias y la variable de agrupamiento obtenida con alguno de los métodos, por ejemplo, k-medias. Use `$dunn` para extraer el índice de Dunn.
 

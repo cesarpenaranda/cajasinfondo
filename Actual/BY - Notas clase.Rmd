@@ -231,7 +231,9 @@ y_bar <- mean(y_snow)
 ```
 
 Verosimilitud:
-$$L(\mu)=P(y|\mu)\propto P(y|\mu)$$$$$$
+
+$$L(\mu)=P(y|\mu)\propto P(y|\mu)$$
+
 $$y\sim N(\mu,\sigma^2/n)$$
 ```{r}
 posterior_mu <- previa_mu %>%
@@ -701,6 +703,7 @@ Incorporamos la muestra en el gráfico de la log-densidad-posterior:
 d = mycontour(normchi2post, c(220, 330, 500, 9000), time,xlab="mean",ylab="variance")
 points(mu_post,sigma2_post)
 ```
+
 Intervalos de credibilidad para $\mu|\sigma^2, y$ (en horas) y para $\sigma^2|y$ son:
 
 ```{r}
@@ -745,3 +748,50 @@ sum(theta_post[,1]-theta_post[,2]<0)/1000
 Esta probabilidad es nula.
 
 ## Evaluación Práctica 3
+
+Definición de variables:
+
+```{r}
+y_N <- 1601
+n_N <- y_N+162527
+
+y_S <- 510
+n_S <- y_S+412368
+```
+
+Simulación de 1000 valores de la distribución posterior conjunta de $(p_N,p_S)$:
+
+```{r}
+p_N_post <- rbeta(1000,shape1 = y_N+1,shape2 = n_N-y_N+1)
+
+p_S_post <- rbeta(1000,shape1 = y_S+1,shape2 = n_S-y_S+1)
+
+hist(p_N_post)
+hist(p_S_post)
+```
+
+Histograma del riesgo relativo:
+
+```{r}
+riesgo_rel_post <- p_N_post/p_S_post
+hist(riesgo_rel_post)
+```
+
+Intervalo de credibilidad al 95% para el riesgo relativo:
+
+```{r}
+quantile(riesgo_rel_post,probs = c(0.025,0.975))
+```
+
+Histograma de la diferencia en riesgos:
+
+```{r}
+diferencia_post <- p_N_post-p_S_post
+hist(diferencia_post)
+```
+
+Probabilidad posterior de que la diferencia exceda 0:
+
+```{r}
+mean(diferencia_post>0)
+```

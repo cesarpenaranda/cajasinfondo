@@ -1,0 +1,208 @@
+---
+title: "Práctica_IIP"
+output: html_document
+date: "2024-05-18"
+---
+
+
+Trabaje con el archivo de datos "better_life.xls". Este archivo contiene los indicadores simples que componen el índice de "Better Life" calculado por la OCDE.
+
+-   Vivienda
+    -   Vivienda sin lo básico
+    -   Gastos de vivienda
+    -   Cuartos por persona
+-   Ingreso
+    -   Ingreso neto del hogar ajustado
+    -   Riqueza del hogar neta
+-   Trabajo
+    -   Inseguridad laboral
+    -   Tasa de empleo
+    -   Desempleo a largo plazo
+    -   Ganancias personales
+-   Comunidad
+    -   Calidad en las redes de apoyo
+-   Educación
+    -   Asistencia escolar
+    -   Habilidades estudiantiles
+    -   Años de educación
+-   Ambiente
+    -   Contaminación del aire
+    -   Calidad del agua
+-   Compromiso civico
+    -   Compromiso civico
+    -   Intensión de voto
+-   Salud
+    -   Esperanza de vida al nacer
+    -   Salud auto-percepción
+-   Satisfacción con la vida 
+    -   Satisfacción con la vida
+-   Seguridad
+    -   Se siente seguro al caminar solo por la calle
+    -   Tasa de homicidio
+-   Balance trabajo-vida
+    -   Trabajadores con largas jornadas
+    -   Tiempo dedicado al ocio
+
+
+
+```{r}
+librerias <- c("ggplot2", "dplyr", "tidyr", "readr", "VIM", "tidyverse", "openxlsx", "factoextra", "hopkins", "mice", "ggthemes", "scales","readxl")
+
+invisible(lapply(librerias, library, character.only = TRUE))
+```
+```{r}
+setwd("C:/Users/Docente/OneDrive - Universidad de Costa Rica/IC2024/Indicadores_IC2024/Evaluaciones IC2024/Script_II_Parcial")
+
+better_life <- read_excel("better_life.xls")
+```
+
+
+1.1 Con este archivo revíse gráficamente los valores faltantes.
+
+```{r}
+md.pattern(better_life, rotate.names = T)
+
+```
+
+1.2.  Cuántos valores faltantes hay en total? 
+
+Respuesta: 73
+
+1.3.  Cuál es la variable con más valores faltantes?
+
+Respuesta: tiempo ocio
+
+1.4.  En este escenario (en estas variables que construyen el índice "better life"), porqué hay valores faltantes?
+
+Respuesta: porque los países no reportan o no construyen esos indicadores simples.
+
+
+
+4.1.  Impute con knn o con regresión la variable que tiene más missing values. 
+
+```{r}
+
+better_life_knn<-kNN(better_life[,-1],variable = c("tiempo_ocio"),k=4)
+```
+
+
+¿Cómo sería con regresión?
+```{r}
+datos_completos<- better_life %>% filter(!is.na("tiempo_ocio"))
+
+
+#usemos como predictores solo las variables que no tienen NA
+mod <- lm(datos_completos$tiempo_ocio ~ datos_completos$tasa_empleo+datos_completos$red_apoyo+datos_completos$contaminacion+datos_completos$calidad_agua+datos_completos$intencion_voto+datos_completos$esperanza_vida+datos_completos$satisfaccion_vida+datos_completos$seguridad_caminar+ datos_completos$tasa_homididio)
+
+
+step(mod) #selección con AIC
+
+mod <- lm(datos_completos$tiempo_ocio ~ datos_completos$calidad_agua+datos_completos$intencion_voto+datos_completos$satisfaccion_vida+datos_completos$seguridad_caminar)
+
+
+#Programamos una funcion para estimar los valores
+pred1  <- function(x){
+  resp <-  mod$coefficients[1] +  mod$coefficients[2]*x[, 1] +  mod$coefficients[3]*x[, 2]+ mod$coefficients[4]*x[, 3]+ mod$coefficients[5]*x[, 4]
+  return(resp)
+  }
+
+faltantes<-which(is.na(better_life$tiempo_ocio))
+
+
+#Se hace la estimacion
+better_life[faltantes,"tiempo_ocio"] <- pred1(better_life[faltantes,c("calidad_agua","intencion_voto","satisfaccion_vida","seguridad_caminar")])
+```
+
+4.2. Explique: porqué escogió este método y no el otro?
+
+Respuesta: para regresión hay que poner más cuidado en el cumplimiento de supuestos. Revisar R2 etc.
+
+
+
+5.  Haga una imputación múltiple con en el resto de la base, es decir, la base después de haber imputado con knn la variable con más missings. Utilice como semilla el número 53
+
+
+
+```{r}
+better_life_imp = mice(better_life_knn[,-c(25)], m = 10, seed = 53) #opcional met=
+
+better_life_imp_base<-complete(better_life_imp)
+```
+
+6.  Normalice toda la base utilizando z-scores
+
+```{r}
+base.zscore <-  as.data.frame(scale(better_life_imp_base, center = TRUE, scale = TRUE))
+```
+
+7.  Construya el índice utilizando un promedio ponderado. Hágala la ponderación con base en criterio de expertos. Para esto asuma que dos expertos dieron su opinión de cómo debía ponderarse estos indicadores. El primer experto asigna una ponderación equitativa a todos los indicadores, pero el segundo experto asigna una ponderación más fuerte (de 10%) a la dimensión "balance trabajo-vida". 
+
+```{r}
+expertos <- function(pesos_expertos) {
+  
+  pesos_promedio <- colMeans(pesos_expertos)
+  return(pesos_promedio)
+  
+}
+
+c1<-c(rep(0.04166667,24))
+c2<-c(rep(0.04090909,22),0.05, 0.05)
+
+experto = expertos(pesos_expertos=rbind(c1, c2))
+
+
+mediapond = function(base, pesos) {
+  if (ncol(base) != length(pesos)) {
+    stop("El número de columnas en los datos no coincide con la longitud del vector de pesos.")
+  }
+    media_ponderada = rowSums(base * pesos)
+    base = cbind(base, media_ponderada)
+    return(base)
+}
+```
+
+```{r}
+indice<-mediapond(base.zscore, experto)
+```
+
+```{r}
+summary(indice$media_ponderada)
+```
+```{r}
+
+agregacion <- function(data, weights, method) {
+  # Verificar que la longitud de las columnas de la base de datos y los pesos coincida
+  if (ncol(data) != length(weights)) {
+    stop("La longitud de las columnas de la base de datos y los pesos debe ser la misma.")
+  }
+  
+  # Vector para almacenar los indicadores compuestos
+  indCom <- numeric(nrow(data))
+  
+  # Calcular el indicador compuesto para cada fila de la base de datos
+  for (i in 1:nrow(data)) {
+    row <- as.numeric(data[i, ])
+    if (method == "lineal") {
+      indCom[i] <- sum(row * weights)
+    } else if (method == "geometrico") {
+      indCom[i] <- prod(row^weights)^(1/sum(weights))
+    } else {
+      stop("Método de agregación no válido. Por favor, elija 'lineal' o 'geometrico'.")
+    }
+  }
+  
+  return(indCom)
+}
+base2<-agregacion(base.zscore, experto, "lineal")
+summary(base2)
+
+base3<-cbind(better_life[,1],base2)
+View(base3)
+```
+
+
+8. Cuáles son los tres países con mejor puntuación del "Better life index" que obtuvo?
+
+Respuesta:
+
+Nueva Zelanda, Australia, EEUU.

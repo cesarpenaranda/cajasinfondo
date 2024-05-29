@@ -3,6 +3,31 @@ title: "Untitled"
 output: html_document
 date: "2024-04-25"
 ---
+```{r}
+options(digits = 5)
+```
+
+
+```{r}
+# Ejemplo de distancias
+#Matrices de trabajo
+MA= matrix(c(-3,-2,-5),ncol = 1)
+MB= matrix(c(6.632,6.638,3,6.368,12.526,3.579,3,3.579,5.945),nrow = 3)
+
+#Euclidea 
+sqrt(t(MA)%*%MA)
+
+#Manhatan
+sum(abs(MA))
+
+#Mahalanobis
+A= t(MA)%*%solve(MB)%*%MA
+sqrt(A)
+#2.1436
+
+```
+
+
 # LAB1 COMPONENTES PRINCIPALES
 
 1. **BASICOS**
@@ -13,7 +38,7 @@ date: "2024-04-25"
 - Eliminarlos en caso de ser necesario 
 - Verificar correlaciones sin el valor extremo
 - Al estandarizar las variables asumimos que trabajaremos con correlaciones
-
+- Si todos los coeficientes del componente Z estan negativos podemos volterlos al multiplicar *-1
 ```{r}
 base$variable=max(base$variable)-base$variable #Asi le damos la misma direccion 
 ```
@@ -25,7 +50,7 @@ cor1=cor(base)
 
 **GRAFICACION DE CORRELACIONES**
 ```{r}
-corrgram(base, lower.panel=panel.pts,order=T) #Grafico de las correlaciones normal 
+corrgram(base, lower.panel=panel.pts,order=T) #Grafico de las correlaciones normal #Libreria necesaria corrgram
 
 suppressWarnings(corrgram(base, lower.panel=panel.pts, upper.panel=panel.conf,
 diag.panel=panel.density,order=T)) #Con intervalos de confianza #suppress es para suprimir errores
@@ -60,6 +85,9 @@ KMO(R)
 **VERIFICACION DE VARIABILIDAD**
 ```{r}
 v=apply(base1,2,var) #Ver directamente las varianzas
+s=var(base1) #Covarianzas 
+diag(s) #Variabilidad de cada variable
+sum(diag(s)) #Variabilidad total
 sum(v) #Variabilidad total 
 ```
 
@@ -139,8 +167,23 @@ A=pca1$rot
 L=diag(pca1$sdev**2)
 R1=A%*%L%*%t(A)
 
-#correlaciones a partir del primer valor propio y el primer vector propio
-pca1$rotation[,1]*sqrt(eigen(cor(base1))$values[1])
+```
+**CORRELACION ENTRE VARIABLES Y Z1**
+```{r}
+cor(base1,Z1a)
+a1*sqrt(lambda1[1]) #correlaciones a partir del primer valor propio y el primer vector propi
+pca1$rotation[,1]*sqrt(eigen(cor(base1))$values[1]) #correlaciones a partir del primer valor propio y el primer vector propio
+```
+
+**REGRESION PARA VALIDACION**
+```{r}
+load("Heptatlon.Rdata")
+base1=base[-25,]
+Z1=pca1$x[,1]
+Z2=pca1$x[,2]
+Y=base1$puntaje
+mod=lm(Y~Z1+Z2)
+summary(mod)
 ```
 
 

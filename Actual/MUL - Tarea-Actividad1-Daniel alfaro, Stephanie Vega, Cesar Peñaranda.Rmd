@@ -1,0 +1,159 @@
+---
+title: "Actividad 1 - Conglomerados"
+author:
+- Daniel Alfaro
+- Stephanie Vega
+- Cesar Peñaranda
+output:
+  word_document: default
+  html_document: default
+date: "`r Sys.Date()`"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load("datoscor.Rdata")
+```
+
+## Cálculo de distancias con datos originales
+
+```{r}
+variables=seq(1,6,by=1)
+plot(variables, A[1,],type = "l",col="green", ylim = c(-1000, 10000),main = "Individuos",ylab = "")
+lines(variables, A[2,], type = "l", col = "blue")
+lines(variables, A[3,], type = "l", col = "blue")
+lines(variables, A[4,], type = "l", col = "blue")
+lines(variables, A[6,], type = "l", col = "blue")
+lines(variables, A[7,], type = "l", col = "blue")
+lines(variables, A[8,], type = "l", col = "blue")
+lines(variables, A[9,], type = "l", col = "blue")
+lines(variables, A[10,], type = "l", col ="blue")
+```
+
+### Distancia euclídea 
+```{r }
+dist.euc <- dist(A)
+round(dist.euc,3)
+```
+
+### Distancia con correlación de Pearson
+
+
+```{r}
+dist.pearson <- as.dist(1-cor(t(A)))
+round(dist.pearson,3)
+```
+
+### Distancia con correlación de Jacknife
+```{r}
+d=matrix(data=0,nrow = 10,ncol = 10)
+for (i in 1:6) {
+  base= t(A)[-i,]
+  d=d+(1-cor(base))
+}
+d.jack=as.dist(d/6);
+
+round(d.jack,3)
+```
+Las distancias usando la correlación de Jacknife y la de Pearson son muy parecidas, ante la ausencia de valores extremos. Sin embargo, al comparar con las distancias euclídeas, el orden de la magnitud de la distancia entre individuos es diferente. 
+
+## Cálculo de distancias con un valor medianamente extremo
+
+
+```{r}
+A1= A
+A1[1,3] = 8000
+variables=seq(1,6,by=1)
+plot(variables, A1[1,],type = "l",col="green", ylim = c(-1000, 10000),main = "Individuos",ylab = "")
+lines(variables, A1[2,], type = "l", col = "blue")
+lines(variables, A1[3,], type = "l", col = "blue")
+lines(variables, A1[4,], type = "l", col = "blue")
+lines(variables, A1[6,], type = "l", col = "blue")
+lines(variables, A1[7,], type = "l", col = "blue")
+lines(variables, A1[8,], type = "l", col = "blue")
+lines(variables, A1[9,], type = "l", col = "blue")
+lines(variables, A1[10,], type = "l", col ="blue")
+```
+
+
+### Distancia euclídea 
+```{r }
+dist.euc <- dist(A1)
+round(dist.euc,3)
+```
+
+### Distancia con correlación de Pearson
+
+
+```{r}
+dist.pearson <- as.dist(1-cor(t(A1)))
+round(dist.pearson,3)
+```
+
+### Distancia con correlación de Jacknife
+```{r}
+d=matrix(data=0,nrow = 10,ncol = 10)
+for (i in 1:6) {
+  base= t(A1)[-i,]
+  d=d+(1-cor(base))
+}
+d.jack=as.dist(d/6);
+
+round(d.jack,3)
+```
+
+Al agregar un valor extremo, la diferencia entre las distancias con correlación de Pearson y la de Jacknife son evidentes, siendo, en general, menores con la correlación de Jacknife. Comparado con las distancias de los valores originales, todas las distancias con la observación con el valor extremo se ven afectadas, aumentado sustancialmente al agregar un valor extremo.
+
+
+## Cálculo de distancias con un valor considerablemente extremo
+
+
+```{r}
+A2= A
+A2[1,3] = 15000
+variables=seq(1,6,by=1)
+plot(variables, A2[1,],type = "l",col="green", ylim = c(-1000, 15500),main = "Individuos",ylab = "")
+lines(variables, A2[2,], type = "l", col = "blue")
+lines(variables, A2[3,], type = "l", col = "blue")
+lines(variables, A2[4,], type = "l", col = "blue")
+lines(variables, A2[6,], type = "l", col = "blue")
+lines(variables, A2[7,], type = "l", col = "blue")
+lines(variables, A2[8,], type = "l", col = "blue")
+lines(variables, A2[9,], type = "l", col = "blue")
+lines(variables, A2[10,], type = "l", col ="blue")
+```
+
+
+### Distancia euclídea 
+```{r }
+dist.euc <- dist(A2)
+round(dist.euc,3)
+```
+
+### Distancia con correlación de Pearson
+
+
+```{r}
+dist.pearson <- as.dist(1-cor(t(A2)))
+round(dist.pearson,3)
+```
+
+### Distancia con correlación de Jacknife
+```{r}
+d=matrix(data=0,nrow = 10,ncol = 10)
+for (i in 1:6) {
+  base= t(A2)[-i,]
+  d=d+(1-cor(base))
+}
+d.jack=as.dist(d/6);
+
+round(d.jack,3)
+```
+
+Al agregar un valor más extremo, la diferencia entre las distancias con correlación de Pearson y la de Jacknife son aun más evidentes, siendo, en general, menores con la correlación de Jacknife. Comparado con las distancias de los valores originales y las del valor medianamente extremo añadido, todas las distancias con la observación con el valor más extremo se ven afectadas. Para este caso, el efecto de la corrección de Jacknife es claro.
+
+

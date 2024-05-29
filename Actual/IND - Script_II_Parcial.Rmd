@@ -1,0 +1,526 @@
+---
+title: "Script: Índices"
+output: html_document
+date: "2024-05-20"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+librerias <- c("ggplot2", "dplyr", "tidyr", "readr", "VIM", "tidyverse", "openxlsx", "factoextra", "hopkins", "mice", "ggthemes", "scales","readxl")
+
+invisible(lapply(librerias, library, character.only = TRUE))
+```
+
+### Imputación
+
+-   Generar missing values:
+
+```{r}
+#prodNA(datos,noNA=0.1) 
+```
+
+-   Revisar patrones de missing:
+
+```{r}
+md.pattern(datos, rotate.names = T)
+```
+
+-   Imputación vía KNN:
+
+```{r}
+kNN(base,variable = c(""),k=)
+
+```
+
+-   Imputación vía regresión:
+
+*El código debe modificarse si se quieren usar más variables*
+
+```{r}
+
+datos_completos<-Datos %>% filter(!is.na("variable_missing"))
+
+
+mod <- lm(datos_completos$y ~ datos_completos$x1 + datos_completos$x2)
+
+#Programamos una funcion para estimar los valores
+pred1  <- function(x){
+  resp <-  mod$coefficients[1] +  mod$coefficients[2]*x[, 1] +  mod$coefficients[3]*x[, 2]
+  return(resp)
+  }
+
+faltantes<-which(is.na(Datos$Variable_missing))
+
+
+#Se hace la estimacion
+Datos[faltantes,"variable_missing"] <- pred1(Datos[faltantes,c("predictores")])
+```
+
+-   Imputación múltiple con mice
+
+```{r}
+#met = c("", "pmm")
+
+imp = mice(datos, m = 10, seed = 200) #opcional met=
+```
+
+Obtener base completa después de haber usado mice
+
+```{r}
+complete(imp)
+```
+
+## Análisis Multivariado
+
+-   K medias:
+
+Algunas funciones útiles:
+
+```{r}
+#Correlaciones
+datos%>% 
+  PerformanceAnalytics::chart.Correlation()
+```
+
+```{r}
+#Hopkins
+hopkins(X = datos)
+```
+
+```{r}
+# Numéro de grupos-Método de la silueta:
+datos%>% fviz_nbclust(kmeans, method = "silhouette")
+```
+
+```{r}
+#Numéro de grupos-Método del total dentro de suma de cuadrados:
+datos %>% fviz_nbclust(kmeans, method = "wss") 
+```
+
+```{r}
+k_medias = eclust(
+  x = datos, # Indicadores
+  FUNcluster = "kmeans", # Algoritmo
+  k = 3, # Número de grupos (k)
+  seed = 1234, # Semilla
+  hc_metric = "euclidean", # Distancia 
+  hc_method = "ward.D2", 
+  nstart = 25, 
+  graph = F
+  )
+```
+
+```{r}
+# Analizar la silueta: 
+fviz_silhouette(
+  sil.obj = k_medias, 
+  print.summary = F, 
+  ggtheme = theme_bw()
+  ) + 
+  scale_color_tableau(palette = "Superfishel Stone") +
+  scale_fill_tableau(palette = "Superfishel Stone")
+```
+
+## Normalización
+
+La siguiente función permite normalizar *una variable a la vez*
+utilizando los siguientes métodos:
+
+-   Ranking
+-   Z-scores
+-   Reescalamiento (min-max)
+-   Categórico
+
+```{r}
+normalizar = function(datos, metodo, limites = NULL, etiquetas = NULL, min_val = NULL, max_val = NULL) {
+  if (metodo == "Ranking" | metodo == "ranking" | metodo == "rank") {
+    return(rank(datos)) ## Los empates los devuelve como un promedio
+  }
+  if (metodo == "zscores" | metodo == "estand" | metodo == "zs") {
+    return((datos - mean(datos)) / sd(datos))
+  }
+  if (metodo == "rescal" | metodo == "reescalar" | metodo == "res") {
+    if (!is.null(min_val) & !is.null(max_val)) {
+      return((datos - min_val) / (max_val - min_val))
+    } else {
+      return((datos - min(datos)) / (max(datos) - min(datos)))
+    }
+  }
+  if(metodo=="escala"|metodo=="Escala"|metodo=="esc"){
+  limites <- c(-Inf, limites, Inf)
+  if (is.null(etiquetas)) {
+    etiquetas <- seq_along(limites)[-1] - 1
+  } else {
+    if (length(etiquetas) != length(limites) - 1) {
+      stop("El número de etiquetas debe ser igual al número de límites más uno.")
+    }
+  }
+  categorias <- cut(datos, breaks = limites, labels = etiquetas, include.lowest = TRUE, right = FALSE)
+  return(categorias)
+  }
+}
+
+#ejemplo: normalizar(datos$variable, metodo = "zscores")
+
+```
+
+A continuación, se presentan opciones para normalizar archivos de datos
+"completos" o varias variables a la vez:
+
+-   Z-scores
+
+La **fórmula de estandarización** es:
+
+$$x_z=\frac{x-\mu}{\sigma} $$
+
+```{r}
+base.zscore <-  as.data.frame(scale(datos, center = TRUE, scale = TRUE))
+#head(base.zscore)
+#mu=apply(base.zscore,2,mean);round(mu,3) # Verificamos su media
+#sd=apply(base.zscore,2,sd);round(sd,3) # Verificamos su desviacion standar
+```
+
+-   Normalización por rescalamiento (min-max)
+
+La **fórmula utilizada** es:
+
+$$ X_{\text{normalizado}} = \frac{X - X_{\text{min}}}{X_{\text{max}} - X_{\text{min}}}$$
+
+donde $X$ es el valor original, $X_{\text{min}}$ es el valor mínimo en
+el conjunto de datos original, $X_{\text{max}}$ es el valor máximo en el
+conjunto de datos original, y $X_{\text{normalizado}}$ es el valor
+normalizado. Esto permite comparar y analizar diferentes conjuntos de
+datos en una misma escala.
+
+nota: Si los datos tienen valores negativos, el rango habría estado
+entre -1 y 1 .
+
+```{r}
+# Libreria necesaria scales
+base.rescal <- as.data.frame(lapply(datos, scales::rescale))
+summary(base.rescal)
+```
+
+-   Normalizacion Ranking
+
+La **fórmula para normalizar los datos mediante ranking** es:
+
+$$ \text{Rank}(x_i) = \frac{{\text{Ranking del valor } x_i - 1}}{{\text{Total de valores en la variable} - 1}} \times (B - A) + A $$
+
+Donde:
+
+-   $\text{Rank}(x_i)$ es el ranking normalizado del valor $x_i$.
+
+-   $\text{Ranking del valor } x_i$ es el lugar que ocupa $x_i$ en la
+    serie ordenada de la variable.
+
+-   $A$ y $B$ son los límites del rango deseado para los datos
+    normalizados.
+
+```{r}
+base.rank <- as.data.frame(lapply(datos, rank))
+summary(base.rank)
+```
+
+-   Escalar robusto (Robust Scalar)
+
+La **fórmula de Robust Scalar** es:
+
+$$X_{\text{robust}} = \frac{X - \text{mediana}(X)}{Q3(X) - Q1(X)}$$
+
+```{r}
+#Funcion
+robust_scalar<- function(x){(x- median(x)) /(quantile(x,probs = .75)-quantile(x,probs = .25))}
+base.robust <- as.data.frame(lapply(datos, robust_scalar))
+
+summary(base.robust)
+```
+
+-   Normalización media
+
+La **fórmula para la normalización media** es:
+
+$$x'=\frac{x-\mu}{max(x)-min(x)}$$
+
+```{r}
+# Creamos nuestra función
+meanminmax <- function(x){
+  (x- mean(x)) /(max(x)-min(x))
+}
+base.meanminmax <- as.data.frame(lapply(datos, meanminmax))
+
+summary(base.meanminmax)
+```
+
+-   Unidad de longitud
+
+La normalización de la longitud unitaria ajusta los datos $x$ al dividir
+cada valor del vector por la longitud euclidiana del vector.
+
+Su **fórmula** esta dada por:
+
+$$x'=\frac{x}{||x||}$$
+
+donde $$||x||$$ es la longitud euclideana del vector
+
+```{r}
+# Creamos nuestra función
+norm.eucli <- function(x) {x / sqrt(sum(x^2))
+                            }
+base.eucli <- as.data.frame(lapply(datos, norm.eucli))
+summary(base.eucli)
+```
+
+## Ponderación
+
+-   Ponderación igualitaria (EW)
+
+Asigna un peso igual a cada indicador en un conjunto de datos.
+
+$$ CI = \frac{1}{n} \times \sum_{i=1}^{n} X_i $$ Donde: - $CI$ es el
+índice compuesto. - $n$ es el número total de indicadores. - $X_i$ es el
+valor del indicador $i$.
+
+```{r}
+ew <- function(n) {
+
+  ponderacion <- 1/n
+  
+  pesosEW = rep(ponderacion,n)
+  pesosEW
+  
+}
+```
+
+Ponderación por objetivos planteados
+
+Asigna ponderaciones a cada variable en función de su distancia respecto
+a un objetivo establecido. La ponderación se calcula como el cociente
+entre el valor actual de la variable y el objetivo fijado para ella.
+
+$$W_i = \frac{X_i}{O_i}$$
+
+Donde: - $W_i$ es el peso asignado al indicador $i$. - $X_i$ es el valor
+del indicador $i$. - $O_i$ es el objetivo planteado para el indicador
+$i$.
+
+```{r}
+op <- function(base, objetivos) {
+  
+  s <- numeric(length(objetivos))
+  
+  for (i in 1:length(objetivos)) {
+    pond = base [i]/objetivos[i]
+    s[i] <- sum(pond)
+    
+  }
+  pesosOP = s/sum(s)
+  return(pesosOP)
+  
+}
+
+#Ejemplo: 
+#obj=c(0.90, 0.95, 0.97) #esto son los objetivos que se esperan lograr para cada indicador
+#op1 = op(base=base, objetivos=obj)
+```
+
+-   Ponderación por regresión
+
+Utiliza los coeficientes obtenidos en la regresión como factores de
+ponderación para asignar pesos a los diferentes componentes de un
+índice, como en el caso del IDHC, se calcula primero con ponderación
+igualitaria y luego se utiliza como variable dependiente en un modelo de
+regresión. Los componentes del IDHC (esperanza de vida, educación e
+ingresos) actúan como variables independientes.
+
+```{r}
+reg <- function(base) {
+  
+  vi <- colnames(base)[1:(ncol(base)-1)]
+  fr <- as.formula(paste(colnames(base)[ncol(base)], "~", paste(vi, collapse = " + ")))
+  mod = lm(fr, data = base)
+  fp <- mod$coef[2:length(mod$coefficients)] / sum(mod$coef[2:length(mod$coefficients)])
+  
+  return(fp)
+
+}
+
+
+```
+
+-   Ponderación por componentes principales
+
+Realizamos los componentes mediante la función prcomp, y se le tiene que
+indicar scale=T para que estandarice en caso de que las variables estén
+en diferentes escalas, debido a que variables que tengan mayor varianza
+van a predominar en los pesos de la creación de los componentes
+
+```{r}
+pca=prcomp(basepca,scale=T)
+
+(lambdas=pca$sdev^2) #valores propios
+
+summary(pca)
+```
+
+Podemos observar que la varianza explicada nos puede ayudar a entender
+la importancia relativa de cada componente en intentar capturar la
+variabilidad total de nuestra información.
+
+```{r}
+pca$rotation
+```
+
+Aquí obtenemos los vectores propios de cada componentes. Sin embargo,
+debido a que el primer componente explica casi un 90% de la variabilidad
+total utilizamos solamente el primer vector propio.
+
+```{r}
+(vp1=pca$rotation[,1])
+```
+
+Calculamos los pesos.
+
+```{r}
+pesospca=abs(vp1)/sum(abs(vp1));pesospca
+```
+
+Realizamos las ponderaciones:
+
+```{r}
+#ejemplo: base$variable=base$variable*pesospca[1]
+
+```
+
+-   Ponderación por experto:
+
+Este método de ponderación implica asignar pesos a las variables en
+función de la evaluación subjetiva de expertos en el campo relevante.
+Los expertos pueden utilizar su experiencia y conocimientos para
+determinar la importancia relativa de cada variable en el índice final.
+
+```{r}
+
+expertos <- function(pesos_expertos) {
+  
+  pesos_promedio <- colMeans(pesos_expertos)
+  return(pesos_promedio)
+  
+}
+
+#Ejemplo: si tres expertos dan ponderaciones a tres indicadores que conforman un índice.
+
+#c1=c(0.75, 0.10, 0.15)
+#c2=c(0.65, 0.20, 0.15)
+#c3=c(0.60, 0.15, 0.25)
+
+#experto = expertos(pesos_expertos=rbind(c1, c2, c3))
+```
+
+La entrada de datos para el codigo anterior es de la siguiente  forma: expertos(rbind(c1, c2, c3)), donde c1, c2 y c3 son los
+vectores compuestos por los pesos asignados a las variables en
+función de la evaluación subjetiva de expertos, se pueden elegir la
+cantidad de vectores deseados.
+
+
+## Agregación
+
+-   Suma de rankings
+
+Este método consiste en sumar para cada unidad de análisis el orden o el
+ranking que posee cada una de las p variables. Se calcula como:
+
+$I^j_t=\sum^p_{i = 1} Ranking_{y_t^{ij}}$
+
+Para utilizar la función, debemos contar con las columnas de los
+puntajes en cada indicador.
+
+```{r}
+ranking = function(base){
+  ranks = apply(base,2,rank)
+  rankings = rowSums(ranks)
+  base = cbind(base, rankings)
+  return(base)
+}
+
+
+```
+
+-   Media aritmética ponderada
+
+Es el método más ampliamente utilizado. Suma los indicadores que se
+toman en cuenta en el índice con su peso ponderado correspondiente.
+
+Se calcula como $I^j_t = \sum_{i=1}^p w^i * y_t^{ij}$
+
+donde $w^i$ es el peso ponderado del indicador i al p contemplado en el
+índice y y la observación de cada unidad en cada indicador.
+
+```{r}
+mediapond = function(base, pesos) {
+  if (ncol(base) != length(pesos)) {
+    stop("El número de columnas en los datos no coincide con la longitud del vector de pesos.")
+  }
+    media_ponderada = rowSums(base * pesos)
+    base = cbind(base, media_ponderada)
+    return(base)
+}
+
+```
+
+-   Promedio geométrico ponderado.
+
+$I^j_t = \sum_{i=1}^p (y_t^{ij})^{w^i}$
+
+```{r}
+mediageom = function(base, pesos) {
+  if (ncol(base) != length(pesos)) {
+    stop("El número de columnas en los datos no coincide con la longitud del vector de pesos.")
+  }
+    base1 = base^pesos
+    media_geometrica = apply(base1,1,prod)
+    base = cbind(base1, media_geometrica)
+    return(base)
+}
+
+```
+
+
+-   Agregación Multi-Criterio
+
+Combina múltiples indicadores utilizando una función de agregación que
+considera las preferencias y pesos asignados a cada indicador. La
+fórmula depende de la función de agregación específica utilizada.
+
+```{r}
+agregacion <- function(data, weights, method) {
+  # Verificar que la longitud de las columnas de la base de datos y los pesos coincida
+  if (ncol(data) != length(weights)) {
+    stop("La longitud de las columnas de la base de datos y los pesos debe ser la misma.")
+  }
+  
+  # Vector para almacenar los indicadores compuestos
+  indCom <- numeric(nrow(data))
+  
+  # Calcular el indicador compuesto para cada fila de la base de datos
+  for (i in 1:nrow(data)) {
+    row <- as.numeric(data[i, ])
+    if (method == "lineal") {
+      indCom[i] <- sum(row * weights)
+    } else if (method == "geometrico") {
+      indCom[i] <- prod(row^weights)^(1/sum(weights))
+    } else {
+      stop("Método de agregación no válido. Por favor, elija 'lineal' o 'geometrico'.")
+    }
+  }
+  
+  return(indCom)
+}
+```
+
+
+## Validación
+
+Ver archivo "CoinR6.Rmd". Entra en el examen únicamente de forma "teórica", es decir, en qué consiste, tipos, utilidad.

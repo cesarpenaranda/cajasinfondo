@@ -1,0 +1,249 @@
+---
+title: "Índices"
+output: html_document
+date: "2024-02-21"
+---
+
+```{r}
+library(readxl)
+```
+
+
+Directorio
+```{r}
+setwd("/Users/alejandraarias/Library/CloudStorage/OneDrive-UniversidaddeCostaRica/IC2024/Indicadores_IC2024/Material IC2024")
+
+```
+
+
+# EJEMPLO 1: Índice de Desarrollo Humano
+
+Se compone de 3 dimensiones: índice de esperanza de vida, índice de conocimiento e índice de bienestar material.
+
+### Datos
+```{r}
+
+Indices_IDH <- read_excel("Indices_ejemplo1.xlsx")
+
+```
+
+### Chequeo inicial
++ Revisión de valores extremos, atípicos y faltantes.
+
+```{r}
+summary(Indices_IDH)
+```
+
+
+
++ Valores pre-determinados
+
+```{r}
+
+ingreso_min<-50000
+ingreso_max<-1000000
+esper_min<-50
+esper_max<-85
+#escola_min<-0.   #esto ya está normalizado
+#escola_max<-15
+#esper_escola_min<-0
+#esper_escola_max<-13
+
+```
+
+
+
+### Dimensión: Esperanza de vida
+
+Índice de la esperanza de vida:
+
+
++ Método de Normalización: re-escalamiento a 0-1
+
+
+
+$$IEV=\frac{EV_{est}-50}{85-50} $$
+
+```{r}
+
+Indices_IDH$Esperanza_res<-(Indices_IDH$Esperanza-esper_min)/(esper_max-esper_min)
+
+```
+
+### Dimensión: Conocimiento
+
+El índice de conocimiento incluye 2 indicadores: años esperados de escolaridad y años promedio de escolaridad.
+
++ *Índice de años de escolaridad*
+
+$$IAEE=\frac{AEE_{est}-0}{13-0} $$
+
++ *Índice de años promedio de escolaridad*
+
+$$IAPE=\frac{APE_{est}-0}{15-0} $$
+
++ *Índice de conocimiento*
+
+- Método de Agregación: media aritmética
+
+$$IC= \frac{IAEE+IAPE}{2} $$
+
+```{r}
+Indices_IDH$indice_conoc <-(Indices_IDH$Escola+Indices_IDH$Escola_esperados)/2
+```
+
+
+
+### Dimensión: Bienestar material
+
++ Transformación: logarítmo
++ Normalización: re-escalamiento a 0-1
+
+$$ IBM=\frac{log(IPCH_{est})-log(50.000)}{log(1.000.000)-log(50.000)}$$
+
+```{r}
+Indices_IDH$indice_bienestar <- (log(Indices_IDH$Ingreso)-log(ingreso_min))/(log(ingreso_max)-log(ingreso_min))
+
+```
+
+## IDH
++ Ponderación: igual ponderación
++ Agregación: media geométrica
+
+
+$$ IDH=(IEV*IC*IBM)^{1/3}$$
+
+```{r}
+
+Indices_IDH$IDH<-(Indices_IDH$Esperanza_res*Indices_IDH$indice_bienestar*Indices_IDH$indice_conoc)^(1/3)
+
+head(Indices_IDH$IDH)
+```
+
+
+##  EJEMPLO 2: Índice de Desigualdad de Género
+
+Se comone de tres dimensiones: 
++ Salud reproductiva, que involucra los indicadores de tasa de mortalidad materna (TMM) y tasa de natalidad entre adolescentes (TNA).
++ Empoderamiento, porcentaje de regidores y regidoras (PR) y población con al menos educación secundaria (PAES)
++ Mercado de trabajo: se utiliza el indicador tasa de participación en la fuerza de trabajo (TPFT).
+
+"El índice se basa en la media general de medias generales de diferentes órdenes: la primera agregación se hace con la media geométrica de las dimensiones; estas medias, calculadas en forma separada para mujeres y hombres, luego se agregan usando una media armónica para ambos sexos." (PNUD, 2023).
+
+### Datos
+
+```{r}
+Indices_IDG <- read_excel("Indices_ejemplo2.xlsx")
+```
+
+
+
+### Chequeo inicial
++ Revisión de valores extremos, atípicos y faltantes.
+
+```{r}
+summary(Indices_IDG)
+```
+
+*Paso 1: tratamiento de ceros y valores faltantes*
+
++ Tratamiento de ceros: ya que al final se usará media geométrica se sustituyen los ceros por 0.001
+
+```{r}
+Indices_IDG$Mort_materna[Indices_IDG$Mort_materna<1]<-10
+```
+
+
+
++ Tratamiento de valores extremos: se trunca la tasa de mortalidad materna a 10 para el mínimo y 1000 como máximo.
+
+
+
+
+*Paso 2: Agregación entre dimensiones dentro de cada género: medias geométricas*
+
+Mujeres y niñas:
+
+$$ G_m=  \sqrt[3]{(\frac{10}{TMM}*\frac{1}{TNA})^{1/2}* (PR_m*PAES)^{1/2}*TPFT_m}$$
+
+```{r}
+Gm<-(sqrt((10/Indices_IDG$Mort_materna)*(1/Indices_IDG$Adolesc))*sqrt(Indices_IDG$Reg_mujeres*Indices_IDG$Sec_mujeres)*Indices_IDG$Part_mujeres)^(1/3)
+
+```
+
+
+
+
+Hombres y niños:
+
+$$ G_h=  \sqrt[3]{1*(PR_h*PAES_h)^{1/2}*TPFT_h}$$
+
+```{r}
+Gh<-(1*sqrt(Indices_IDG$Reg_hombres*Indices_IDG$Sec_hombres)*Indices_IDG$Part_hombres)^(1/3)
+
+
+```
+
+
+
+*Paso 3: Agregación entre grupos de sexo: media armónica*
+
+Esto crea un solo ínidce de genero "igualmente distribuido". La media armónica de las medias geométricad dentro de los grupos permite capturar la desigualdad entre mujeres y hombres y a la vez ajusta las asicuaciones entre dimensiones. 
+
+$$Harm(G_m, G_h)= \Big[ \frac{G_m^{-1}+G_h^{-1}}{2}\Big]^{-1} $$
+```{r}
+Harm<-1/((1/Gm+1/Gh)/2)
+
+head(Harm)
+```
+
+
+
+
+
+### Dimensiones: 
+- Salud reproductiva
+
+$$\bar{S}=\frac{\sqrt (\ \frac{10}{TMM}*\frac{1}{TNA} ) +1} {2}  $$
+```{r}
+S<-(sqrt((10/Indices_IDG$Mort_materna)*(1/Indices_IDG$Adolesc))+1)/2
+```
+
+
+- Empoderamiento 
+
+$$\bar{E}= \frac{\sqrt(PR_m * PAES_m)+ \sqrt(PR_h * PAES_h)}{2} $$
+
+```{r}
+E<-(sqrt(Indices_IDG$Reg_mujeres*Indices_IDG$Sec_mujeres)+sqrt(Indices_IDG$Reg_hombres*Indices_IDG$Sec_hombres))/2
+```
+
+
+- Mercado de trabajo:
+
+$$\bar{M} = \frac{TPFT_m+TPFT_h} {2}$$
+
+```{r}
+M<-(Indices_IDG$Part_mujeres+Indices_IDG$Part_hombres)/2
+```
+
+
+
+
+*Paso 4: Média geométrica de las medias aritméticas para cada indicador*
+
+$$ G_{\bar{m},\bar{h}}= \sqrt[3]{\bar{S}*\bar{E}*\bar{M}}$$
+
+```{r}
+Gmh<-(S*E*M)^(1/3)
+```
+
+Cálculo del ÍDG
+
+$$IDG= 1-\frac{Harm(G_m, G_h)}{G_{\bar{m},\bar{h}}}$$
+
+```{r}
+IDG<-1-(Harm/Gmh)
+head(IDG)
+```
+

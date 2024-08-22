@@ -1,0 +1,142 @@
+---
+title: "Modelos de área"
+author: "Alejandra Arias-Salazar"
+date: "2024-04-15"
+output: html_document
+---
+### Carga de librerías
+
+```{r}
+library(emdi)
+library(dplyr)
+```
+
+### La función "fh()"
+
+Vamos a usar la función "fh()" que permite aplicar modelos a nivel de área. Los requerimientos mínimos de datos son los siguientes:
+
+-   Datos provenientes de *muestra* de forma agregada, es decir, por dominio.
+-   Datos auxiliares provenientes e.g., de *censo*, también de forma agregada.
+-   Ambos archivos deben contener la variable que indique el nivel geográfico de interés.
+-   El archivo de muestra debe contener como variable, los pesos muestrales y además, estimaciones de varianza de las estimaciones puntuales.
+
+### Datos sintéticos de Austria
+
+```{r}
+data("eusilcA_popAgg")
+data("eusilcA_smpAgg")
+str(eusilcA_popAgg)
+str(eusilcA_smpAgg)
+```
+
+Responda: 
+
+-   Cuántos dominios tiene el censo y cuántos la encuesta?
+```{r}
+eusilcA_popAgg %>% distinct(Domain)
+eusilcA_smpAgg %>% distinct(Domain)
+```
+
+-   Revise los tamaños de muestra, cuantas observaciones tiene el distrito más pequeño y cuántas el distrito más grande?
+```{r}
+eusilcA_popAgg %>% group_by(Domain) %>% summarize(total=n())
+```
+
+-   Revise rápidamente qué variables tiene el censo y qué variables la encuesta? Cuál es la variable de interés?
+```{r}
+names(eusilcA_popAgg)
+names(eusilcA_smpAgg)
+```
+Para aplicar la función "fh()", se deben combinar los dos archivos de datos (el de censo y el de encuesta) mediante la función "combined_data()"
+
+```{r}
+combinados <- combine_data(
+  pop_data = eusilcA_popAgg,
+  pop_domains = "Domain",
+  smp_data = eusilcA_smpAgg,
+  smp_domains = "Domain"
+)
+
+```
+
+### Proceso de selección de variables.
+
+Como en cualquier modelo de regresión, es necesario seleccionar los mejores predictores. Vamos a partir de un modelo en donde la variable respuesta es el ingreso promedio de los hogares ("Mean") y los predictores son "cash", "self_empl" y "unempl_ben"). 
+
+Especificamos también que la varianza de la estimación directa se llama "Var_mean". La estimación de varianza para los efectos aleatorios se hará con Máxima Verosimilitud (ml). "B" refleja el numero de replicas bootstrap para obtener a) un ECM y para b) la selección de predictores según criterios de información.
+
+
+Métodos "clásicos" son AIC y BIC. Sin embargo, Marhuenda et al. (2014) propone varias opciones específicamente para modelos FH. 
+
+```{r}
+formula = Mean~cash+self_empl+unempl_ben
+fh1 <- fh(fixed = formula, vardir = "Var_Mean",
+ combined_data = combinados, domains = "Domain", method = "ml", B = c(0,50))
+
+```
+
+Ejemplo con Kullback information criterion (KIC) con bootstrap y corrección por sesgo. Esto lo que hace es hacer una selección "hacia atrás" hasta encontrar el KICb2 más bajo.
+
+```{r}
+step(fh1, criteria = "KICb2")
+```
+
+
+
+### Evaluación del modelo final
+
+```{r}
+fh1 <- fh(fixed = Mean ~ cash + self_empl, vardir = "Var_Mean", combined_data = combinados, domains = "Domain", method = "ml", MSE = TRUE, B = c(0,50))
+```
+
+*Revisión del modelo*. Hay varias cosas que observar: 
+
++ Dominios dentro y fuera de muestra.
++ Asimetría y curtosis
++ Normalidad (Shapiro) de ambos terminos de error
++ $R^2$ ajustado y FH $R^2$ (Lahiri & Suntornchost, 2015)
++ Coeficientes
+
+```{r}
+summary(fh1)
+```
+
+Además, realizamos chequeos gráficos:
+
++ Q-Q plots de los residuos estandarizados y efectos aleatorios 
++ Gráficos de densidades de la distribución de ambos términos de error (lo comparamos con una distribución normal estándar).
+
+```{r}
+plot(fh1)
+```
+
+### Comparaciones con las estimaciones directas 
+
+```{r}
+compare_plot(fh1, CV = TRUE, MSE=T,label = "no_title")
+```
+
+### Producción de mapas
+
+```{r}
+load_shapeaustria()
+map_plot(object = fh1, MSE = TRUE, map_obj = shape_austria_dis,
+map_dom_id = "PB", scale_points = list(Direct = list(
+ ind = c(8000, 60000), MSE = c(200000, 10000000)), FH = list(
+ ind = c(8000, 60000), MSE = c(200000, 10000000))))
+```
+
+### Exportar resultados a Excel
+
+Una funcionalidad útil de este paquete es poder exportar los resultados de una manera ordenada y sencilla.
+
+```{r}
+write.excel(fh1, file="fh_excel.xlsx", indicator="all", MSE=TRUE, CV=TRUE, split = T)
+```
+
+
+### Quitando áreas
+
++ Ahora quite los dominios del 6 al 12.
+
++ Utilice la misma variable dependiente y como predictores: unempl_ben,  rent, house_allow, cap_inv y   tax_adj

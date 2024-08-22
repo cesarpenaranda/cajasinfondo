@@ -1,0 +1,608 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-17"
+---
+**NOTAS**
+- Error en mahalanobis
+
+**Librerias**
+```{r}
+library(factoextra)
+library(cluster)
+library(NbClust)
+library(biotools)
+library(fpc)
+library(ggplot2)
+```
+
+
+```{r}
+load("basemulti.Rdata")
+Base_Multi=Base_Multi[-20,]
+```
+
+- **Eliminacion de variables no necesarias para el clust**
+```{r}
+df=subset(Base_Multi,select = -c(EDAD,SEXO,AREA,ANIOCARR,INTEXTR,SATIS))
+```
+
+- **Escalas y horas, numericas**
+```{r}
+df.escal=subset(df,select = c(HORAS,INTERES,DESADIFI,CAPESTU))
+```
+
+- **Nominales y binarias**
+```{r}
+df.bi.no=subset(df,select = c(INDGRUP,RECURADI,ESTIL,SOLPROF,TODOPAS))
+```
+
+- **Hot encoding**
+```{r}
+#INDGRUP
+df.bi.no$INDGRUP1=ifelse(df.bi.no$INDGRUP==1,1,0)
+df.bi.no$INDGRUP0=ifelse(df.bi.no$INDGRUP==0,1,0)
+#RECURADI
+df.bi.no$RECURADI1=ifelse(df.bi.no$RECURADI==1,1,0)
+df.bi.no$RECURADI0=ifelse(df.bi.no$RECURADI==0,1,0)
+#ESTIL
+df.bi.no$ESTIL1=ifelse(df.bi.no$ESTIL==1,1,0)
+df.bi.no$ESTIL2=ifelse(df.bi.no$ESTIL==2,1,0)
+df.bi.no$ESTIL3=ifelse(df.bi.no$ESTIL==3,1,0)
+#SOLPROF
+df.bi.no$SOLPROF1=ifelse(df.bi.no$SOLPROF==1,1,0)
+df.bi.no$SOLPROF2=ifelse(df.bi.no$SOLPROF==2,1,0)
+#TODOPAS
+df.bi.no$TODOPAS1=ifelse(df.bi.no$TODOPAS==1,1,0)
+df.bi.no$TODOPAS2=ifelse(df.bi.no$TODOPAS==2,1,0)
+```
+
+- **Formacion de dataframe de trabajo**
+```{r}
+df2=df.bi.no[,c(6:16)]
+df.final=cbind(df.escal,df2)
+```
+
+- **Estandarizacion de trabajo**
+```{r}
+df.estand=scale(df.final,scale = T)
+```
+
+- **Evaluacion y eliminacion de valor extremo**
+```{r}
+leverage=hat(df.estand)
+lim=2*mean(leverage)
+plot(leverage)
+abline(h=lim,col="red")
+```
+
+```{r}
+df.estand=df.estand[-89,]
+leverage=hat(df.estand)
+lim=2*mean(leverage)
+plot(leverage)
+abline(h=lim,col="red")
+```
+
+- **Distancias**
+```{r}
+d.EUCLIDEA=dist(df.estand)
+#S=var(df.final) 
+#d.MAHALANOBIS=D2.dist(df.final,S) #Da problemas
+d.MANHATAN=dist(df.estand,method = "manhattan")
+```
+
+- **Distancias entre grupos euclidea**
+```{r}
+#Euclidea
+CERCANO.EU= hclust(d.EUCLIDEA,method = "single")
+LEJANO.EU= hclust(d.EUCLIDEA,method = "complete")
+PROMEDIO.EU=hclust(d.EUCLIDEA,method = "average")
+WARD.EU= hclust(d.EUCLIDEA,method = "ward.D")
+```
+
+- **Dendograma euclidea**
+```{r}
+#plot(CERCANO.EU, xlab="", main="Single-Euclidea", ylab="Distancia", sub="") #Descartado
+
+plot(LEJANO.EU, xlab="", main="Complete-Euclidea", ylab="Distancia", sub="") #Elejible
+
+#plot(PROMEDIO.EU, xlab="", main="Average-Euclidea", ylab="Distancia", sub="") #Descartado
+
+plot(WARD.EU, xlab="", main="Ward.D-Euclidea", ylab="Distancia", sub="") #Elejido
+```
+- **Distancias entre grupos Manhatan**
+```{r}
+#Manhatan
+CERCANO.MAN= hclust(d.MANHATAN,method = "single")
+LEJANO.MAN= hclust(d.MANHATAN,method = "complete")
+PROMEDIO.MAN=hclust(d.MANHATAN,method = "average")
+WARD.MAN= hclust(d.MANHATAN,method = "ward.D")
+```
+
+- **Dendograma Manhatan**
+```{r}
+#plot(CERCANO.MAN, xlab="", main="Single-Manhatan", ylab="Distancia", sub="") #Descartado
+
+plot(LEJANO.MAN, xlab="", main="Complete-Manhatan", ylab="Distancia", sub="") #Elejible
+
+#plot(PROMEDIO.MAN, xlab="", main="Average-Manhatan", ylab="Distancia", sub="") #Descartado
+
+plot(WARD.MAN, xlab="", main="Ward.D-Manhatan", ylab="Distancia", sub="") #Elejido
+```
+
+- **SDCG segun numero de grupos**
+```{r}
+SCDG1 = c()
+for (k in 1:10) SCDG1[k] = kmeans(df.estand, centers = k)$tot.withinss
+plot(SCDG1,type = "b",xlab = "numero de grupos")
+fviz_nbclust(df.estand, kmeans, method = "wss", diss = d.EUCLIDEA)
+fviz_nbclust(df.estand, kmeans, method = "wss", diss = d.MANHATAN)
+```
+
+- **Evaluacion numero de grupos** silueta para k-medias
+```{r}
+fviz_nbclust(df.estand, kmeans, method = "silhouette", diss = d.EUCLIDEA)
+fviz_nbclust(df.estand, kmeans, method = "silhouette", diss = d.MANHATAN)
+```
+
+- **Evaluacion numero de grupos** gap (criterio no usar, no converge)
+```{r}
+fviz_nbclust(df.estand, kmeans, method = "gap", diss = d.EUCLIDEA)
+fviz_nbclust(df.estand, kmeans, method = "gap", diss = d.MANHATAN)
+```
+
+- **Validacion** con eclidea
+```{r}
+for(i in 3:5){
+km1 = eclust(df.estand, FUNcluster = "kmeans", k = i, hc_metric = "euclidean", nstart = 50, graph = F)
+print(fviz_silhouette(sil.obj =km1 , print.summary = TRUE))
+}
+```
+
+- **Validacion** con Manhatan
+```{r}
+for(i in 3:5){
+km1 = eclust(df.estand, FUNcluster = "kmeans", k = i, hc_metric = "manhattan", nstart = 50, graph = F)
+print(fviz_silhouette(sil.obj = km1, print.summary = TRUE))
+}
+```
+
+- **Idice dunn** euclidea
+```{r}
+for (i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+km_indices = cluster.stats(d.EUCLIDEA,clust.km)
+print(km_indices$dunn)
+}
+```
+
+- **Idice dunn** Manhatan
+```{r}
+for (i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+km_indices = cluster.stats(d.MANHATAN,clust.km)
+print(km_indices$dunn)
+}
+```
+
+- **Agrupamientos**
+```{r}
+scdg = function(base, grupo) {
+  k = length(unique(grupo))
+  sc = 0
+  for (i in 1:k) {
+    mat = base[grupo==i,] 
+    centroide = apply(mat,2,mean)
+    sc = sc + sum(as.matrix(dist(rbind(centroide,mat)))[1,-1]**2)
+  }
+  return(sc)
+}
+```
+
+- **Kmeans y jerargico (exploratorio)**
+```{r}
+#Manhatan-complete/ward
+for(i in 3:5){
+hkm.mc = hkmeans(x = df.estand, hc.metric = "manhattan",hc.method = "complete", k = i) #Puedes ir cambiando el numero de grupos
+hkm.mw = hkmeans(x = df.estand, hc.metric = "manhattan",hc.method = "ward.D", k = i)
+print(fviz_cluster(hkm.mc, data = df.estand))
+print(fviz_cluster(hkm.mw, data = df.estand))}
+```
+
+```{r}
+#Euclidea-complete/ward
+for (i in 3:5){
+hkm.ec = hkmeans(x = df.estand, hc.metric = "euclidean",hc.method = "complete", k = i)
+hkm.ew = hkmeans(x = df.estand, hc.metric = "euclidean",hc.method = "ward.D", k = i)
+print(fviz_cluster(hkm.ec, data = df.estand))
+print(fviz_cluster(hkm.ew, data = df.estand))}
+```
+
+
+- **Creacion de clusters** Euclidea (se descarto single,average)
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+print(table(clust.km,clust.complete))
+print(table(clust.km,clust.ward))
+}
+
+```
+
+- **SDCDG** Euclidea grupos de 3 a 5
+```{r}
+km.1=c()
+com.2=c()
+ward.3=c()
+for (i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+km.1[i]=scdg(df.estand,clust.km)
+com.2[i]=scdg(df.estand,clust.complete)
+ward.3[i]=scdg(df.estand,clust.ward)
+}
+cbind(km.1,com.2,ward.3)
+```
+
+- **Creacion de clusters** Manhatan (se descarto single,average)
+```{r}
+for (i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+print(table(clust.km,clust.complete))
+print(table(clust.km,clust.ward))
+}
+```
+
+- **SDCDG** Manhatan grupos de 3 a 5
+```{r}
+km.1=c()
+com.2=c()
+ward.3=c()
+for (i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+km.1[i]=scdg(df.estand,clust.km)
+com.2[i]=scdg(df.estand,clust.complete)
+ward.3[i]=scdg(df.estand,clust.ward)
+}
+cbind(km.1,com.2,ward.3)
+```
+**Nota** cada corrida da valores diferentes, supongo que por se aleatorio
+
+
+- **PCA** (solo esta el argumento euclid en el ellipse.type) (no nos hace falta nada con componentes principales)
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+print(fviz_cluster(km, df.estand, show.clust.cent = TRUE,
+ellipse.type = "euclid", repel = TRUE) +
+labs(title = "Resultados K-medias") +
+theme_bw() +
+theme(legend.position = "none"))
+}
+```
+
+- **PCA** metodo jerarquico (euclidean-ward.D)
+```{r}
+for(i in 3:5){
+c.w2 = eclust(df.estand, k=i,"hclust", hc_metric = "euclidean",hc_method = "ward.D",nboot = 2)
+print(fviz_cluster(c.w2, df.estand,show.clust.cent = TRUE,
+ellipse.type = "euclid", repel = TRUE) +
+labs(title = "Resultados Distancia de Ward") +
+theme_bw() +
+theme(legend.position = "none"))
+}
+```
+
+- **PCA** metodo jerarquico (euclidean-complete)
+```{r}
+for(i in 3:5){
+c.w2 = eclust(df.estand, k=i,"hclust", hc_metric = "euclidean",hc_method = "complete",nboot = 2)
+print(fviz_cluster(c.w2, df.estand,show.clust.cent = TRUE,
+ellipse.type = "euclid", repel = TRUE) +
+labs(title = "Resultados Distancia de Ward") +
+theme_bw() +
+theme(legend.position = "none"))
+}
+```
+
+- **PCA** metodo jerarquico (Manhattan-complete)
+```{r}
+for(i in 3:5){
+c.w2 = eclust(df.estand, k=i,"hclust", hc_metric = "manhattan",hc_method = "complete",nboot = 2)
+print(fviz_cluster(c.w2, df.estand,show.clust.cent = TRUE,
+ellipse.type = "euclid", repel = TRUE) +
+labs(title = "Resultados Distancia de Ward") +
+theme_bw() +
+theme(legend.position = "none"))
+}
+```
+
+- **PCA** metodo jerarquico (Manhattan-ward.D)
+```{r}
+for(i in 3:5){
+c.w2 = eclust(df.estand, k=i,"hclust", hc_metric = "manhattan",hc_method = "ward.D",nboot = 2)
+print(fviz_cluster(c.w2, df.estand,show.clust.cent = TRUE,
+ellipse.type = "euclid", repel = TRUE) +
+labs(title = "Resultados Distancia de Ward") +
+theme_bw() +
+theme(legend.position = "none"))
+}
+```
+
+- **Caracterizacion** para euclidea
+```{r}
+Base_Multi=Base_Multi[-89,]
+df=df[-89,]
+```
+
+**Horas (es solo exploratorio)** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+print(boxplot(Base_Multi$HORAS ~ clust.km, xlab = "Grupo", ylab="Horas",main="clust.km"))
+print(boxplot(Base_Multi$HORAS ~ clust.complete, xlab = "Grupo", ylab="Horas",main="clust.complete"))
+print(boxplot(Base_Multi$HORAS ~ clust.ward, xlab = "Grupo", ylab="Horas",main="clust.ward"))
+}
+```
+
+**Horas (es solo exploratorio)** Manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+print(boxplot(Base_Multi$HORAS ~ clust.km, xlab = "Grupo", ylab="Horas",main="clust.km"))
+print(boxplot(Base_Multi$HORAS ~ clust.complete, xlab = "Grupo", ylab="Horas",main="clust.complete"))
+print(boxplot(Base_Multi$HORAS ~ clust.ward, xlab = "Grupo", ylab="Horas",main="clust.ward"))
+}
+```
+- **Edad** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+print(boxplot(Base_Multi$EDAD ~ clust.km, xlab = "Grupo", ylab="Horas",main="clust.km"))
+print(boxplot(Base_Multi$EDAD ~ clust.complete, xlab = "Grupo", ylab="Horas",main="clust.complete"))
+print(boxplot(Base_Multi$EDAD ~ clust.ward, xlab = "Grupo", ylab="Horas",main="clust.ward"))
+}
+```
+- **Edad** manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+print(boxplot(Base_Multi$EDAD ~ clust.km, xlab = "Grupo", ylab="Horas",main="clust.km"))
+print(boxplot(Base_Multi$EDAD ~ clust.complete, xlab = "Grupo", ylab="Horas",main="clust.complete"))
+print(boxplot(Base_Multi$EDAD ~ clust.ward, xlab = "Grupo", ylab="Horas",main="clust.ward"))
+}
+```
+- **Satisfaccion** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+print(boxplot(Base_Multi$SATIS ~ clust.km, xlab = "Grupo", ylab="Horas",main="clust.km"))
+print(boxplot(Base_Multi$SATIS ~ clust.complete, xlab = "Grupo", ylab="Horas",main="clust.complete"))
+print(boxplot(Base_Multi$SATIS ~ clust.ward, xlab = "Grupo", ylab="Horas",main="clust.ward"))
+}
+```
+
+- **Satisfaccion** manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+print(boxplot(Base_Multi$SATIS ~ clust.km, xlab = "Grupo", ylab="Horas",main="clust.km"))
+print(boxplot(Base_Multi$SATIS ~ clust.complete, xlab = "Grupo", ylab="Horas",main="clust.complete"))
+print(boxplot(Base_Multi$SATIS ~ clust.ward, xlab = "Grupo", ylab="Horas",main="clust.ward"))
+}
+```
+
+- **Sexo** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+frec.km=table(Base_Multi$SEXO,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$SEXO,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$SEXO,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+barra1=barplot(tab.km*100,legend=T,main="clust.km")
+text(barra1, y = colSums(tab.km * 100) + 5, labels = table(clust.km), xpd = TRUE)
+barra2=barplot(tab.complete*100,legend=T,main="clust.complete")
+text(barra2, y = colSums(tab.complete * 100) + 5, labels = table(clust.complete), xpd = TRUE)
+barra3=barplot(tab.ward*100,legend=T,main="clust.ward")
+text(barra3, y = colSums(tab.ward * 100) + 5, labels = table(clust.ward), xpd = TRUE)
+}
+
+```
+
+- **Sexo** manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+frec.km=table(Base_Multi$SEXO,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$SEXO,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$SEXO,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+
+```
+
+- **Area** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+frec.km=table(Base_Multi$AREA,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$AREA,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$AREA,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+```
+- **Area** manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+frec.km=table(Base_Multi$AREA,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$AREA,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$AREA,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+```
+
+- **Anio carrera** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+frec.km=table(Base_Multi$ANIOCARR,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$ANIOCARR,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$ANIOCARR,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+```
+- **Anio carrera** manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+frec.km=table(Base_Multi$ANIOCARR,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$ANIOCARR,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$ANIOCARR,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+```
+
+- **Personalidad** euclidea
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.EU, k=i)
+clust.ward = cutree(WARD.EU, k=i)
+frec.km=table(Base_Multi$INTEXTR,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$INTEXTR,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$INTEXTR,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+```
+- **Personalidad** manhatan
+```{r}
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+clust.km=km$cluster
+clust.complete = cutree(LEJANO.MAN, k=i)
+clust.ward = cutree(WARD.MAN, k=i)
+frec.km=table(Base_Multi$INTEXTR,clust.km) ;tab.km=prop.table(frec.km,2)
+frec.complete=table(Base_Multi$INTEXTR,clust.complete) ; tab.complete=prop.table(frec.complete,2)
+frec.ward=table(Base_Multi$INTEXTR,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+print(barplot(tab.km*100,legend=T,main="clust.km"))
+print(barplot(tab.complete*100,legend=T,main="clust.complete"))
+print(barplot(tab.ward*100,legend=T,main="clust.ward"))
+}
+```
+
+
+### BORRADOR
+
+**Nota es pososible dejarlos asi** (los hice en base porque no me salian con gg)
+```{r}
+clust.ward = cutree(WARD.EU, k=3)
+frec.ward=table(Base_Multi$SEXO,clust.ward) ; tab.ward=prop.table(frec.ward,2)
+barra = barplot(tab.ward*100,legend=T,main="clust.ward",col = c("grey","red","salmon"))
+text(barra, y = colSums(tab.ward * 100) + 5, labels = table(clust.ward), xpd = TRUE)
+labels_pos = apply(tab.ward * 100, 2, cumsum) - 0.5 * tab.ward * 100
+text(rep(barra, each = nrow(tab.ward)), labels_pos, labels = round(tab.ward * 100, 1), col = "black", cex = 0.8)
+```
+
+- **Silueta** kmedias
+```{r}
+silu.km=c()
+for(i in 3:5){
+km=kmeans(df.estand,centers = i)
+sil=silhouette(km$cluster, dist(df.estand))
+silu.km=mean(sil[,3])
+print(fviz_silhouette(sil, print.summary = TRUE))
+km_indices = cluster.stats(d.EUCLIDEA,km$cluster)
+print(km_indices$dunn)
+print(silu.km)
+}
+
+```
+- **Silueta** complete euclidea k2
+```{r}
+clust.complete = cutree(LEJANO.EU, k=2)
+sil=silhouette(clust.complete, dist(df.estand))
+fviz_silhouette(sil, print.summary = TRUE)
+```
+- **Silueta** ward euclidea k5
+```{r}
+clust.ward = cutree(WARD.EU, k=5)
+sil=silhouette(clust.ward, dist(df.estand))
+fviz_silhouette(sil, print.summary = TRUE)
+```
+- **Silueta** ward manhatan k4
+```{r}
+clust.ward = cutree(WARD.MAN, k=4)
+sil=silhouette(clust.ward, dist(df.estand,method = "manhattan"))
+fviz_silhouette(sil, print.summary = TRUE)
+```
+- **Silueta** ward manhatan k5
+```{r}
+clust.ward = cutree(WARD.MAN, k=5)
+sil=silhouette(clust.ward, dist(df.estand,method = "manhattan"))
+fviz_silhouette(sil, print.summary = TRUE)
+```
+

@@ -1,0 +1,246 @@
+---
+title: 'III Parcial: Construcción de indicadores'
+date: "2024-07-08"
+output:
+  word_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: sentence
+---
+```{r}
+library(emdi)
+library(dplyr)
+library(sf)
+library(dplyr)
+```
+
+Instrucciones.
+
+1. Cambie el nombre de este archivo con su numero de grupo y nombre, por ejemplo: "G3_nombre.Rmd".
+
+2. Conteste todas las preguntas en este documento. Debe entregar tanto el .Rmd como el documento "compilado", ya sea en Word o en PDF. En caso de que no logre compilar, entregue únicamente el archivo .Rmd.
+
+3. Tiene 1 hora y 30 minutos para completar el examen.
+
+4. Todos los codigos y salidas necesarias para cada pregunta deben aparecer, al igual que las respuestas.
+
+5. Para reducir el tiempo computacional, use únicamente 10 réplicas Bootstrap y 10 simulaciones Monte Carlo cuando aplique.
+
+
+### Pregunta 1. (23pts)
+
++ Cargue los datos "Pregunta1.RData".
+```{r}
+load("Pregunta1.RData")
+```
+
+```{r}
+variables1=list(datos_a=names(datos_a),datos_b=names(datos_b),n.a=nrow(datos_a),n.b=nrow(datos_b))
+variables1
+```
+
++ Estos son datos simulados y anonimizados de hogares de Costa Rica, 2011.
+
++ El indicador que interesa encontrar a nivel cantonal es: años de escolaridad promedio del jefe de hogar.La variable que contiene la información del diseño muestral se llama "FACTOR".
+
++ Los dominios de interés son cantones (CODCANTON).
+
++ Asuma que se desean coeficientes de variación de máximo 15%.
+
+
+
+
+1.1. Haga la estimación directa y compruebe la necesidad de aplicar modelos para áreas pequeñas. De las razones necesarias. (4pts)
+
+````{r}
+directa1=direct(y="escolari_jefe", smp_data =datos_b , smp_domains = "CODCANTON",weights = "FACTOR",var = T)
+#Permite agregar argumento "weights" y calcular varianzas "var". Se puede modificar el umbral para el cálculo de indicadores basados en ingresos con el argumento "threshold".
+CV=sqrt(directa1$MSE$Mean)/directa1$ind$Mean*100
+CV
+table(CV<15)
+```
+```{r}
+datos_a %>% group_by(CODCANTON) %>% summarize(total=n())
+datos_b %>% group_by(CODCANTON) %>% summarize(total=n())
+```
+```{r}
+n_distinct(datos_a$CODCANTON)
+n_distinct(datos_b$CODCANTON)
+```
+
+*Respuesta: Es necesario aplicar SAE ya que hay CVs que no cumplen con el estandar establecido (osea menores a 15%), ademas de que hay dominios que estan ausentes en la muestra, por lo que aplicar un SAE tiene sentido  *
+
+
+1.2. Aplique dos modelos de unidad, uno sin transformación y otro con transformación logarítmica. En ambos casos utilice todos los predictores posibles (sin hacer selección de modelo). (6pts) 
+
+ [1] "CODCANTON"                 "REGION"                    "ZONA"                      "TIPO_VIVIENDA"            
+ [5] "TIPO_TENENCIA"             "MATERIAL_PAREDES"          "MATERIAL_TECHO"            "MATERIAL_PISO"            
+ [9] "ESTADO_PAREDES"            "ESTADO_TECHO"              "ESTADO_PISO"               "ESTADO_VIVIENDA"          
+[13] "HACINAMIENTO_DORMITORIOS"  "HACINAMIENTO_APOSENTOS"    "TUBERIA_AGUA"              "PROVENIENCIA_AGUA"        
+[17] "SERVICIO_SANITARIO"        "PROVENIENCIA_ELECTRICIDAD" "ELIMINACION_BASURA"        "CELULAR"                  
+[21] "CANTIDAD_LINEAS_CELULAR"   "TEL_FIJO"                  "SIST_AGUA_CALIENTE"        "TANQUE_AGUA"              
+[25] "COMPU"                     "CARRO"                     "MOTO"                      "TV_PLASMA"                
+[29] "TV_CONVENCIONAL"           "TV_CABLE"                  "INTERNET"                  "TAMHOG"                   
+[33] "SEGURO"                    "CONDACT"                   "edad_jefe"                 "sexo_jefe"                
+[37] "ocupados_hogar"            "prop_ocupados_hogar"       "IPM_E1"                    "IPM_E2"                   
+[41] "IPM_V1"                    "IPM_V3"                    "IPM_V4"                    "IPM_S1"                   
+[45] "IPM_S2"                    "IPM_S3"                    "IPM_S4"                    "IPM_P1"                   
+
+
+
+ [1] "FACTOR"                   "CODCANTON"                "ZONA"                     "HACINAMIENTO_DORMITORIOS"
+ [5] "TUBERIA_AGUA"             "PROVENIENCIA_AGUA"        "SERVICIO_SANITARIO"       "ELIMINACION_BASURA"      
+ [9] "SIST_AGUA_CALIENTE"       "TANQUE_AGUA"              "COMPU"                    "CARRO"                   
+[13] "MOTO"                     "INTERNET"                 "TAMHOG"                   "CONDACT"                 
+[17] "edad_jefe"                "sexo_jefe"                "prop_ocupados_hogar"      "escolari_jefe"  
+
+```{r}
+formula=escolari_jefe~HACINAMIENTO_DORMITORIOS+TUBERIA_AGUA+PROVENIENCIA_AGUA+SERVICIO_SANITARIO+ELIMINACION_BASURA+SIST_AGUA_CALIENTE+TANQUE_AGUA+COMPU+CARRO+MOTO+INTERNET+TAMHOG+CONDACT+edad_jefe+sexo_jefe+prop_ocupados_hogar
+```
+
+```{r}
+#Sin tranformacion
+load("Pregunta1.Rdata")
+datos_a$CODCANTON=as.numeric(datos_a$CODCANTON)
+datos_b$CODCANTON=as.numeric(datos_b$CODCANTON)
+mod.no=ebp(fixed =formula, pop_data = datos_a,
+  pop_domains = "CODCANTON", smp_data = datos_b, smp_domains = "CODCANTON",
+  na.rm = T,MSE = T,B=10,transformation = "no")
+
+#Permite obtener ECM agregando el argumento "MSE=T", además, permite cambiar el umbral (linea de pobreza) para estimar indicadores de pobreza y desigualdad basados en ingresos "threshold". También se pueden hacer transformaciones "no", "log" o Box Cox. El numero de replicas bootstrap y Monte Carlo se pueden ajustar con los argumentos "B" y "L".
+```
+```{r}
+#Con log
+mod.log=ebp(fixed =formula, pop_data = datos_a,
+  pop_domains = "CODCANTON", smp_data = datos_b, smp_domains = "CODCANTON",
+  na.rm = T,MSE = T,B=10,transformation = "log")
+```
+
+
+1.3. ¿Cuál de los dos modelos elige? justifique con dos razones.(3pts)
+```{r}
+summary(mod.no)
+```
+```{r}
+summary(mod.log)
+```
+
+*Respuesta: eligo el modelo sin transformacion*
+
+*Justificaciones: Precenta R2 mas elevados lo que nos indica que este podria presentar un mejor ajuste,ademas presenta un mayor ICC es el que le da mas sentido a los efectos aleatorios, aunque los dos no presentan un buen ajuste elejiria el de mejor ajuste entre los dos*
+
+
+1.4. ¿Qué habría que hacer para poder aplicar un modelo de área en este escenario? (2pts)
+
+*Respuesta: en este escenario tendriamos que agregar los datos para poder aplicar un modelo de area*
+
+1.5. ¿Cuál es la principal ventaja que tiene el modelo de unidad aplicado vs un modelo de área.(3pts)
+
+*Respuesta: los datos a nivel de individuo poseen mayor nivel de detalle en comparacion con un modelo de area que los datos estan agregados, ademas los indicadores de interes no deben de ser necesariamente lineales*
+
+1.6. Calcule únicamente los coeficientes de varación para el modelo seleccionado en el punto 1.3 y obtenga el valor máximo de esos coeficientes.(2pt)
+
+```{r}
+CV=sqrt(mod.no$MSE$Mean)/mod.no$ind$Mean*100
+max(CV)
+```
+
+
+
+
+
+### Pregunta 2. Responda BREVEMENTE cada una de las siguientes preguntas. (10pts)
+
+2.1. Con base en el paper de Tzavidis, et al (2018). ¿Qué mecanismos se pueden utilizar para evaluar la calidad de las estimaciones basadas en los modelos? comente brevemente al menos dos mecanismos. (4pts)
+
+*Respuesta:* 
+*-se puede evaluar la precision mediante los errores estandar, calcular intervalos de confianza para encontrar un posible rango donde se encuentre el verdadero valor* 
+
+*-puede utilizar tecnicas de validacion cruzada dividiendo el conjunto de datos en pedasos, entrenando el modelo con algunas y validandolo con otras para asegurar las estimaciones consistentes*
+
+2.2. Con base en lo visto en clase, de un ejemplo de un parámetro (indicador) de interés que sea lineal. (2pts)
+
+*Respuesta: Un indicador de interes que es lineal en este caso podria ser el la mediana del ingreso promedio segun lo vimos en clase*
+
+
+2.3. ¿Cuál es el objetivo de usar métodos de replicación ``Bootstrap" en el contexto de estimación en áreas pequeñas? (4pts)
+
+
+*Respuesta: estos modelos tienen el fin de darle robustes al modelo, ademas ayuda a la validacion de los mismos, ya que el SAE supone que hay poca muestra en algunos de los dominios y el bostrap pasa a ser necesario en este caso* 
+
+
+
+### Pregunta 3. (17pts)
+
++ Cargue los datos "Pregunta3.RData".
+```{r}
+load("Pregunta3.RData")
+```
+
++ Estos son datos simulados y anonimizados de hogares de Costa Rica del 2012 y 2011.
+
++ Los archivos contienen: 
+
+  - preg3_a: CODCANTON: (código de cantón), "Dependientes": promedio de personas dependientes económicamente, "varianza": varianza de la estimación directa de "Dependientes", "CV": coeficiente de variación de "Dependientes": 
+  
+  -preg3_b: "CODCANTON": (código de cantón), "TAMHOG": tamaño del hogar,  "edad_jefe": edad promedio del jefe, y cuatro indicadore del índice de pobreza multidimensional: "IPM_V1", "IPM_V4", "IPM_S2" , "IPM_P1"
+  
++ El indicador que interesa encontrar a nivel cantonal es "Deps" la cantidad promedio de personas dependientes económicamente que tienen los hogares.La variable "se" se refiere al error estándar de "Deps".
+
++ Los dominios de interés son cantones (CODCANTON).
+
++ Asuma que se desean coeficientes de variación de máximo 15%.
+
+
+
+3.1. SIN USAR FUNCIONES DE ESTIMACIÓN DIRECTA O INDIRECTA: Justifique la necesidad de utilizar una estimación indirecta en este caso. (3pts)
+
+```{r}
+n_distinct(datos_a$CODCANTON)
+n_distinct(datos_b$CODCANTON)
+```
+
+*Respuesta: Necesitamos aplicar SAE porque hay dominios en la base_a los cuales no estan presentes en la base_b, falta representacion de algunos dominios*
+
+
+3.2. ¿Cuál es el método de estimación indirecta más conveniente para este caso? Justifique. (3pts)
+```{r}
+table(preg3_a$CODCANTON)
+table(preg3_b$CODCANTON)
+```
+
+*Respuesta: El modelo mas conveniente en este caso es un modelo de areas ya que los datos se encuentran agregados*
+
+3.3. Parta de un modelo completo y haga una selección de predictores con el criterio BIC. (8pts)
+```{r}
+combin=combine_data(
+  pop_data = preg3_b,
+  pop_domains = "CODCANTON",
+  smp_data =preg3_a ,
+  smp_domains = "CODCANTON"
+)
+```
+
+```{r}
+formula=Dependientes~TAMHOG+edad_jefe+IPM_V1+IPM_V4+IPM_S2+IPM_P1
+mod3=fh(fixed = formula, vardir = "varianza", combined_data = combin, domains = "CODCANTON", method = "ml",MSE = T)
+#ES posible agregar el argumento MSE=T para obtener estimaciones de ECM.
+```
+```{r}
+mod3.3=step(mod3,criteria = "BIC")
+```
+
+
+3.4. Produzca gráficos comparativos (entre estimación directa e indirecta) para la estimación puntual de "Dependientes" y los Coeficientes de Variación. (3pt)
+
+```{r}
+compare_plot(model=mod3.3,CV = T)
+#Al aplicar el modelo FH no se necesita el argumento "direct" ni "indicator".
+```
+
+
+
+
+
+

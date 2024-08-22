@@ -1,0 +1,77 @@
+---
+title: "Estimación directa"
+author: "Alejandra Arias-Salazar"
+date: "2024-06-09"
+output: html_document
+---
+
+Carga de librerías
+
+```{r}
+library(emdi)
+library(dplyr)
+```
+
+El paquete "emdi" cuenta con datos de EU-SILC (European Union Statistics on Income and Living Conditions). Son datos sintéticos, creados a partir de datos reales de Austria.
+
+```{r}
+data("eusilcA_smp")
+```
+
+Revisamos lo que contiene el archivo
+
+```{r}
+str(eusilcA_smp)
+summary(eusilcA_smp)
+```
+
+```{r}
+?eusilcA_smp
+```
+
+Revisamos la variable de ingreso (equivalente), que será la variable de interés
+
+```{r}
+summary(eusilcA_smp$eqIncome)
+
+# Histograma
+hist(eusilcA_smp$eqIncome,main="Histogram",xlab="Ingreso del hogar",col = "lightblue",
+       freq = F,breaks=100)
+  
+```
+
+Si nos interesa el ingreso promedio:
+
+```{r}
+ingreso.promedio=eusilcA_smp %>%
+  group_by(district) %>%
+  summarize(
+    prom_pond = weighted.mean(eqIncome, w = weight)
+  ) 
+ingreso.promedio
+```
+
+O bien, podemos usar la función "direct" del paquete "emdi". Se requieren los siguientes argumentos básicos:
+
+
+    | Argumento   | Descripción                                             |
+    |-------------|---------------------------------------------------------|
+    | y           | variable que se utilizará para crear indicadores        |
+    | smp_data    | nombre del archivo que contiene la muestra              |
+    | smp_domains | nombre de la variable que especifica los dominios       |
+    | weights     | nombre de la variable que contiene los pesos muestrales |
+
+
+```{r}
+estimacion_directa <- direct(
+  y = "eqIncome", smp_data = eusilcA_smp,
+  smp_domains = "district", weights = "weight")
+
+```
+
+```{r}
+summary(estimacion_directa$ind)
+```
+
+
+

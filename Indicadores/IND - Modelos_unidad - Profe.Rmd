@@ -1,0 +1,267 @@
+---
+title: "Modelos de Unidad"
+Author: "Alejandra Arias-Salazar"
+output: html_document
+date: "2024-05-24"
+---
+
+Cargamos el paquete emdi y dplyr.
+
+```{r}
+library(emdi)
+library(dplyr)
+library(maptools)
+```
+
+
+### Ejemplo 1. Indicadores de pobreza y desigualdad para Austria
+
+Trabajamos ahora con los datos a nivel de individuo de la encuesta EUSICL Austria. El indicador de interés es la mediana del ingreso de los hogares por dominio. Los dominios de interés son estados (state) y distritos (district).
+
+
+```{r}
+data("eusilcA_pop")
+data("eusilcA_smp")
+```
+
++ Revise la cantidad de observaciones que tiene cada archivo, revise qué variables tiene el censo y qué variables la encuesta.
+
++ Utilice la función "direct" para obtener estimaciones directas a nivel de estado (state). ¿Es necesario aplicar un modelo a nivel de individuo en este caso, si la tolerancia para el CV se define como 10%? Justifique
+
+```{r}
+est_directa<-direct(y="eqIncome", smp_data = eusilcA_smp, smp_domains = "state", weights = "weight", var=T)
+```
+
++ Utilice la función "direct" para obtener estimaciones directas a nivel de distrito (district). ¿Es necesario aplicar un modelo a nivel de individuo en este caso, si la tolerancia para el CV se define como 10%? Justifique
+
+```{r}
+est_directa2<-direct(y="eqIncome", smp_data = eusilcA_smp, smp_domains = "district", weights = "weight", var=T)
+```
+
++ Defina un modelo en donde la variable de interés es "eqIncome", el dominio de interés "district" y como predictores todas las variables (excepto las geográficas). Para esto utilice la función "ebp", la cual requiere como mínimo:
+
+- fixed: donde especifica el modelo
+- pop_data: datos de censo a nivel de unidad
+- pop_domains: variable en "pop_data" que contiene el dominio de interés
+- smp_data: datos de encuesta a nivel de unidad
+- smp_domains: variable en "smp_data" que contiene el dominio de interés
+
+Haga este proceso con un modelo sin transformación (transformation="no"), con un modelo con transformación log y con box-cox. 
+
+```{r}
+modelo_ebp1 <- ebp(
+  fixed = eqIncome ~ gender + eqsize + cash + self_empl +
+    unempl_ben + age_ben + surv_ben + sick_ben + dis_ben + rent + fam_allow +
+    house_allow + cap_inv + tax_adj, pop_data = eusilcA_pop,
+  pop_domains = "district", smp_data = eusilcA_smp, smp_domains = "district",
+  na.rm = TRUE, MSE = TRUE
+)
+```
+
++ Use "summary(modelo)" para revisar: 
+- ¿Cuántos dominios hay en la muestra y cuantos fuera?
+- ¿Cómo se puede justificar la inclusión de efectos aleatorios?
+- Puede considerarse un "modelo adecuado"? porqué?
+- Se aplicó algún tipo de transformación? cuál?
+
+```{r}
+summary(modelo_ebp1)
+```
+
+Compare las estimaciones directas para la mediana del ingreso de los hogares con las basadas en el modelo usando "compare_plot". Hay beneficios de haber usado el modelo? cuales? 
+
+```{r}
+compare_plot(modelo_ebp1, est_directa2, indicator = "Median", MSE = T, CV=T)
+```
+
+Produzca mapas tanto de la estimación directa como de la estimación basada en el modelo. 
+```{r}
+load_shapeaustria()
+map_plot(modelo_ebp1, CV=T, map_obj = shape_austria_dis, indicator = "Median", map_dom_id = "PB")
+```
+```{r}
+map_plot(est_directa2, MSE = F, CV=T, map_obj = shape_austria_dis, indicator = "Median", map_dom_id = "PB")
+
+```
+
+
+### Ejemplo 2. Indicadores de pobreza y desigualdad para Costa Rica
+
+
+1. Cargue los datos "datos_indicadores.RData".
+```{r}
+load("datos_indicadores.RData")
+```
+
+2. Revise las variables que tiene el censo y las que tiene la encuesta. En este caso, la variable de interés es "ipcn" (ingreso per capita neto del hogar). La variable que contiene la información del diseño muestral se llama "FACTOR". Los dominios de interés son cantones (CODCANTON)
+3. Haga la estimación directa y revise si es necesario aplicar modelos para áreas pequeñas. ¿Porqué?
+
+
+```{r}
+est_dir_cr<-direct(y="ipcn", smp_data = HOGARES11_anonim_sample, weights = "FACTOR", smp_domains = "CODCANTON", var=T)
+```
+
+```{r}
+nrow(est_dir_cr$ind)
+```
+
+
+```{r}
+summary(sqrt(est_dir_cr$MSE$Mean)/est_dir_cr$ind$Mean)
+```
+
+Aplique un modelo a nivel de unidad con una transformación log y los siguientes predictores
+
+
+escolari_jefe + edad_jefe + 
+prop_ocupados_hogar + TAMHOG + SIST_AGUA_CALIENTE + TANQUE_AGUA + 
+CARRO + INTERNET
+
+
+
+```{r}
+mod_ebp_cr_log<-ebp(ipcn~escolari_jefe + edad_jefe + 
+    prop_ocupados_hogar + TAMHOG + SIST_AGUA_CALIENTE + TANQUE_AGUA + 
+    CARRO + INTERNET, smp_data = HOGARES11_anonim_sample, pop_data = censo_anonim_sample, smp_domains = "CODCANTON", pop_domains = "CODCANTON", na.rm = T, MSE=T, transformation = "log")
+```
+
+```{r}
+summary(mod_ebp_cr_log)
+```
+
+
+
+
+
+```{r}
+compare_plot(mod_ebp_cr_log, est_dir_cr, indicator = "Mean", CV=T)
+```
+
+### Mapas de Costa Rica
+
+Dos formas (de varias) de hacerlo:
+
+1-Usando el shapefile del 2008 y el código de emdi
+2-Usando el shapefile del 2022 y el código de Amanda, Iván y Manrique 
+
+1-Usando el shapefile del 2008 y el código de emdi
+```{r}
+library(sf)
+cantones<-st_read("shp_CR_2008/cantones2008ctm05.shp")
+```
+
+```{r}
+plot_cr_mean_dir<-map_plot(object=est_dir_cr, MSE=F, CV=T, map_obj = cantones, indicator="Mean", map_dom_id = "CODNUM")
+```
+
+2-Usando el shapefile del 2022 y el código de Amanda, Iván y Manrique 
+
+Éste código es más flexible, sin embargo el shapefile es más pesado y además hay que agrupar algunos cantones que no existían en el 2011, que es de cuando se obtuvieron los datos.
+
+```{r}
+#1. base con el indicador de interés "mean" y el MSE respectivo
+base_dir<-as.data.frame(c(est_dir_cr$ind[,c(1,2)],est_dir_cr$MSE[,c(1,2)]))
+#2. Quitamos el dominio que está duplicado
+base_dir<-base_dir[,-3]
+#3. Creamos el cv 
+base_dir$cv<-sqrt(base_dir[,3])/base_dir[,2]
+#4. Nombres de columnas 
+colnames(base_dir)<-c("COD_UGEC", "Est_dir", "MSE_dir", "CV_dir")
+
+#5. Repetimos lo mismo pero con las estimaciones basadas en modelo
+base_mod<-as.data.frame(c(mod_ebp_cr_log$ind[,c(1,2)], mod_ebp_cr_log$MSE[,c(1,2)]))
+base_mod<-base_mod[,-3]
+base_mod$cv<-sqrt(base_mod[,3])/base_mod[,2]
+colnames(base_mod)<-c("COD_UGEC", "Est_mod", "MSE_mod", "CV_mod")
+
+#6. Unimos bases
+base<-dplyr::left_join(base_mod, base_dir, by="COD_UGEC")
+
+
+#Cargar el shapefile
+#carga del shapefile
+cantones = st_read("UGEC_MGN_2022.shp")
+
+#Se une el shape con los datos
+datos_cantones = cantones %>% 
+  left_join(y = base, by = "COD_UGEC") 
+
+#Ajustamos los cantones no estaban en el 2011
+datos_cantones = datos_cantones %>% 
+  mutate(
+    Est_mod = case_when(
+      COD_UGEC == 612 ~ datos_cantones$Est_mod[COD_UGEC == 601],
+      COD_UGEC == 613 ~ datos_cantones$Est_mod[COD_UGEC == 607],
+      COD_UGEC == 216 ~ datos_cantones$Est_mod[COD_UGEC == 203],
+      TRUE ~ Est_mod
+    ),
+    MSE_mod= case_when(
+      COD_UGEC == 612 ~ datos_cantones$MSE_mod[COD_UGEC == 601],
+      COD_UGEC == 613 ~ datos_cantones$MSE_mod[COD_UGEC == 607],
+      COD_UGEC == 216 ~ datos_cantones$MSE_mod[COD_UGEC == 203],
+      TRUE ~ MSE_mod
+    ),
+    CV_mod = case_when(
+      COD_UGEC == 612 ~ datos_cantones$CV_mod[COD_UGEC == 601],
+      COD_UGEC == 613 ~ datos_cantones$CV_mod[COD_UGEC == 607],
+      COD_UGEC == 216 ~ datos_cantones$CV_mod[COD_UGEC == 203],
+      TRUE ~ CV_mod
+    ),
+    Est_dir = case_when(
+      COD_UGEC == 612 ~ datos_cantones$Est_dir[COD_UGEC == 601],
+      COD_UGEC == 613 ~ datos_cantones$Est_dir[COD_UGEC == 607],
+      COD_UGEC == 216 ~ datos_cantones$Est_dir[COD_UGEC == 203],
+      TRUE ~ Est_dir
+    ),
+      MSE_dir = case_when(
+      COD_UGEC == 612 ~ datos_cantones$MSE_dir[COD_UGEC == 601],
+      COD_UGEC == 613 ~ datos_cantones$MSE_dir[COD_UGEC == 607],
+      COD_UGEC == 216 ~ datos_cantones$MSE_dir[COD_UGEC == 203],
+      TRUE ~ MSE_dir
+    ),
+     CV_dir = case_when(
+      COD_UGEC == 612 ~ datos_cantones$CV_dir[COD_UGEC == 601],
+      COD_UGEC == 613 ~ datos_cantones$CV_dir[COD_UGEC == 607],
+      COD_UGEC == 216 ~ datos_cantones$CV_dir[COD_UGEC == 203],
+      TRUE ~ CV_dir
+    )
+  ) 
+```
+
+Función (editada) de Amanda, Iván y Manrique para crear gráficos
+```{r}
+graficar_indice = function(datos, indice) {
+  plot_title = switch(indice,
+                       Est_dir = "Estimación directa",
+                       MSE_dir = "MSE estimación directa",
+                       CV_dir = "CV estimación directa",
+                       Est_mod = "Estimación basada en modelo", 
+                       MSE_mod="MSE estimación basada en modelo",
+                       CV_mod="MSE estimación basada en modelo")
+  fill_label = paste0(indice)
+  ggplot(datos) +
+    geom_sf(aes_string(fill = indice)) +
+    labs(title = plot_title,
+         fill = fill_label) +
+    coord_sf(xlim = c(230000, 700000), ylim = c(880000, 1241118)) +
+    theme_map() +
+    scale_fill_continuous_tableau(palette = "Red-Gold", na.value = "gray", labels = scales::number_format(accuracy = 1))
+}
+
+
+```
+
+```{r}
+graficar_indice(datos_cantones, "Est_dir")
+```
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,233 @@
+---
+title: "Resumen bayes II"
+output: html_document
+date: "2024-07-04"
+---
+Claro, aquí tienes una explicación de cada uno de estos conceptos:
+
+### Muestreo por Rechazo
+
+El **muestreo por rechazo** es un método para generar muestras de una distribución objetivo \( p(x) \) mediante el uso de una distribución propuesta \( q(x) \) que es más fácil de muestrear. El procedimiento es el siguiente:
+
+1. Encuentra una constante \( c \) tal que \( p(x) \leq c q(x) \) para todo \( x \).
+2. Genera un candidato \( x \) a partir de \( q(x) \).
+3. Genera un valor \( u \) de una distribución uniforme en el intervalo \([0, 1]\).
+4. Acepta el candidato \( x \) si \( u \leq \frac{p(x)}{c q(x)} \); de lo contrario, recházalo y repite el proceso.
+
+El muestreo por rechazo puede ser ineficiente si la constante \( c \) es grande, lo que lleva a muchos rechazos.
+
+### Algoritmo de Metropolis-Hastings
+
+El **algoritmo de Metropolis-Hastings** es un método de muestreo que genera una cadena de Markov cuya distribución estacionaria es la distribución objetivo \( p(x) \). El procedimiento es el siguiente:
+
+1. Elige un punto inicial \( x_0 \).
+2. Repite lo siguiente por \( t = 1, 2, \ldots \):
+   - Genera un candidato \( x' \) a partir de una distribución de propuesta \( q(x'|x_t) \).
+   - Calcula la probabilidad de aceptación \( \alpha = \min\left(1, \frac{p(x') q(x_t|x')}{p(x_t) q(x'|x_t)}\right) \).
+   - Genera un valor \( u \) de una distribución uniforme en el intervalo \([0, 1]\).
+   - Si \( u \leq \alpha \), acepta \( x' \) y establece \( x_{t+1} = x' \); de lo contrario, rechaza \( x' \) y establece \( x_{t+1} = x_t \).
+
+### Monte Carlo
+
+El término **Monte Carlo** se refiere a un amplio rango de técnicas computacionales que se basan en el uso de muestras aleatorias para obtener resultados numéricos. En contextos de muestreo, suele referirse a técnicas de Monte Carlo para integrar o muestrear de distribuciones complejas. Un uso común es en la estimación de integrales mediante el promedio de valores de funciones evaluadas en puntos aleatorios.
+
+### Cadenas de Markov
+
+Una **cadena de Markov** es un proceso estocástico en el cual el estado futuro depende únicamente del estado presente y no de la historia pasada. Las cadenas de Markov pueden ser discretas o continuas y se utilizan en muchos algoritmos de muestreo, incluyendo el algoritmo de Metropolis-Hastings y el muestreo de Gibbs.
+
+### Muestreo de Gibbs
+
+El **muestreo de Gibbs** es un caso especial del algoritmo de Metropolis-Hastings que es particularmente útil cuando la distribución conjunta es compleja pero las distribuciones condicionales son más simples. El procedimiento es el siguiente:
+
+1. Elige un punto inicial \( x^{(0)} = (x_1^{(0)}, x_2^{(0)}, \ldots, x_d^{(0)}) \).
+2. Repite lo siguiente por \( t = 1, 2, \ldots \):
+   - Para cada componente \( i = 1, 2, \ldots, d \):
+     - Muestra \( x_i^{(t+1)} \) de la distribución condicional \( p(x_i | x_1^{(t+1)}, \ldots, x_{i-1}^{(t+1)}, x_{i+1}^{(t)}, \ldots, x_d^{(t)}) \).
+
+El muestreo de Gibbs es especialmente útil en modelos de alta dimensión donde es difícil muestrear directamente de la distribución conjunta.
+
+Espero que esto aclare cada uno de estos conceptos. Si tienes más preguntas o necesitas más detalles, no dudes en preguntar.
+
+## Forma simple 
+
+### Muestreo por Rechazo
+El muestreo por rechazo es una forma de generar números aleatorios que siguen una distribución deseada. Imagina que estás intentando lanzar dardos en un área específica para conseguir puntos. Haces lo siguiente:
+
+1. Lanzas muchos dardos en un área más grande que incluye el área objetivo.
+2. Sólo mantienes los dardos que caen dentro del área objetivo.
+3. Descartas los demás dardos.
+
+En estadística, generas números aleatorios desde una distribución fácil de usar y luego decides si mantener o descartar esos números según la distribución deseada.
+
+### Metrópolis-Hastings
+El algoritmo de Metrópolis-Hastings es un método para obtener una secuencia de números aleatorios que siguen una distribución complicada:
+
+1. Empiezas con un número inicial.
+2. Propones un nuevo número cercano al actual.
+3. Decides si aceptas este nuevo número basado en una probabilidad calculada a partir de las distribuciones.
+4. Si aceptas el número, lo usas como el nuevo punto de partida. Si no, te quedas con el número actual.
+
+Repites este proceso muchas veces para crear una serie de números que representan la distribución objetivo.
+
+### Monte Carlo
+El método de Monte Carlo es una técnica para resolver problemas complejos utilizando el azar. Imagina que necesitas estimar el área de una forma irregular:
+
+1. Generas muchos puntos aleatorios dentro de un área conocida que incluye la forma.
+2. Cuentas cuántos puntos caen dentro de la forma.
+3. Usas esta proporción para estimar el área de la forma.
+
+Usas el mismo principio para estimar valores y resolver problemas en estadística, física, finanzas y otros campos.
+
+### Markov
+Una cadena de Markov es una secuencia de eventos donde cada evento solo depende del evento anterior. Piensa en un juego de mesa donde la posición de tu ficha en la próxima tirada depende únicamente de tu posición actual, no de cómo llegaste allí. 
+
+En matemáticas y estadística, esto significa que la probabilidad de estar en un estado futuro depende solo del estado presente, no del pasado.
+
+### Gibbs
+El muestreo de Gibbs es una técnica para generar muestras de una distribución multivariable complicada cuando sabes las distribuciones más simples de cada variable individualmente. Imagina que estás horneando un pastel y tienes varios ingredientes:
+
+1. Empiezas con una cantidad inicial para cada ingrediente.
+2. Ajustas la cantidad de un ingrediente mientras mantienes las cantidades de los otros fijas, basándote en una receta.
+3. Repetidamente ajustas cada ingrediente uno por uno.
+
+Al final, obtienes una mezcla que debería representar la receta original.
+
+## Otro simple
+
+### Muestreo por Rechazo
+
+El **muestreo por rechazo** es útil cuando queremos generar muestras de una distribución complicada \( p(x) \) usando una distribución más simple \( q(x) \).
+
+- **Proceso**: 
+  1. Seleccionamos un punto aleatorio según \( q(x) \).
+  2. Calculamos \( p(x) \) y \( q(x) \) en ese punto.
+  3. Aceptamos el punto con una probabilidad proporcional a \( \frac{p(x)}{cq(x)} \), donde \( c \) es una constante que asegura \( p(x) \leq cq(x) \) para todos los \( x \).
+  4. Si el punto no se acepta, se vuelve a intentar.
+
+- **Limitaciones**: 
+  - Puede ser ineficiente si \( q(x) \) es muy diferente o si \( c \) es grande, lo que lleva a muchos rechazos.
+
+### Algoritmo de Metropolis-Hastings
+
+El **algoritmo de Metropolis-Hastings** es una técnica más sofisticada para generar muestras de una distribución objetivo \( p(x) \), aprovechando una distribución propuesta \( q(x'|x) \).
+
+- **Proceso**:
+  1. Partimos de un punto inicial \( x_0 \).
+  2. Generamos un punto candidato \( x' \) según \( q(x'|x_t) \), donde \( x_t \) es el estado actual.
+  3. Evaluamos una probabilidad de aceptación \( \alpha = \min\left(1, \frac{p(x') q(x_t|x')}{p(x_t) q(x'|x_t)}\right) \).
+  4. Aceptamos \( x' \) con probabilidad \( \alpha \); si no, mantenemos \( x_t \).
+  5. Repetimos este proceso para generar una cadena de puntos \( x_1, x_2, \ldots \) cuya distribución se aproxima a \( p(x) \).
+
+- **Ventajas**:
+  - Adecuado para distribuciones complejas donde \( q(x) \) puede ser elegido más flexiblemente.
+
+### Monte Carlo
+
+**Monte Carlo** se refiere a un enfoque general para resolver problemas mediante simulación estadística y el uso de números aleatorios.
+
+- **Aplicación**:
+  - Se utiliza para estimar cantidades numéricas complicadas, como integrales multidimensionales o propiedades de sistemas complejos.
+  - Implica generar muestras aleatorias según una distribución conocida para obtener resultados estadísticamente significativos.
+
+- **Ejemplo**:
+  - Para estimar el valor de \( \pi \), se pueden lanzar puntos aleatorios dentro de un cuadrado y contar cuántos caen dentro de un círculo inscrito, utilizando esta relación para aproximar \( \pi \).
+
+### Cadenas de Markov
+
+Una **cadena de Markov** es un proceso estocástico donde la probabilidad de pasar a un estado futuro depende solo del estado actual y no de cómo se llegó a ese estado.
+
+- **Características**:
+  - Utilizadas en modelos que evolucionan con el tiempo de manera probabilística.
+  - Útiles en muestreo porque la transición entre estados se define en función de probabilidades condicionales, simplificando la simulación de sistemas complejos.
+
+### Muestreo de Gibbs
+
+El **muestreo de Gibbs** es una técnica especializada dentro del algoritmo de Metropolis-Hastings, ideal para problemas de alta dimensión donde las distribuciones condicionales son más fáciles de manejar que la distribución conjunta completa.
+
+- **Proceso**:
+  - Se descompone la distribución multidimensional en partes más simples.
+  - Se actualiza cada variable una a la vez, manteniendo constantes las demás, usando distribuciones condicionales.
+
+- **Ventajas**:
+  - Eficiente cuando las distribuciones condicionales son conocidas o más fáciles de muestrear que la distribución conjunta completa.
+  - Ampliamente utilizado en estadística bayesiana y aprendizaje automático para inferencia de parámetros.
+
+## Laplace
+
+### Método de Laplace para Aproximación a la Posterior
+
+1. **Datos y Modelos**:
+   - Supongamos que tienes datos \( \mathbf{y} \) y quieres saber sobre un parámetro desconocido \( \theta \).
+   - Tienes una idea inicial sobre \( \theta \) expresada como una distribución a priori \( \pi(\theta) \).
+   - El modelo dice cómo los datos \( \mathbf{y} \) dependen de \( \theta \), representado por \( f(\mathbf{y}|\theta) \).
+
+2. **Distribución Posterior**:
+   - Después de ver los datos, quieres encontrar \( p(\theta|\mathbf{y}) \), la distribución de \( \theta \) dada la evidencia.
+
+3. **Aproximación de Laplace**:
+   - Encuentras el valor de \( \theta \) que maximiza \( p(\theta|\mathbf{y}) \). Este valor se llama el modo de la distribución posterior.
+   - Asumes que alrededor de este modo, la distribución posterior se parece a una campana simétrica (como una campana gaussiana).
+
+4. **Aproximación Normal**:
+   - Aproximas \( p(\theta|\mathbf{y}) \) con una distribución normal (campana gaussiana) centrada en el modo y con una forma determinada por cuán "ancha" es la distribución en ese punto.
+
+### Por qué es útil
+
+- **Simplicidad**: Es fácil de calcular y entender.
+- **Rapidez**: Proporciona una solución rápida cuando no se puede calcular la distribución posterior exacta.
+- **Cuando usarlo**: Funciona bien cuando la distribución posterior es suave y tiene una sola cima (no es muy complicada).
+
+### Limitaciones
+
+- **No siempre exacto**: Puede no capturar todas las características de la distribución posterior si es muy complicada o tiene muchas cimas.
+- **Depende del modo**: La precisión depende de encontrar correctamente el modo de la distribución posterior.
+
+### Aplicaciones
+
+- Se usa en problemas donde necesitas una respuesta rápida y aceptable sobre la distribución posterior.
+- Útil en muchos modelos bayesianos básicos y algunas situaciones más complejas donde es difícil calcular la distribución posterior exacta.
+
+La Región de Equivalencia Práctica (ROPE, por sus siglas en inglés, Region of Practical Equivalence) es un concepto importante en la inferencia bayesiana que ayuda a interpretar los resultados de un análisis estadístico en términos de relevancia práctica o sustantiva en lugar de solo significancia estadística. Aquí te explico cómo se interpreta:
+
+### Interpretación de la Región de Equivalencia Práctica (ROPE)
+
+1. **Definición**:
+   - La ROPE es un intervalo o región alrededor de un valor de referencia o hipótesis nula donde las diferencias se consideran prácticamente insignificantes o irrelevantes para el propósito práctico del estudio.
+   - Por ejemplo, si estás estudiando el efecto de un tratamiento y tienes una hipótesis nula de que el efecto es cero, la ROPE podría ser un intervalo alrededor de cero donde las diferencias en los efectos del tratamiento no son importantes desde un punto de vista práctico.
+
+2. **Aplicación**:
+   - En el contexto bayesiano, después de calcular la distribución posterior de un parámetro (como la diferencia entre dos tratamientos o la efectividad de una intervención), puedes evaluar si los valores de este parámetro caen dentro de la ROPE.
+   - Si la mayor parte de la distribución posterior está dentro de la ROPE, entonces los datos no proporcionan evidencia suficiente para rechazar la hipótesis nula o para considerar que las diferencias observadas son sustancialmente diferentes de cero o de otro valor de referencia.
+
+3. **Interpretación**:
+   - **Diferencia Práctica**: Si la distribución posterior cae mayormente dentro de la ROPE, puedes concluir que las diferencias observadas son prácticamente irrelevantes o no sustancialmente diferentes del valor de referencia.
+   - **Relevancia Práctica**: Esto ayuda a evitar conclusiones basadas únicamente en criterios estrictamente estadísticos (como p-values) y a enfocarse en la relevancia práctica de los resultados para la toma de decisiones.
+
+4. **Ejemplo**:
+   - Supongamos que estás evaluando dos tratamientos y quieres determinar si hay una diferencia en su efectividad. La ROPE podría ser un intervalo alrededor de cero donde cualquier diferencia en efectividad se consideraría clínicamente insignificante.
+   - Si la mayor parte de la distribución posterior de la diferencia entre los tratamientos cae dentro de esta ROPE, puedes concluir que no hay una diferencia prácticamente significativa entre los tratamientos.
+
+### Importancia en la Inferencia Bayesiana
+
+- La ROPE promueve una evaluación más completa y relevante de los resultados de un análisis estadístico.
+- Ayuda a los investigadores y tomadores de decisiones a interpretar los resultados en términos de impacto práctico y no solo en términos de significancia estadística.
+
+En resumen, la ROPE es crucial en inferencia bayesiana porque proporciona un marco para evaluar la relevancia práctica de los resultados y evitar conclusiones sesgadas por criterios puramente estadísticos.
+
+El intervalo que mencionas, -0.16 < 0.09 < 0.16, se interpreta de la siguiente manera en términos de la Región de Equivalencia Práctica (ROPE):
+
+1. **Interpretación del intervalo**:
+   - La diferencia estimada está entre -0.16 y 0.16.
+   - Esto sugiere que, según los datos analizados, la diferencia entre las dos cosas (por ejemplo, dos tratamientos) está contenida dentro de este rango.
+
+2. **Relación con la ROPE**:
+   - Si la ROPE definida previamente es (-1/6, 1/6) horas, que es aproximadamente (-0.1667, 0.1667) en términos decimales, entonces el intervalo (-0.16, 0.16) está dentro de esta ROPE.
+
+3. **Implicaciones prácticas**:
+   - Dado que la diferencia estimada está dentro de la ROPE, según el criterio establecido (diferencias menores a 10 minutos no son relevantes), podríamos concluir que no hay evidencia suficiente para considerar que la diferencia entre las dos cosas es prácticamente significativa.
+   - En otras palabras, la diferencia observada es tan pequeña que no afecta significativamente la decisión o el resultado práctico en estudio.
+
+4. **Verificación con HDI**:
+   - Para asegurarnos de que la diferencia verdadera está dentro de la ROPE, podríamos verificar si el Intervalo de Alta Densidad (HDI) está completamente dentro de (-1/6, 1/6). Si el HDI está completamente contenido dentro de la ROPE, reforzaría la idea de que la diferencia es insignificante desde un punto de vista práctico.
+
+En resumen, el intervalo (-0.16, 0.16) dentro de la ROPE (-1/6, 1/6) sugiere que la diferencia entre las dos cosas es tan pequeña que no tiene relevancia práctica significativa, de acuerdo con el criterio establecido de la ROPE.

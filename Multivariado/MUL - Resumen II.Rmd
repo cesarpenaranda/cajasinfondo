@@ -1,0 +1,708 @@
+## Resumen del Análisis
+
+### IRIS Multinomial
+
+La base de datos Iris es un conjunto de datos famoso que contiene medidas de 150 flores de tres especies de Iris: setosa, versicolor y virginica. Los datos incluyen el largo y ancho del sépalo, y el largo y ancho del pétalo.
+
+1. **Carga de Datos**
+```{r}
+   load("iris.Rdata")
+```
+
+2. **Creación de Bases de Entrenamiento y Validación**
+```{r}
+   RNGkind(sample.kind = "Rounding")
+   set.seed(10)
+
+   n = nrow(base)
+   m = sample(1:n, 100, replace = FALSE)
+   basea = base[m,]
+   basev = base[-m,]
+```
+
+3. **Distribución de Especies en la Base de Entrenamiento**
+```{r}
+   table(basea$especie)
+```
+
+4. **Balanceo de Especies (no implementado)**
+```{r}
+   base$especie2 = as.numeric(as.factor(base$especie))
+
+   df = c()
+   for(i in 1:3){
+     basei = base[base$especie2 == i,]
+     m0 = sample(1:50, 33, replace = FALSE)
+     base0 = basei[m0,]
+     df = rbind(df, base0)
+   }
+   table(df$especie)
+```
+
+5. **Visualización de Datos por Pares de Variables**
+```{r}
+   sp = unclass(basea$especie)
+   pairs(basea[,-5], col = sp, pch = 18) # Quitamos la respuesta
+```
+
+6. **Modelo Logístico Multinomial**
+```{r}
+   library(nnet)
+   mod1 = multinom(especie ~ ., basea)
+   summary(mod1)
+   mod1$convergence
+```
+
+7. **Evaluación del Individuo 32 de la Base de Validación**
+```{r}
+   basev[32,]
+```
+
+8. **Parte Lineal para el Individuo 32**
+```{r}
+   x = cbind(1, basev[32, 1:4])
+   coef.ver = summary(mod1)$coefficients[1,]
+   coef.vir = summary(mod1)$coefficients[2,]
+
+   PL1 = sum(x * coef.ver)
+   PL2 = sum(x * coef.vir)
+```
+
+9. **Probabilidades de Pertenencia a Cada Especie**
+```{r}
+   den = 1 + exp(PL1) + exp(PL2)
+
+   round(exp(PL1) / den, 3)
+   round(exp(PL2) / den, 3)
+   round(1 / den, 3)
+```
+
+10. **Probabilidades para el Individuo 32 usando `predict`**
+```{r}
+    props = predict(mod1, basev, type = "probs")
+    round(props[32,], 3)
+```
+
+11. **Tabla de Confusión para la Base de Validación**
+```{r}
+    sp2 = predict(mod1, basev)
+    table(basev$especie, sp2)
+```
+
+12. **Selección de Variables hacia Atrás**
+```{r}
+    step(mod1)
+    mod2 = step(mod1)
+    summary(mod1)
+    table(basev$especie, predict(mod1, basev))
+    table(basev$especie, predict(mod2, basev))
+```
+
+### SECUNDARIA
+
+Este conjunto de datos contiene variables sobre 200 estudiantes y sus elecciones de programas en la escuela secundaria.
+
+1. **Carga de Datos**
+```{r}
+   load("secundaria.Rdata")
+```
+
+2. **Conteo de Estudiantes por Programa**
+```{r}
+   str(base)
+   table(base$programa)
+```
+
+3. **Modelo de Regresión Logística Multinomial**
+```{r}
+   library(nnet)
+   mod1 = multinom(programa ~ genero + nivelsocio + tipo, base)
+   summary(mod1)
+   mod1$convergence
+```
+
+4. **Distribución de Estudiantes por Predictores**
+```{r}
+   table(base$programa, base$genero)
+   table(base$programa, base$nivelsocio)
+   table(base$programa, base$tipo)
+```
+
+5. **Eliminación de Estudiantes Anómalos**
+```{r}
+   base[base$tipo == "privada" & base$programa == "vocacional",]
+   base2 = base[-c(98, 116),]
+```
+
+6. **Nuevo Modelo sin Estudiantes Anómalos**
+```{r}
+   mod2 = multinom(programa ~ genero + nivelsocio + tipo, base2)
+   summary(mod2)
+   mod2$convergence
+```
+
+7. **Comparación de Errores Estándar**
+```{r}
+   m1 = summary(mod1)$standard.errors
+   m2 = summary(mod2)$standard.errors
+   rbind(m1, m2)
+   round(m1 - m2, 4)
+```
+
+
+### KNN
+
+### Predecir el Tipo de Cliente para Créditos
+
+El objetivo es predecir el tipo de cliente (bueno o malo) usando varias variables relevantes para la evaluación de crédito.
+
+### Variables
+
+- **Edad**: Edad del cliente en años.
+- **Antigüedad Laboral**: Años de antigüedad laboral.
+- **Vivienda**: Tipo de vivienda (propia, padres, alquilada, contrato privado, otros).
+- **Estado Civil**: Estado civil (soltero, casado, separado, divorciado, viudo).
+- **Trabajo**: Tipo de trabajo (asalariado, independiente, temporal, otros).
+- **Ingreso**: Salario mensual.
+- **Gasto**: Gasto mensual.
+- **Deuda**: Deuda mensual.
+- **Ahorro**: Ahorro mensual.
+- **Patrimonio**: Valor del patrimonio.
+- **Porcentaje Deuda**: Deuda/Ingeso * 100.
+- **Porcentaje Ahorro**: Ahorro/Ingreso * 100.
+- **Porcentaje Gasto**: Gasto/Ingreso * 100.
+- **Sobreendeudado**: 1 si está sobreendeudado, 0 si no.
+- **Plazo**: Plazo del préstamo solicitado.
+- **Monto**: Monto del préstamo solicitado.
+- **Garantía**: Valor de la garantía.
+- **Monto/Garantía**: Monto/Garantía * 100.
+
+### K Vecinos Más Cercanos (K-NN)
+
+1. **Carga de Paquetes y Datos**
+```{r}
+   paquetes <- c("caret", "DT", "ROCR", "class", "kknn", "e1071", "adabag", "randomForest")
+   lapply(paquetes, library, character.only = TRUE)
+   load("Credit.Rdata")
+```
+
+2. **Procedimiento Manual**
+   a) **Creación de Bases de Entrenamiento y Validación**
+```{r}
+   train = base2[1:50,-(3:6)]
+   test = base2[51:60,-(3:6)]
+   base4 = rbind(train, test)
+```
+
+   b) **Clasificación Manual con 3 Vecinos Más Cercanos (Distancia Euclidiana)**
+```{r}
+   library(cluster)
+   library(modeest)
+# Distancia de bases 
+   d <- as.matrix(dist(base4[,-1]))
+   round(d, 1)
+   d2 = d[51:60, 1:50]
+# Clasificacion
+   k = 3
+   pred = c()
+   for(i in 1:10){
+     pred[i] = mlv(train$cliente[order(d2[i,])][1:k])
+   }
+   pred
+```
+
+   c) **Clasificación usando la Función `knn`**
+```{r}
+   library(class)
+   pred2 = knn(train[,-1], test[,-1], train$cliente, k = 3)
+```
+
+   d) **Verificación de Coincidencia de Clasificación**
+```{r}
+   table(pred2, pred)
+```
+
+3. **Validación Entrenamiento/Prueba**
+   a) **Estandarización de Variables Numéricas y Creación de Base3**
+```{r}
+   numericas = sapply(base2, is.numeric)
+   base.num = base2[, numericas] # Escojiendo las numericas
+   base3 = as.data.frame(cbind(base2$cliente, scale(base.num, scale = TRUE)))
+```
+
+   b) **División en Bases de Entrenamiento y Prueba**
+```{r}
+   set.seed(123)  # Para reproducibilidad
+   m = sample(1:nrow(base3), nrow(base3) * 0.8)
+   train = base3[m,]
+   test = base3[-m,]
+```
+
+   c) **Clasificación con Diferentes Cantidades de Vecinos y Evaluación del Error**
+```{r}
+   E = c()
+   for(i in 1:15){
+     pred3 = knn(train[,-1], test[,-1], train$V1, k = i)
+     confu = table(test$V1, pred3)
+     error = 1 - sum(diag(confu)) / sum(confu)
+     E[i] = error
+   }
+   plot(E, pch = 18)
+```
+
+**Conclusión**: El número adecuado de vecinos se encuentra entre 9 y 11, basado en la evaluación del error de clasificación.
+
+
+
+
+
+# Introducción al Análisis Multivariado
+## Lab. No.6 - Métodos basados en árboles
+
+### Árboles de Decisión
+
+1. **Cargar Paquetes**
+```{r}
+   paquetes = c("rpart", "rattle", "DT", "adabag", "randomForest")
+   invisible(lapply(paquetes, library, character.only = TRUE))
+```
+
+2. **Cargar Datos**
+```{r}
+   load("Credit.Rdata")
+   dim(base2)
+```
+
+3. **Mostrar Datos**
+```{r}
+   datatable(head(base2, 1000), options = list(pageLength = 10, scrollX = TRUE))
+```
+
+4. **Dividir Datos**
+```{r}
+   suppressWarnings(RNGkind(sample.kind = "Rounding"))
+   set.seed(10)
+   n <- nrow(base2)
+   m <- sample(1:n, n*0.8, F)
+   train <- base2[m, ]
+   test <- base2[-m, ]
+```
+
+5. **Dimensiones de Datos**
+```{r}
+   dim(train)
+   dim(test)
+```
+
+6. **Generar Árbol**
+```{r}
+   mod1 = rpart(cliente ~ ., method="class", data=train)
+```
+
+7. **Graficar Árbol**
+```{r}
+   fancyRpartPlot(mod1, palettes=c("Greens", "Reds"))
+```
+
+8. **Análisis del Árbol**
+   - Nodos terminales: **8**
+   - Profundidad: **6**
+   - Análisis del nodo terminal de la izquierda:
+```{r}
+     nodo = train[train$antig_laboral >= 2.5 & train$ahorro >= 1850, ]
+     nrow(nodo) / nrow(train) * 100
+     table(nodo$cliente)
+     prop.table(table(nodo$cliente)) * 100
+```
+
+9. **Clasificación Manual**
+```{r}
+   id1 = test[1, ]
+   id1$antig_laboral >= 2.5
+   id1$ahorro >= 1850
+   c("bueno", id1$cliente)
+```
+
+10. **Clasificación Automática**
+```{r}
+    pred1 = predict(mod1, newdata=test, type="class") # Metiendo lo resultados en un objeto
+    pred1[1] # Verificando el primer id
+    test$pred1 = pred1 # Introduciondo la prediccion a la base de test
+    head(cbind(test$cliente, test$pred)) # Comparacion
+```
+
+11. **Tabla Comparativa**
+```{r}
+    table(test$pred1, test$cliente)
+    prop.table(table(test$pred1, test$cliente)) * 100
+```
+
+12. **Nuevo Árbol con Parámetros Ajustados**
+```{r}
+    mod2 = rpart(cliente ~ ., method="class", data=train, minsplit=177, minbucket=71, maxdepth=6, cp=0.004)
+    fancyRpartPlot(mod2, palettes=c("Greens", "Reds"))
+```
+
+13. **Clasificación Manual con Nuevo Árbol**
+```{r}
+    # Original
+    id2 = test[164, ]
+    id2$antig_laboral >= 2.5
+    id2$monto_financiado < 0.72
+    c("bueno", id2$cliente)
+    
+    # Nuevo
+    id2 = test[164, ]
+    id2$antig_laboral >= 2.5
+    id2$monto_financiado < 0.72
+    id2$trabajo
+    id2$porc_ahorro >= 0.42
+    c("malo", id2$cliente)
+```
+
+14. **Clasificación Automática con Nuevo Árbol**
+```{r}
+    pred2 = predict(mod2, newdata=test, type="class")
+    pred1[164]
+    pred2[164]
+```
+
+15. **Tabla Comparativa con Nuevo Árbol**
+ ```r
+    table(pred2, test$cliente)
+    prop.table(table(pred2, test$cliente)) * 100
+ ```
+
+16. **Árbol con Variables Ordinales**
+```{r}
+    mod3 = rpart(cliente ~ vivienda + antig_laboral, method="class", data=train)
+    fancyRpartPlot(mod3, palettes=c("Greens", "Reds"))
+```
+
+17. **Declarar Variable Ordinal**
+```{r}
+ train$vivienda2 = factor(train$vivienda, ordered = TRUE, levels = c("padres", "alquilada", "propia", "contrato privado", "otros"))
+    mod4 = rpart(cliente ~ vivienda2 + antig_laboral, method="class", data=train)
+    fancyRpartPlot(mod4, palettes=c("Greens", "Reds"))
+    train = train[, -20]
+```
+
+### Bagging
+
+19. **Modelo Bagging**
+```{r}
+    mod5 = bagging(cliente ~ ., method="class", data=train, mfinal=19)
+```
+
+20. **Primer Árbol de Bagging**
+```{r}
+    mod5$trees[[1]]
+    predict(mod5$trees[[1]], test, type="class")
+```
+
+21. **Clasificación con Bagging**
+```{r}
+    tab = matrix(nrow = nrow(test), ncol = 19)
+    for (i in 1:19) {
+        tab[, i] = predict(mod5$trees[[i]], test, type="class")
+    }
+
+    tab[2, ] # Ver como se clasifico el 2 cliente en los 19 arboles
+    pred1 = apply(tab, 1, mlv) # Ver la moda de cada cliente #libreria (modeest)
+    pred2 = predict(mod5, test)$class # Forma automatica de las estas clasificaciones
+    table(pred1, pred2) # Comparacion de a pie y autimatica
+    table(test$cliente, pred2) # Comparacion con lo observado y la automatica
+    prop.table(table(test$cliente, pred2)) * 100 # Proporciones
+```
+
+### Bosques Aleatorios
+
+22. **Modelo Bosques Aleatorios**
+```{r}
+    mod6 = randomForest(cliente ~ ., method="class", data=train, ntree=100)
+    pred3 = predict(mod6, test)
+    table(test$cliente, pred3)
+    prop.table(table(test$cliente, pred3)) * 100
+```
+
+### Potenciación (Boosting)
+
+24. **Modelo Boosting**
+```{r}
+    mod7 = boosting(cliente ~ ., train, boos = TRUE, mfinal = 50) #library(adabag) mfinal numero de arboles de decision o numero de iteraciones
+    pred4 = predict(mod7, test)$class
+    table(test$cliente, pred4)
+```
+
+26. **Pesos de Boosting**
+```{r}
+    mod7$weights
+    predict(mod7$trees[[1]], test)[,2] > 0.5
+    tab = matrix(nrow = nrow(test), ncol = 50)
+    for (i in 1:50) {
+        tab[, i] = predict(mod7$trees[[i]], test)[,2] > 0.5
+    }
+    tab1 = 1 * (tab == TRUE) - 1 * (tab == FALSE)
+    tab1[1, ]
+    tab1[1, ] %*% mod7$weights
+    res= tab1 %*% mod7$weights
+    pred5 =1*(res>0)-1*(res<0)
+    table(pred5, pred4)
+```
+
+## Indicadores de desempeño
+
+1. **Carga de Paquetes**:
+   ```r
+   paquetes=c("caret", "rpart","rattle","DT","ROCR","plotly","cluster","modeest")
+   invisible(lapply(paquetes,library,character.only=T))
+   ```
+
+2. **Carga de Datos y Preparación**:
+```{r}
+   load("Credit.Rdata")
+   base2$sobreendeudado=factor(base2$sobreendeudado) #Declaramos sobreendeudado como factor
+   suppressWarnings(RNGkind(sample.kind = "Rounding"))
+   set.seed(10)
+   n=nrow(base2)
+   m=sample(1:n,n*0.8,F)
+   train=base2[m,]
+   test=base2[-m,]
+```
+
+3. **Árbol de Decisión**:
+```{r}
+   mod1=rpart(cliente~.,method = "class",data = train)
+   pred1=predict(mod1,test,type = "class")
+   table(pred1,test$cliente)
+```
+
+4. **Regresión Logística**:
+```{r}
+   mod2=glm(cliente~.,data = train,family = binomial)
+   pred2=predict(mod2,test,type = "response")
+   pred2=ifelse(pred2>0.5,"malo","bueno")
+   table(pred1,pred2)
+```
+
+5. **Distancias de Gower y KNN**:
+```{r}
+base3=rbind(train[,-1],test[,-1])
+   d=as.matrix(daisy(base3,metric = "gower")) #library(cluster)
+   d2=d[1:3556,3557:4445]
+   
+```
+
+**Clasificacion con KNN K=5**
+```{r}
+k=5
+pred3=c()
+   for(i in 1:nrow(test)){
+     d1=d2[,i]
+     o=order(d1)
+     clas=train[o,][1:k,1]
+     pred3[i]=mfv(clas) #library(modeest)
+   }
+   table(pred1,pred3)
+   table(pred2,pred3)
+```
+
+6. **Evaluación de Desempeño**:
+```{r}
+# Derivada de la tabla de confucion, esta funcion resibe la variable respuesta de la base de validacion y la clasificacion obtenida con el modelo deseado
+   eval=function(y,pred){
+     confu=table(y,pred)
+     e=1-sum(diag(confu))/sum(confu)
+     falsos=1-diag(confu)/apply(confu,1,sum)
+     error=c(e,falsos)*100
+     names(error)=c("e","FP","FN")
+     return(list(Matriz=confu,Error=error))
+   }
+```
+
+**Tabla de resultados**
+```{r}
+   e1=eval(test$cliente,pred1)
+   e2=eval(test$cliente,pred2)
+   e3=eval(test$cliente,pred3)
+   E=cbind(e1$Error,e2$Error,e3$Error)
+   colnames(E)=c("Arbol","Logistica","Knn");round(E,1)
+```
+
+7. **Curvas ROC y AUC**:
+```{r}
+#Necesario para la curva ROC y el AUC, solicita dos variables, la prediccion en forma numerica y el vector respuesta, prediction(pred,y)
+predict1=prediction(as.numeric(pred1),test$cliente) #library(ROCR)
+```
+
+
+```{r}
+attributes(performance(predict1,"auc"))$y.values[[1]]*100
+```
+
+
+```{r}
+des= performance(predict1,"tpr","fpr")
+   attributes(des)$x.values[[1]]*100
+   attributes(des)$y.values[[1]]*100
+```
+
+
+**Grafico de curva ROC**
+```{r}
+#library(dplyr);library(plotly)
+curvaROC = function(pred,y, grafico = F) {
+     predict = prediction(pred,y) 
+     auc = attributes(performance(predict,"auc"))$y.values[[1]]*100
+     des = performance(predict,"tpr","fpr")
+     p = NULL
+     if(grafico){
+       FP = attributes(des)$x.values[[1]]*100
+       PP = attributes(des)$y.values[[1]]*100
+       p <- plot_ly(x = FP, y = FP, name = 'Línea No Discrimina', 
+                    type = 'scatter', mode = 'lines',
+                    line = list(color = 'rgba(0, 0, 0, 1)', 
+                                width = 4, dash = 'dot'),
+                    fill = 'tozeroy',  fillcolor = 'rgba(0, 0, 0, 0)') %>% 
+         add_trace(y = PP, name = paste('Curva ROC (AUC = ', round(auc,3),')', sep =""), 
+                   line = list(color = 'rgba(0, 0, 255, 1)', width = 4, 
+                   dash = 'line'),  fillcolor = 'rgba(0, 0, 255, 0.2)')%>%
+         layout(title = "Curva ROC",
+                xaxis = list(title = "<b>Falsos Positivos (%)<b>"),
+                yaxis = list (title = "<b>Precisión Positiva (%)<b>"))
+     }
+     return(list(auc = auc,grafico = p))
+   }
+```
+
+
+```{r}
+#La funcion acepta solo numericos en pred1, puede ser necesario trasformar en factor y luego a numerico para solucionar el problema
+ROC1=curvaROC(as.numeric(pred1),test$cliente,grafico = T)
+   ROC2=curvaROC(as.numeric(as.factor(pred2)),test$cliente,grafico = T)
+   ROC3=curvaROC(pred3,test$cliente,grafico = T)
+   ROC3$grafico
+c(ROC1$auc,ROC2$auc,ROC3$auc)
+```
+
+8. **Cálculo del KS**:
+```{r}
+max(attributes(des)$y.values[[1]]*100-attributes(des)$x.values[[1]]*100)
+```
+
+```{r}
+
+   KS = function(pred,y) {
+     predictions = prediction(pred,y) 
+     des = performance(predictions,"tpr","fpr")    
+     ks = max(attributes(des)$y.values[[1]]*100 - 
+              attributes(des)$x.values[[1]]*100)
+     return(ks)
+   }
+```
+   
+   
+ 
+```{r}
+KS(as.numeric(pred1),test$cliente)
+KS(as.numeric(as.factor(pred2)),test$cliente)
+KS(as.numeric(pred3),test$cliente)
+```
+
+```{r}
+   eval= function(y,pred){
+     confu=table(y,pred)
+     e=1-sum(diag(confu))/sum(confu)
+     falsos=1-diag(confu)/apply(confu,1,sum)
+     error= c(e,falsos)*100
+     auc=curvaROC(pred,y)$auc
+     KS=KS(pred,y)
+     indicadores=c(error,auc,KS)
+     names(indicadores)=c("e","FN","FP","AUC","KS")
+     return(list(Matriz=confu,indicadores=indicadores))
+   }
+```
+
+
+```{r}
+   (f1=eval(test$cliente,as.numeric(as.factor(pred1))))
+   (f2=eval(test$cliente,as.numeric(as.factor(pred2))))
+   (f3=eval(test$cliente,as.numeric(pred3)))
+   ID=cbind(f1$indicadores,f2$indicadores,f3$indicadores)
+   colnames(ID)=c("arbol","logistica","knn")
+   round(ID,1)
+```
+
+
+
+9. **Validación Cruzada**:
+
+```{r}
+   res4=matrix(nrow = 10, ncol = 5)
+   colnames(res4)=c("e","FN","FP","AUC","KS")
+   for(i in 1:10){
+     m=sample(1:nrow(base2),nrow(base2)*0.8,F)
+     train4=base2[m,]
+     test4=base2[-m,,]
+     mod4=rpart(cliente~.,method = "class",data = train4) #Library adabag
+     pred4=predict(mod4,newdata=test4,type="class")
+     f4=eval(test4$cliente,as.numeric(pred4))
+     res4[i,]=f4$indicadores
+   }
+   round(res4,1)
+```
+grafico con las medias 
+```{r}
+matplot(res4,type = "l",lty = 1,ylim = c(1,100),ylab = "indicadores",xlab = "Repeticion")
+legend("topright",colnames(res4),col=1:5,lty = 1,bty = "n")
+medias=apply(res4,2,mean)
+abline(h=medias,col=1:5,lty=2)
+```
+
+```{r}
+   cortes=createFolds(1:nrow(base2),k=10) #library(caret)
+   res5=matrix(nrow = 10, ncol = 5)
+   colnames(res5)=c("e","FN","FP","AUC","KS")
+   for(i in 1:10){
+     train5=base2[-cortes[[i]],]
+     test5=base2[cortes[[i]],]
+     mod5=rpart(cliente~.,method = "class",data = train5)
+     pred5=predict(mod5,newdata=test5,type="class")
+     f5=eval(test5$cliente,as.numeric(pred5))
+     res5[i,]=f5$indicadores
+   }
+   round(res5,1)
+```
+
+```{r}
+matplot(res5,type = "l",lty = 1,ylim = c(1,100),ylab = "indicadores",xlab = "Repeticion")
+legend("topright",colnames(res5),col=1:5,lty = 1,bty = "n")
+medias=apply(res5,2,mean)
+abline(h=medias,col=1:5,lty=2)
+```
+
+```{r}
+medias6=matrix(nrow = 10,ncol = 5)
+for(j in 1:10){
+cortes=createFolds(1:nrow(base2),k=10) #library(caret)
+   res6=matrix(nrow = 10, ncol = 5)
+   colnames(res6)=c("e","FN","FP","AUC","KS")
+   for(i in 1:10){
+     train6=base2[-cortes[[i]],]
+     test6=base2[cortes[[i]],]
+     mod6=rpart(cliente~.,method = "class",data = train6)
+     pred6=predict(mod5,newdata=test6,type="class")
+     f6=eval(test6$cliente,as.numeric(pred6))
+     res6[i,]=f6$indicadores
+   }
+   medias6[j,]=apply(res6,2,mean)
+}
+colnames(medias6)=colnames(res6)
+round(medias6,1)
+```
+```{r}
+matplot(medias6,type = "l",lty = 1,ylim = c(1,100),ylab = "indicadores",xlab = "Repeticion")
+legend("topright",colnames(medias6),col=1:5,lty = 1,bty = "n")
+```
+
+

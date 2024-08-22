@@ -1,0 +1,105 @@
+---
+title: "Evaluacion practica 5"
+author:
+  - Cesar Peñaranda
+  - Keyla Zuñiga
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-06-27"
+---
+
+```{r include=FALSE}
+paquetes=c("CalvinBayes","tidyverse","rstan","brms","rjags")
+lapply(paquetes,library,character.only = T)
+rstan_options(auto_write = TRUE)
+```
+
+Resuelva las siguientes preguntas y adjunte sus soluciones y procedimientos de R en formato PDF únicamente. La evaluación se realiza en parejas y ambas personas deben enviar la solución vía Mediación Virtual. Cada ítem vale lo mismo.
+
+El conjunto de datos CalvinBayes::Seaweed (adaptado de Qian y Shen 2007) registra la rapidez con la que las algas marinas se regeneran en presencia de diferentes tipos de herbívoros. Se recopilaron datos de ocho zonas de marea diferentes de la costa de Oregon. Queremos predecir la cantidad de algas marinas a partir de dos predictores: el tipo de herbívoro y la zona de marea. Las zonas de marea están etiquetadas simplemente de la A a la H. El tipo de herbívoro era más complejo, con seis niveles: Sin herbívoros (None), solo peces pequeños (f), peces pequeños y grandes (fF), solo lapas (L), lapas y peces pequeños (Lf), lapas y peces pequeños y grandes (LfF). Nos gustaría conocer los efectos de los diferentes tipos de herbívoros, y también nos gustaría conocer las diferencias entre las distintas zonas.
+```{r}
+data=CalvinBayes::Seaweed
+```
+1. Haga un gráfico que coloque SeaweedAmt en el eje y, Grazer en el eje x, y use Zone para dividir en facetas. Use gf_jitter() para evitar la superposición de puntos. Ajuste la altura y el ancho a valores apropiados para que el gráfico sea fácilmente interpretable. Interprete.
+
+```{r}
+gf_point(SeaweedAmt ~ Grazer |~Zone, data = data, alpha = 0.5, size = 2) %>% 
+   gf_jitter(width = 0.4, height = 0, alpha = 0.3)%>%
+  gf_point(stat = "summary", color = "blue", size = 2, alpha = 0.5, fun = mean)
+```
+
+**Parece ser que el tipo de herbívoro es el factor que muestra diferencias más notables en la cantidad de algas marinas regeneradas. Aunque se observan algunas diferencias según la zona de marea (parece observarse una interaccion entre zona y tipo), el efecto del tipo de herbívoro es más destacado. En todas las zonas de marea, se observa un patrón consistente donde la cantidad de algas sigue el siguiente orden de mayor a menor: Sin herbívoros (None), solo peces pequeños (f), peces pequeños y grandes (fF), solo lapas (L), lapas y peces pequeños (Lf), y lapas y peces pequeños y grandes (LfF).**
+
+2. Ajuste un modelo bayesiano con ambos predictores y su interacción, asumiendo varianzas homogéneas en cada grupo. Comente la convergencia del modelo.
+```{r}
+sea_brm <- brm(SeaweedAmt ~ 0+Grazer*Zone, data = data, sample_prior = TRUE)
+summary(sea_brm)
+#plot(sea_brm)
+```
+**Mediante analisis grafico (No se presenta por temas de codigo) y por medio del resumen del modelo, se logra apreciar que el modelo presenta convergencia y esta no es despreciable ya que los Rhat son 1 en su mayoria**
+
+3. ¿Cuál es el efecto de los peces pequeños en todas las zonas? Responda a esta pregunta estableciendo los siguientes tres contrastes: ninguno versus solo peces pequeños; solo lapas versus lapas y peces pequeños; el promedio de ninguno y solo lapas versus el promedio de solo peces pequeños y lapas con peces pequeños. Discuta los resultados.
+
+**Dado que en la pregunta se establece el planteo de solo 3 contrastes por lo que para seguir la intruccion se decide hacerlo ignorando la interaccion ya que teniendo encuenta la interaccion serian mas de los 3 contrastes solicitados ya que se tendria que fijar cada zona y hacer los tres contrastes para cada una, para tener en cuenta la interaccion por lo que en total serian 21 contrastes y no los 3 solicitados**
+
+```{r}
+stanfit(sea_brm)
+```
+```{r}
+sea_post <- posterior(sea_brm)
+names(sea_post)
+```
+**Se decide hacer los contrastes con desigualdad ya que como se observa en el siguiente codigo al usar igualdad en los contrastes el Evid.Ratio da NA**
+
+```{r}
+# Contraste 1: Ninguno (None) versus solo peces pequeños (f)
+contraste_1 <- hypothesis(sea_brm, "GrazerNone=Grazerf")
+
+# Contraste 2: Solo lapas (L) versus lapas y peces pequeños (Lf)
+contraste_2 <- hypothesis(sea_brm, "GrazerLf=GrazerL")
+
+# Contraste 3: Promedio de ninguno (None) y solo lapas (L) versus promedio de solo peces pequeños (f) y lapas con peces pequeños (Lf)
+contraste_3 <- hypothesis(sea_brm, "(GrazerNone + GrazerL)/2 = (Grazerf+GrazerLf)/2")
+
+contraste_1
+contraste_2
+contraste_3
+```
+
+**Planteo grafico**
+```{r}
+plot_post(sea_post$b_GrazerNone-sea_post$b_Grazerf)
+plot_post(sea_post$b_GrazerLf-sea_post$b_GrazerL)
+plot_post((sea_post$b_GrazerNone + sea_post$b_GrazerL)/2 - (sea_post$b_Grazerf+sea_post$b_GrazerLf)/2)
+```
+**Contrastes mediante codigo hypothesis**
+```{r}
+# Contraste 1: Ninguno (None) versus solo peces pequeños (f)
+contraste_1 <- hypothesis(sea_brm, "GrazerNone-Grazerf > 0")
+
+# Contraste 2: Solo lapas (L) versus lapas y peces pequeños (Lf)
+contraste_2 <- hypothesis(sea_brm, "GrazerLf - GrazerL > 0")
+
+# Contraste 3: Promedio de ninguno (None) y solo lapas (L) versus promedio de solo peces pequeños (f) y lapas con peces pequeños (Lf)
+contraste_3 <- hypothesis(sea_brm, "(GrazerNone + GrazerL)/2 - (Grazerf+GrazerLf)/2 > 0")
+
+contraste_1
+contraste_2
+contraste_3
+```
+**Interpretacion: Para todas las desigualdades (de cada contraste) la razon de las probabilidades posteriores sea verdadera vs falsa es mayor que 1 pero no es mucho mayor a uno en todos los casos, por lo que respondiendo a la pregunta de  ¿Cuál es el efecto de los peces pequeños en todas las zonas? segun los contrastes establecidos el efecto de los peces pequeños en todas las zonas no parece ser una diferencia muy relevante en comparacion con otros posibles contrastes segun los tipos de herbivoros presentes en el experimento**
+
+esta es la razón de las probabilidades posteriores de que la desigualdad sea verdadera vs. falsa.
+4. ¿Cuál es el efecto de las lapas en todas las zonas? Defina y calcule un contraste que pueda responder esta pregunta.
+
+**Para averiguar este efecto de definen un contraste de las situaciones con y sin lapas**
+```{r}
+plot_post((sea_post$b_GrazerNone + sea_post$b_Grazerf+sea_post$b_GrazerfF)/3 - (sea_post$b_GrazerL+sea_post$b_GrazerLf+sea_post$b_GrazerLfF)/3)
+```
+
+```{r}
+contraste_4 <- hypothesis(sea_brm, "(GrazerNone+Grazerf+GrazerfF) / 3 - (GrazerL + GrazerLf + GrazerLfF) / 3>0")
+contraste_4
+```
+**Interpretacion: Para este caso la razon de las probabilidades posteriores sea verdadera vs falsa es mayor que 1 pero mucho mayor a uno, por lo que respondiendo a la pregunta de  ¿Cuál es el efecto de las lapas en todas las zonas? segun el contraste establecido el efecto de las lapas en todas las zonas parece ser una diferencia relevante en comparacion a su no presencia por lo que esta tipo de herbivoro parece tener un efecto sobre la cantidad de algas marinas**

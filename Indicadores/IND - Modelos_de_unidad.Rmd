@@ -1,0 +1,237 @@
+---
+title: "Modelos de Unidad"
+Author: "Alejandra Arias-Salazar"
+output: html_document
+date: "2024-05-24"
+---
+
+Cargamos el paquete emdi y dplyr.
+
+Emdi es un paquete para medir pobreza y desigualdad ademas de otras caracteristicas.
+
+```{r}
+library(emdi)
+library(dplyr)
+```
+
+
+### Ejemplo 1. Indicadores de pobreza y desigualdad para Austria
+
+Trabajamos ahora con los datos a nivel de individuo de la encuesta EUSICL Austria. El indicador de interés es la mediana del ingreso de los hogares por dominio. Los dominios de interés son estados (state) y distritos (district).
+
+
+```{r}
+data("eusilcA_pop") #Censo 
+data("eusilcA_smp") #encuesta
+```
+
++ Revise la cantidad de observaciones que tiene cada archivo, revise qué variables tiene el censo y qué variables la encuesta.
+```{r}
+nrow(eusilcA_pop)
+nrow(eusilcA_smp)
+names(eusilcA_pop)
+names(eusilcA_smp)
+```
+```{r}
+eusilcA_smp %>% group_by(state) %>% summarize(media=weighted.mean(eqIncome,w = weight))
+```
+```{r}
+eusilcA_pop %>% distinct(state)
+```
+```{r}
+eusilcA_pop %>% group_by(state) %>% summarize(total=n())
+eusilcA_smp %>% group_by(state) %>% summarize(total=n())
+```
+
++ Utilice la función "direct" para obtener estimaciones directas a nivel de estado (state). ¿Es necesario aplicar un modelo a nivel de individuo en este caso, si la tolerancia para el CV se define como 10%? Justifique
+
+```{r}
+estimacion_directa <- direct(
+  y = "eqIncome", smp_data = eusilcA_smp,
+  smp_domains = "state", weights = "weight", var = T) #threshold=x para cambiar la linea de pobreza
+summary(estimacion_directa)
+sqrt(estimacion_directa$MSE$Mean)/estimacion_directa$ind$Mean*100
+```
+**The threshold for the HCR and the PG is automatically set to 60% of the weighted median of the dependent variable and equals 10885.329 (este mensaje lo que me indica es donde esta definiendo la linea de pobreza)**
+
+
+tengo informacion en todos los dominios, osea no tengo infomacion que este fuera de la encuesta, ademas los coeficientes me dicen que la informacion es buena
+
+Yo aplico sae por dos razones:
+- porque no tengo info en algunos dominios
+- porque la precision dentro de los dominios es muy mala
+
+**No hace falta usar modelos porque tengo informacion en todos los dominios, y la informacion que tengo en los dominios es buena proque los CV son menores al 10% en todos los dominios**
+
++ Utilice la función "direct" para obtener estimaciones directas a nivel de distrito (district). ¿Es necesario aplicar un modelo a nivel de individuo en este caso, si la tolerancia para el CV se define como 10%? Justifique
+
+```{r}
+estimacion_directa2 <- direct(
+  y = "eqIncome", smp_data = eusilcA_smp,
+  smp_domains = "district", weights = "weight",var = T)
+sqrt(estimacion_directa2$MSE$Mean)/estimacion_directa2$ind$Mean*100>10
+table(sqrt(estimacion_directa2$MSE$Mean)/estimacion_directa2$ind$Mean*100>10)
+eusilcA_pop %>% distinct(district)
+eusilcA_smp %>% distinct(district)
+```
+**Tenemos dominios que no salieron en la muestra, y tenemos ademas varios dominios que tienen un coefciente de variacion deficiente segun el 10% que definimos.**
+
++ Defina un modelo en donde la variable de interés es "eqIncome", el dominio de interés "district" y como predictores todas las variables (excepto las geográficas). Para esto utilice la función "ebp", la cual requiere como mínimo:
+
+- fixed: donde especifica el modelo
+- pop_data: datos de censo a nivel de unidad
+- pop_domains: variable en "pop_data" que contiene el dominio de interés
+- smp_data: datos de encuesta a nivel de unidad
+- smp_domains: variable en "smp_data" que contiene el dominio de interés
+
+Haga este proceso con un modelo sin transformación (transformation="no"), con un modelo con transformación log y con box-cox. 
+
+#transformation = "log" / no / sin nada es box cox
+```{r}
+formula= eqIncome ~ gender + eqsize + cash + self_empl +
+    unempl_ben + age_ben + surv_ben + sick_ben + dis_ben + rent + fam_allow +
+    house_allow + cap_inv + tax_adj
+
+modelo_ebp1.boxcox <- ebp(
+  fixed = formula, pop_data = eusilcA_pop,
+  pop_domains = "district", smp_data = eusilcA_smp, smp_domains = "district",
+  na.rm = TRUE, MSE = TRUE)
+summary(modelo_ebp1.boxcox)
+table(sqrt(modelo_ebp1.boxcox$MSE$Mean)/modelo_ebp1.boxcox$ind$Mean*100>10)
+```
+```{r}
+#Modelo sin transformacion
+modelo_ebp.no <- ebp(
+  fixed = formula, pop_data = eusilcA_pop,
+  pop_domains = "district", smp_data = eusilcA_smp, smp_domains = "district",
+  na.rm = TRUE, MSE = TRUE, transformation ="no")
+summary(modelo_ebp.no)
+table(sqrt(modelo_ebp.no$MSE$Mean)/modelo_ebp.no$ind$Mean*100>10)
+```
+
+
+```{r}
+modelo_ebp.log <- ebp(
+  fixed =formula, pop_data = eusilcA_pop,
+  pop_domains = "district", smp_data = eusilcA_smp, smp_domains = "district",
+  na.rm = TRUE, MSE = TRUE, transformation = "log"
+) #con transformacion logaritmica
+summary(modelo_ebp.log)
+table(sqrt(modelo_ebp.log$MSE$Mean)/modelo_ebp.log$ind$Mean*100>10)
+```
+
++ Use "summary(modelo)" para revisar: 
+- ¿Cuántos dominios hay en la muestra y cuantos fuera?
+```{r}
+summary(modelo_ebp1.boxcox)
+plot(modelo_ebp1.boxcox)
+```
+**Out-of-sample domains:  24 dominios fuera**
+**ICC:  0.2086841** si esto es alto, quiere decir que tiene sentido usar efectos aleatorios(alto puede ser 10%)
+
+**Marginal_R2 0.6325942**
+**Conditional_R2 0.709266** son buenos por ser mayores a 0.5 podemos decir que son buenos
+
+```{r}
+summary(modelo_ebp.no)
+plot(modelo_ebp.no)
+```
+```{r}
+summary(modelo_ebp.log)
+plot(modelo_ebp.log)
+```
+
+- ¿Cómo se puede justificar la inclusión de efectos aleatorios?
+- Puede considerarse un "modelo adecuado"? porqué?
+- Se aplicó algún tipo de transformación? cuál?
+
+Compare las estimaciones directas para la mediana del ingreso de los hogares con las basadas en el modelo usando "compare_plot". Hay beneficios de haber usado el modelo? cuales? 
+
+```{r}
+compare_plot(modelo_ebp1.boxcox,estimacion_directa2)
+
+```
+
+
+Produzca mapas tanto de la estimación directa como de la estimación basada en el modelo. 
+```{r}
+load_shapeaustria()
+map_plot(estimacion_directa2,indicator ="Mean",CV = T,map_dom_id = "PB",map_obj = shape_austria_dis)
+```
+
+```{r}
+load_shapeaustria()
+map_plot(modelo_ebp1.boxcox,indicator ="Mean",CV = T,map_dom_id = "PB",map_obj = shape_austria_dis)
+```
+
+### Ejemplo 2. Indicadores de pobreza y desigualdad para Costa Rica
+
+
+1. Cargue los datos "datos_indicadores.RData".
+```{r}
+load("datos_indicadores.RData")
+```
+2. Revise las variables que tiene el censo y las que tiene la encuesta. En este caso, la variable de interés es "ipcn" (ingreso per capita neto del hogar). La variable que contiene la información del diseño muestral se llama "FACTOR". Los dominios de interés son cantones (CODCANTON)
+```{r}
+variables=list(censo=names(censo_anonim_sample),encuesta=names(HOGARES11_anonim_sample),ncenso=nrow(censo_anonim_sample),necuesta=nrow(HOGARES11_anonim_sample)) ; variables
+```
+```{r}
+censo_anonim_sample %>% group_by(CODCANTON) %>% summarize(total=n())
+HOGARES11_anonim_sample %>% group_by(CODCANTON) %>% summarize(total=n())
+```
+
+3. Haga la estimación directa y revise si es necesario aplicar modelos para áreas pequeñas. ¿Porqué?
+
+```{r}
+direct=direct(y="ipcn", smp_data =HOGARES11_anonim_sample, smp_domains = "CODCANTON",var=T,weights="FACTOR")
+table(sqrt(direct$MSE$Mean)/direct$ind$Mean*100<10)
+summary(sqrt(direct$MSE$Mean)/direct$ind$Mean)
+```
+- Es necesario  hay dominios ausentes en la muestra el CV es deficiente en la mayoria
+
+Aplique un modelo a nivel de unidad con una transformación log y los siguientes predictores
+
+
+- escolari_jefe 
+- edad_jefe
+- prop_ocupados_hogar 
+- TAMHOG 
+- SIST_AGUA_CALIENTE 
+- TANQUE_AGUA 
+- CARRO 
+- INTERNET
+
+```{r}
+formula=ipcn~escolari_jefe+edad_jefe+prop_ocupados_hogar+TAMHOG+SIST_AGUA_CALIENTE+TANQUE_AGUA+CARRO+INTERNET
+mod4=ebp(fixed = formula, pop_data = censo_anonim_sample,
+  pop_domains = "CODCANTON", smp_data = HOGARES11_anonim_sample, smp_domains = "CODCANTON",
+  na.rm = TRUE,B = 10,transformation = "log",MSE=T)
+summary(mod4)
+#Permite obtener ECM agregando el argumento "MSE=T", además, permite cambiar el umbral (linea de pobreza) para estimar indicadores de pobreza y desigualdad basados en ingresos "threshold". También se pueden hacer transformaciones "no", "log" o Box Cox. El numero de replicas bootstrap y Monte Carlo se pueden ajustar con los argumentos "B" y "L".
+```
+```{r}
+compare_plot(model=mod4, direct=direct,CV = T, MSE=F, indicator="Mean")
+```
+```{r}
+table(sqrt(mod4$MSE$Mean)/mod4$ind$Mean*100<10)
+```
+
+
+
+
+# Notas de clase
+Estimacion directa
+ Es calcular "y" por ejemplo (ingresos) con los datos de la encuesta, uso los datos de encuesta porque en el censo no estan, 
+ esto me da el ingreso del dominio 1,2,3, pero puede faltar uno de los dominios, cuanto es el ingreso del dominio de los que e  estan.
+
+
+indirectos
+ - basicos
+    sinteticas 
+    compuestas
+ - modelos 
+    area -> los datos estan agregados  -> fh() funcion
+    unidad -> datos a nivel de individuos(microdatos) -> ebp() funcion hay que poner el compare plot, la directa y ebp
+    
+    
+mis y van a venir de encuesta y las xs del censo (agregada)

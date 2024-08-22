@@ -1,0 +1,158 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-06-09"
+---
+
+
+Aquí tienes el texto corregido con las faltas ortográficas corregidas:
+
+---
+
+Se quiere predecir el tipo de cliente (bueno o malo) usando las siguientes variables que se analizan antes de otorgar un crédito:
+
+* edad: edad del cliente en años cumplidos.
+* antig_laboral: antigüedad laboral del cliente en años.
+* vivienda: tipo de vivienda (propia, padres, alquilada, contrato privado y otros).
+* estado_civil: estado civil del cliente (soltero, casado, separado, divorciado y viudo).
+* trabajo: tipo de trabajo del cliente (asalariado, independiente, temporal y otros).
+* ingreso: salario mensual del cliente.
+* gasto: gasto mensual del cliente.
+* deuda: deuda mensual del cliente.
+* ahorro: ahorro mensual del cliente.
+* patrimonio: valor del patrimonio del cliente.
+* porc_deuda: $\frac{deuda}{ingreso} * 100$
+* porc_ahorro: $\frac{ahorro}{ingreso} * 100$
+* porc_gasto: $\frac{gasto}{ingreso} * 100$
+* sobreendeudado: 1 si el cliente está sobreendeudado y 0 si no.
+* plazo: plazo del préstamo solicitado.
+* monto: monto del préstamo solicitado.
+* garantia: valor de la garantía.
+* montoGarantia: $\frac{monto}{garantia} * 100$
+
+## K VECINOS MÁS CERCANOS
+
+1. Cargue los paquetes `caret`, `DT`, `ROCR`, `class`, `kknn`, `e1071`, `adabag` y `randomForest`. Se utilizará la base2 que se encuentra en "Credit.Rdata".
+```{r}
+paquetes <- c("caret", "DT", "ROCR", "class", "kknn", "e1071", "adabag", "randomForest")
+lapply(paquetes, library, character.only = TRUE)
+```
+
+```{r}
+load("Credit.Rdata")
+```
+
+2. Procedimiento manual:
+
+a) Use los primeros 50 datos de base2 para entrenamiento y los siguientes 10 para validación. Forme las dos bases.
+```{r}
+#Para gower
+base2$sobreendeudado=as.factor(base2$sobreendeudado)
+train=base2[1:50,]
+test=base2[51:60,]
+
+base4=rbind(train,test)
+```
+
+```{r}
+#Para euclidea
+base2$sobreendeudado=as.factor(base2$sobreendeudado)
+train=base2[1:50,-c(4:6)]
+test=base2[51:60,-c(4:6)]
+
+base4=rbind(train,test)
+```
+
+b) Haga la clasificación manualmente usando 3 vecinos más cercanos de los 10 datos de validación, usando las distancias a los 50 datos de entrenamiento. Use la distancia euclidiana. La variable "cliente" indica el grupo y es la variable objetivo.
+```{r}
+#Para gower
+library(cluster)
+d <- as.matrix(daisy(base4[,-1], metric = "gower"))
+round(d,1)
+
+d2=d[51:60,1:50]
+```
+
+```{r}
+#Para Para euclidea
+d <- as.matrix(dist(base4[,-1]))
+round(d,1)
+
+d2=d[51:60,1:50]
+```
+
+```{r}
+#Para gower
+sort(d2[1,])
+train$cliente[order(d2[1,])][1:3]
+```
+
+```{r}
+#Para gower
+library(modeest)
+k=7
+pred=c()
+for(i in 1:10){
+pred[i]=mlv(train$cliente[order(d2[i,])][1:7])
+}
+pred
+```
+```{r}
+#Para euclidea
+library(modeest)
+k=3
+pred=c()
+for(i in 1:10){
+pred[i]=mlv(train$cliente[order(d2[i,])][1:3])
+}
+pred
+```
+c) Use la función `knn` de la librería `class` de la siguiente forma `knn(train, test, clase, k = 3)`, donde `train` son los datos de entrenamiento (sin la variable objetivo), `test` son los datos de validación y `clase` es la variable objetivo de la base de entrenamiento.
+```{r}
+#Para gower da error
+library(class)
+pred2=knn(train[,-1],test[,-1],train$cliente,k=3)
+```
+
+
+```{r}
+#Para euclidea 
+library(class)
+pred2=knn(train[,-1],test[,-1],train$cliente,k=3)
+```
+
+d) Verifique que la clasificación manual coincide con la realizada con la función `knn`.
+```{r}
+table(pred2,pred)
+```
+
+3. Validación entrenamiento/prueba:
+
+a) Escoja solo las variables numéricas de base2 y estandarícelas. Luego pegue la variable objetivo y llame a esta base3.
+```{r}
+numericas= sapply(base2,is.numeric)
+base.num=base2[,numericas]
+base22=as.data.frame(cbind(base2[,1],scale(base.num,scale =T)))
+```
+
+b) Haga una base de entrenamiento con el 80% de los datos y una base de prueba con el resto.
+```{r}
+m=sample(1:nrow(base22),nrow(base2)*0.8)
+train=base22[m,]
+test=base22[-m,]
+```
+
+c) Lleve a cabo la clasificación usando diferentes cantidades de vecinos y almacene el error de clasificación. Decida un número adecuado de vecinos.
+```{r}
+library(class)
+E=c()
+for(i in 1:15){
+pred3=knn(train[,-1],test[,-1],train$V1,k=i)
+confu= table(test$V1,pred3)
+error= 1-sum(diag(confu))/sum(confu)
+E[i]=error
+}
+
+plot(E,pch=18)
+```
+**Entre 9 y 11 vecinos**

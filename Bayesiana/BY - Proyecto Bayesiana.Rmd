@@ -1,0 +1,69 @@
+---
+title: "Proyecto Bayes"
+author: "Grupo 3"
+date: "2024-06-10"
+output: html_document
+---
+```{r}
+librerias=c("car","dplyr","lmtest","e1071","corrgram")
+suppressWarnings(invisible(lapply(librerias,library,character.only=T)))
+```
+
+
+# Base de datos: 
+```{r}
+load("baseP.Rdata")
+```
+
+
+```{r}
+#Seleccion de variables numericas
+df <- subset(baseP,select = c("edad","nota_dima","admision","carga_academica","nota_calculo","ponderado_anual","horas_estudio"))
+df$nota_dima <-car::recode(df$nota_dima, "NA=0")
+str(df)
+```
+```{r}
+corrgram(df, lower.panel=panel.pts,order=T)
+```
+
+# Análisis Descriptivo de las variables: 
+```{r}
+par(mfrow=c(2,3))
+plot(df$edad,df$nota_calculo)
+plot(df$ponderado_anual,df$nota_calculo)
+plot(df$carga_academica,df$nota_calculo)
+plot(df$nota_dima,df$nota_calculo)
+plot(df$horas_estudio,df$nota_calculo)
+```
+
+# Modelos: 
+```{r}
+mod1 <- lm(nota_calculo~.,data = df)
+summary(mod1)
+step(mod1)
+mod2=lm(nota_calculo~edad+admision+ponderado_anual,data=df)
+```
+
+# Análisis supuestos: 
+```{r}
+#Normalidad
+qqPlot(mod1$residuals)
+qqPlot(mod2$residuals) 
+#Normalidad, pruebas de hipotesis: 
+shapiro.test(mod1$residuals)
+shapiro.test(mod2$residuals)
+```
+
+```{r}
+#Multicolinealidad, VIF: 
+vif(mod1)
+```
+
+```{r}
+#Grafico de multicolinealidad
+avPlots(mod1)
+avPlots(mod2)
+```
+
+
+

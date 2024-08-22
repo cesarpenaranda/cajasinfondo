@@ -1,0 +1,190 @@
+---
+title: "Bayes "
+author: "josue"
+date: '2024-06-19'
+output: html_document
+---
+```{r}
+library(readxl)
+library(mosaic)
+library(bayesplot)
+library(R2jags)
+library(ggformula)
+library(rstan)
+library(dplyr)
+library(CalvinBayes)
+library(brms)
+library(coda)
+library(runjags)
+
+```
+
+```{r}
+load("baseP.Rdata")
+base=baseP
+#base <- base[,-c(1,4,6,7,10)]
+base$grupo<-as.factor(base$grupo)
+base$grupo <- as.integer(base$grupo)
+base$persona<- factor(c(1:72))
+```
+# Modelo frecuentista
+```{r}
+modelo=lm(nota_calculo ~  admision + ponderado_anual+horas_estudio*carga_academica, data = base)
+step(modelo)
+```
+
+# Modelo 1
+```{r}
+mod1 <- brm(nota_calculo ~  admision + 
+               ponderado_anual+horas_estudio*carga_academica, data = base)
+mod1_res<- stanfit(mod1)
+mod1_res
+```
+```{r}
+pairs(mod1)
+```
+## Prior mod1
+```{r}
+pp=prior_summary(mod1);pp
+```
+```{r}
+library(ggplot2)
+
+# Parámetros de la distribución t-Student
+nu <- 3      # Grados de libertad
+mu <- 0      # Media
+sigma <- 14.6 # Desviación estándar
+
+# Crear una secuencia de valores en el eje x para la distribución t-Student
+x_t <- seq(mu - 4 * sigma, mu + 4 * sigma, length.out = 1000)
+y_t <- dt((x_t - mu) / sigma, df = nu) / sigma
+
+y_norm <- dnorm(x_t, mean = mu, sd = 25)
+
+data_t <- data.frame(x = x_t, y = y_t)
+data_norm <- data.frame(x = x_t, y = y_norm)
+
+ggplot() +
+  geom_line(data = data_t, aes(x = x, y = y), color = "blue", linetype = "dashed", size = 1) +
+  geom_line(data = data_norm, aes(x = x, y = y), color = "red", size = 1) +
+  labs(title = "Comparación de Distribución t-Student y Normal",
+       x = "x",
+       y = "Densidad") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "red")) +
+  annotate("text", x = 40, y = max(y_t), label = "t-Student", color = "blue") +
+  annotate("text", x = -40, y = max(y_norm), label = "Normal", color = "red")
+
+```
+
+```{r}
+library(ggplot2)
+
+# Parámetros de la distribución t-Student
+nu <- 3      # Grados de libertad
+mu <- 85     # Media
+sigma <- 14.6 # Desviación estándar
+
+x_t <- seq(mu - 4 * sigma, mu + 4 * sigma, length.out = 1000)
+y_t <- dt((x_t - mu) / sigma, df = nu) / sigma
+
+# Ajustar parámetros para la distribución Gamma
+shape <- 20
+scale <- 4.25
+
+x_gamma <- seq(0, 200, length.out = 1000)
+y_gamma <- dgamma(x_gamma, shape = shape, scale = scale)
+
+
+data_t <- data.frame(x = x_t, y = y_t)
+data_gamma <- data.frame(x = x_gamma, y = y_gamma)
+
+ggplot() +
+  geom_line(data = data_t, aes(x = x, y = y), color = "blue", linetype = "dashed", size = 1) +
+  geom_line(data = data_gamma, aes(x = x, y = y), color = "red", size = 1) +
+  labs(title = "Comparación de Distribución t-Student y Gamma",
+       x = "x",
+       y = "Densidad") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "red")) +
+  annotate("text", x = 150, y = max(y_t), label = "t-Student", color = "blue") +
+  annotate("text", x = 50, y = max(y_gamma), label = "Gamma", color = "red")
+```
+
+# Modelo 2
+```{r}
+priors <- c(
+  set_prior("gamma(20,4)", class = "Intercept"),
+  set_prior("normal(0, 25)", class = "sigma")
+)
+
+mod2 <- brm(
+  formula = nota_calculo ~ admision + ponderado_anual + horas_estudio * carga_academica,
+  data = base,
+  prior = priors,
+  family = gaussian()
+)
+
+stanfit(mod2)
+```
+
+## Prior mod2
+```{r}
+p2=prior_summary(mod2);p2
+```
+# Comparacion de modelos segun prior
+```{r}
+library(loo)
+ori=loo(mod1);ori
+otro=loo(mod2);otro
+```
+# seleccion de variables mod 2
+```{r}
+mod1_1 <- brm(nota_calculo ~  admision + ponderado_anual+horas_estudio+carga_academica, data = base)
+mod1_sin<- stanfit(mod1_1)
+mod1_sin
+```
+```{r}
+loo(mod1_1)
+ori
+```
+```{r}
+mod1_2 <- brm(nota_calculo ~  admision + ponderado_anual+horas_estudio, data = base)
+mod1_car<- stanfit(mod1_2)
+mod1_car
+```
+```{r}
+car=loo(mod1_2);car
+ori
+```
+```{r}
+mod1_3 <- brm(nota_calculo ~  admision + ponderado_anual, data = base)
+mod1_ch<- stanfit(mod1_3)
+mod1_ch
+```
+```{r}
+nue=loo(mod1_3);nue
+ori
+```
+```{r}
+mod1_4 <- brm(nota_calculo ~  admision  , data = base)
+mod1_chp<- stanfit(mod1_4)
+mod1_chp
+```
+```{r}
+loo(mod1_4)
+ori
+```
+
+```{r}
+ori
+nue
+mod1_ch
+```
+Elijo el modelo nue es el que solo tiene ponderado y admision
+porque es el que tiene el loo mas bajo 499(solo baja 6 puntos con respecto al original pero ese es le que me da el step)
+
+
+
+
+

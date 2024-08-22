@@ -1,0 +1,304 @@
+---
+title: "Análisis de Datos"
+author: "Tu Nombre"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preparación de Datos
+
+```{r}
+# Cargar las bibliotecas necesarias
+library(dplyr)
+library(nnet)
+library(caret)
+library(DT)
+library(ROCR)
+library(class)
+library(kknn)
+library(e1071)
+library(plotly)
+library(adabag)
+library(randomForest)
+library(rpart)
+library(rattle)
+
+# Cargar los datos
+load("MUL - datos_finales.Rdata")
+datos_finales=MUL_datos_finales
+remove(MUL_datos_finales)
+# Renombrar el dataset y convertir la columna 'RR+' a factor
+datos_finales <- datos_finales %>%
+  rename(y = `RR+`)  
+datos_finales$y <- as.factor(datos_finales$y)
+datos_finales <- na.omit(datos_finales)
+```
+
+## División de Datos
+
+```{r}
+# Configurar el generador de números aleatorios y dividir el dataset en train y test
+RNGkind(sample.kind = "Rounding")
+set.seed(22122000)
+n <- nrow(datos_finales)
+m <- sample(1:n, n * 0.8)
+train <- datos_finales[m, c(7:29)]
+test <- datos_finales[-m, c(7:29)]
+```
+
+## Definir Fórmula
+
+```{r}
+# Definir la fórmula
+formula <- y ~ Tmax_max + Tmax_mean + Tmax_min + Tmin_max + Tmin_mean + Tmin_min + 
+  n_Tmax_Q3 + n_Tmin_Q1 + amplitude_max_max + amplitude_max_mean + amplitude_max_min + 
+  amplitude_min_max + amplitude_min_mean + amplitude_min_min + n_amplitude_P90 + 
+  n_amplitude_Q3 + precip_max_max + precip_max_mean + precip_max_min + precip_mean_mean
+```
+
+## Funcion eval / Curva Rog / Ks
+```{r}
+eval= function(y,pred){
+  confu=table(y,pred)
+  e=1-sum(diag(confu))/sum(confu)
+  falsos=1-diag(confu)/apply(confu,1,sum)
+  error= c(e,falsos)*100
+  auc=curvaROC(pred,y)$auc
+  KS=KS(pred,y)
+  indicadores=c(error,auc,KS)
+  names(indicadores)=c("e","FN","FP","AUC","KS")
+  return(list(Matriz=confu,indicadores=indicadores))
+}
+
+curvaROC = function(pred,y, grafico = F) {
+  predict = prediction(pred,y) 
+  auc = attributes(performance(predict,"auc"))$y.values[[1]]*100
+  des = performance(predict,"tpr","fpr")
+  p = NULL
+  if(grafico){
+    FP = attributes(des)$x.values[[1]]*100
+    PP = attributes(des)$y.values[[1]]*100
+    p <- plot_ly(x = FP, y = FP, name = 'Línea No Discrimina', 
+                 type = 'scatter', mode = 'lines',
+                 line = list(color = 'rgba(0, 0, 0, 1)', 
+                             width = 4, dash = 'dot'),
+                 fill = 'tozeroy',  fillcolor = 'rgba(0, 0, 0, 0)') %>% 
+      add_trace(y = PP, name = paste('Curva ROC (AUC = ', round(auc,3),')', sep =""), 
+                line = list(color = 'rgba(0, 0, 255, 1)', width = 4, 
+                dash = 'line'),  fillcolor = 'rgba(0, 0, 255, 0.2)')%>%
+      layout(title = "Curva ROC",
+             xaxis = list(title = "<b>Falsos Positivos (%)<b>"),
+             yaxis = list (title = "<b>Precisión Positiva (%)<b>"))
+  }
+  return(list(auc = auc,grafico = p))
+}
+KS = function(pred,y) {
+  predictions = prediction(pred,y) 
+  des = performance(predictions,"tpr","fpr")    
+  ks = max(attributes(des)$y.values[[1]]*100 - 
+           attributes(des)$x.values[[1]]*100)
+  return(ks)
+}
+```
+
+## Modelos Multinomiales
+
+```{r}
+# MULTINOMIAL
+mod1 <- multinom(formula, train)
+
+# Selección de umbral
+prob <- predict(mod1, test, type = "prob")
+probs <- seq(0.05, 1, 0.05)
+E <- matrix(NA, nrow = 20, ncol = 5)
+for (k in 1:20) {
+  pred <- ifelse(prob > probs[k], 1, 0)
+  E[k, ] <- eval(test$y, as.numeric(pred))$indicadores
+  print(k)
+}
+colnames(E) <- c("e", "FP", "FN", "AUC", "KS")
+rownames(E) <- probs
+
+# Predicción y evaluación
+pred <- predict(mod1, test)
+table(test$y, pred)
+eval(test$y, as.numeric(pred))
+
+# MULTINOMIAL STEP
+mod2 <- step(mod1)
+eval(test$y, as.numeric(predict(mod2, test)))
+```
+
+## K-Nearest Neighbors (KNN)
+
+```{r}
+# KNN
+datos_est <- data.frame(scale(datos_finales[, -c(1:7)]))
+datos_est$y <- datos_finales$y
+trainknn <- datos_est[m, ]
+testknn <- datos_est[-m, ]
+
+# Evaluación Euclidea
+E <- matrix(NA, nrow = 15, ncol = 5)
+for (k in 1:15) {
+  pred <- knn(trainknn[, -23], testknn[, -23], trainknn$y, k = k)
+  E[k, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+colnames(E) <- c("e", "FP", "FN", "AUC", "KS")
+
+# Mejor modelo KNN con k=9
+pred2 <- knn(trainknn[, -23], testknn[, -23], trainknn$y, k = 9)
+eval(testknn$y, as.numeric(pred2))
+```
+
+## Árboles de Decisión
+
+```{r}
+# Árboles de Decisión
+mod3 <- rpart(y ~ ., method = "class", data = train)
+pred3 <- predict(mod3, newdata = test, type = "class")
+eval(test$y, as.numeric(pred3))
+
+# Selección de cp
+E <- matrix(NA, nrow = 10, ncol = 5)
+cp <- c(0.0005, 0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.01, 0.02)
+for (k in 1:10) {
+  mod4 <- rpart(y ~ ., method = "class", data = train, minsplit = 560, minbucket = 235, cp = cp[k])
+  pred <- predict(mod4, newdata = test, type = "class")
+  E[k, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+colnames(E) <- c("e", "FP", "FN", "AUC", "KS")
+rownames(E) <- cp
+
+# Selección de maxdepth
+E <- matrix(NA, nrow = 15, ncol = 5)
+for (k in 1:15) {
+  mod4 <- rpart(y ~ ., method = "class", data = train, minsplit = 560, minbucket = 235, cp = 0.0005, maxdepth = k)
+  pred <- predict(mod4, newdata = test, type = "class")
+  E[k, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+colnames(E) <- c("e", "FP", "FN", "AUC", "KS")
+
+# Modelo final de Árboles de Decisión
+mod4 <- rpart(y ~ ., method = "class", data = train, minsplit = 560, minbucket = 235, cp = 0.0005, maxdepth = 9)
+pred4 <- predict(mod4, newdata = test, type = "class")
+eval(test$y, as.numeric(pred4))
+```
+
+## Bagging
+
+```{r}
+# Bagging
+mod5 <- bagging(y ~ ., data = train, mfinal = 10)
+pred5 <- predict(mod5, test)$class
+```
+
+## Random Forest
+
+```{r}
+# Random Forest
+mod6 <- randomForest(y ~ ., data = train, ntree = 500)
+pred6 <- predict(mod6, test)
+table(test$y, pred6)
+
+# Selección de variables aleatorias en Random Forest
+mtry <- seq(1, 22, 1)
+E <- matrix(NA, nrow = 22, ncol = 5)
+for (k in 1:22) {
+  mod6 <- randomForest(y ~ ., data = train, ntree = 500, mtry = mtry[k])
+  pred <- predict(mod6, test)
+  E[k, ] <- eval(test$y, as.numeric(pred))$indicadores
+  print(k)
+}
+colnames(E) <- c("e", "FP", "FN", "AUC", "KS")
+
+# Selección de número de árboles en Random Forest
+ntree <- seq(100, 1000, 100)
+E <- matrix(NA, nrow = 10, ncol = 5)
+for (k in 1:10) {
+  mod6 <- randomForest(y ~ ., data = train, ntree = ntree[k])
+  pred <- predict(mod6, test)
+  E[k, ] <- eval(test$y, as.numeric(pred))$indicadores
+  print(k)
+}
+colnames(E) <- c("e", "FP", "FN", "AUC", "KS")
+
+# Mejor modelo Random Forest con 100 árboles
+mod6 <- randomForest(y ~ ., data = train, ntree = 100)
+pred <- predict(mod6, test)
+eval(test$y, as.numeric(pred))
+```
+
+## Boosting
+
+```{r}
+# Boosting
+mod7 <- boosting(y ~ ., data = train, boos = TRUE, mfinal = 25)
+pred7 <- predict(mod7, test)$class
+```
+
+## Validación Cruzada
+
+```{r}
+# VALIDACIÓN CRUZADA
+
+# Preparar datos y crear cortes para validación cruzada
+datos_finales <- datos_finales[, c(7:29)]
+cortes <- createFolds(1:nrow(datos_finales))
+res <- matrix(nrow = 10, ncol = 5)
+colnames(res) <- c("e", "FN", "FP", "AUC", "KS")
+
+# Multinomial con validación cruzada
+for (i in 1:10) {
+  train <- datos_finales[-cortes[[i]], ]
+  test <- datos_finales[cortes[[i]], ]
+  mod1 <- multinom(formula, train)
+  prob <- predict(mod1, test, type = "prob")
+  pred <- ifelse(prob > 0.45, 1, 0)
+  res[i, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+mediares <- apply(res, 2, mean)
+
+# KNN con validación cruzada
+res <- matrix(nrow = 10, ncol = 5)
+colnames(res) <- c("e", "FN", "FP", "AUC", "KS")
+for (i in
+
+ 1:10) {
+  train <- datos_est[-cortes[[i]], ]
+  test <- datos_est[cortes[[i]], ]
+  pred <- knn(train[, -23], test[, -23], train$y, k = 9)
+  res[i, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+mediares <- apply(res, 2, mean)
+
+# Árboles de Decisión con validación cruzada
+res <- matrix(nrow = 10, ncol = 5)
+colnames(res) <- c("e", "FN", "FP", "AUC", "KS")
+for (i in 1:10) {
+  train <- datos_finales[-cortes[[i]], ]
+  test <- datos_finales[cortes[[i]], ]
+  mod <- rpart(y ~ ., method = "class", data = train, minsplit = 560, minbucket = 235, cp = 0.0005, maxdepth = 9)
+  pred <- predict(mod, newdata = test, type = "class")
+  res[i, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+mediares <- apply(res, 2, mean)
+
+# Random Forest con validación cruzada
+res <- matrix(nrow = 10, ncol = 5)
+colnames(res) <- c("e", "FN", "FP", "AUC", "KS")
+for (i in 1:10) {
+  train <- datos_finales[-cortes[[i]], ]
+  test <- datos_finales[cortes[[i]], ]
+  mod <- randomForest(y ~ ., data = train, ntree = 100)
+  pred <- predict(mod, test)
+  res[i, ] <- eval(test$y, as.numeric(pred))$indicadores
+}
+mediares <- apply(res, 2, mean)
+```
+
+

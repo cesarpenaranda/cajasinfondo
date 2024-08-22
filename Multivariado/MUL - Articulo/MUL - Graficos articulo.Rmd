@@ -1,0 +1,562 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-20"
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r}
+load("basemulti.km5.Rdata")
+clust.km5=Base_Multi$clust.km5
+```
+
+- **Caracterizacion**
+
+- **HORAS,INTERES,DESADIFI,CAPESTU**
+
+**HORAS**
+```{r}
+print(boxplot(Base_Multi$HORAS ~ clust.km5, xlab = "Grupo", ylab="Horas",main="clust.km5"))
+```
+
+**INTERES**
+
+```{r}
+frec.km5=table(Base_Multi$INTERES,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+```{r}
+# Definir los colores para los grupos
+group_colors <- c("#F79327", "#FFE15D", "#FFBC80", "#F55353")
+
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$INTERES, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Interés en nuevos estilos", "Grupo", "Porcentaje")
+
+# Renombrar y ordenar los niveles de 'Interés en nuevos estilos'
+df.km5$`Interés en nuevos estilos` <- factor(df.km5$`Interés en nuevos estilos`,
+                                             levels = c("1", "2", "3", "4"),
+                                             labels = c("Nada", "Poco", "Algo", "Muy"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+
+# Crear el gráfico
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Interés en nuevos estilos`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+
+```
+**DESADIFI**
+```{r}
+print(boxplot(Base_Multi$DESADIFI ~ clust.km5, xlab = "Grupo", ylab="motiva",main="clust.km5"))
+```
+
+```{r}
+frec.km5=table(Base_Multi$DESADIFI,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c( "#F79327", "#FFE15D", "#FFBC80","#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$DESADIFI, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Motivación", "Grupo", "Porcentaje")
+
+# Renombrar y ordenar los niveles de 'Motivación'
+df.km5$`Motivación` <- factor(df.km5$`Motivación`,
+                              levels = c("1", "2", "3", "4"),
+                              labels = c("Nada", "Poco", "Algo", "Muy"))
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Motivación`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+**CAPESTU**
+```{r}
+frec.km5=table(Base_Multi$CAPESTU,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+
+```{r}
+group_colors <- c( "#F79327", "#FFE15D", "#FFBC80","#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$CAPESTU, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Importancia de ritmo", "Grupo", "Porcentaje")
+# Renombrar y ordenar los niveles de 'Importancia de ritmo'
+df.km5$`Importancia de ritmo` <- factor(df.km5$`Importancia de ritmo`,
+                              levels = c("1", "2", "3", "4"),
+                              labels = c("Nada", "Poco", "Algo", "Muy"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Importancia de ritmo`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+- **INDGRUP,RECURADI,ESTIL,SOLPROF,TODOPAS**
+
+**INDGRUP**
+
+```{r}
+frec.km5=table(Base_Multi$INDGRUP,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+```{r}
+group_colors <- c( "#F79327","#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$INDGRUP, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Preferencia al aprender", "Grupo", "Porcentaje")
+df.km5$`Preferencia al aprender`=ifelse(df.km5$`Preferencia al aprender`=="1","En grupo", "Individual")
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Preferencia al aprender`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+
+**RECURADI**
+
+```{r}
+frec.km5=table(Base_Multi$RECURADI,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+```{r}
+group_colors <- c( "#F79327","#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$RECURADI, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Recursos adicionales", "Grupo", "Porcentaje")
+df.km5$`Recursos adicionales`=ifelse(df.km5$`Recursos adicionales`=="1","Si", "No")
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Recursos adicionales`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+
+
+**ESTIL**
+
+```{r}
+frec.km5=table(Base_Multi$ESTIL,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c( "#F79327","#F55353","#FFBC80")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$ESTIL, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Estilo de aprendizaje", "Grupo", "Porcentaje")
+df.km5$`Estilo de aprendizaje`=ifelse(df.km5$`Estilo de aprendizaje`=="1","Visual", ifelse(df.km5$`Estilo de aprendizaje`=="2","Kinestésico","Auditivo"))
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Estilo de aprendizaje`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+**SOLPROF**
+
+```{r}
+frec.km5=table(Base_Multi$SOLPROF,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c( "#F79327","#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$SOLPROF, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Cuando no entiende algo", "Grupo", "Porcentaje")
+df.km5$`Cuando no entiende algo`=ifelse(df.km5$`Cuando no entiende algo`=="1","Prefiere entenderlo solo","Prefiere preguntarle al profesor")
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Cuando no entiende algo`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+**TODOPAS**
+
+```{r}
+frec.km5=table(Base_Multi$TODOPAS,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c( "#F79327","#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$TODOPAS, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Manera de afrontar problemas", "Grupo", "Porcentaje")
+df.km5$`Manera de afrontar problemas`=ifelse(df.km5$`Manera de afrontar problemas`=="1","Paso a paso","Todo al mismo tiempo")
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Manera de afrontar problemas`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+- **EDAD,SEXO,AREA,ANIOCARR,INTEXTR,SATIS**
+
+**SEXO**
+```{r}
+frec.km5=table(Base_Multi$SEXO,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c("#B70404", "#F79327","#FFBC80")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$SEXO, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Sexo", "Grupo", "Porcentaje")
+# Renombrar y ordenar los niveles de 'Sexo'
+df.km5$`Sexo` <- factor(df.km5$`Sexo`,
+                              levels = c("1", "2", "3"),
+                              labels = c("Hombre","Mujer", "Prefiero no decirlo"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Sexo`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+**AREA**
+```{r}
+frec.km5=table(Base_Multi$AREA,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+```{r}
+group_colors <- c("#ECAC5D","#B70404", "#F79327","#DE834D", "#FFE15D", "#F55353", "#FFBC80","#CD113B")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$AREA, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Área", "Grupo", "Porcentaje")
+# Renombrar y ordenar los niveles de 'Área'
+df.km5$`Área` <- factor(df.km5$`Área`,
+                              levels = c("1","2","3","4","5","6","7","8"),
+                              labels = c("Ingeniería","Ciencias sociales", "Ciencias de la salud","Ciencias básicas","Educación","Artes","Ciencias económicas y empresariales","Letras"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Área`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+
+**ANIOCARR**
+
+```{r}
+frec.km5=table(Base_Multi$ANIOCARR,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c("#B70404", "#F79327", "#FFE15D", "#F55353", "#FFBC80")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$ANIOCARR, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Año de carrera", "Grupo", "Porcentaje")
+# Renombrar y ordenar los niveles de 'Año de carrera'
+df.km5$`Año de carrera` <- factor(df.km5$`Año de carrera`,
+                              levels = c("1", "2", "3", "4","5","6"),
+                              labels = c("Primero","Segundo", "Tercero", "Cuarto","Quinto","Sexto"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Año de carrera`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+**INTEXTR**
+```{r}
+frec.km5=table(Base_Multi$INTEXTR,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+```{r}
+group_colors <- c("#B70404", "#F79327", "#FFE15D", "#F55353")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$INTEXTR, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Personalidad", "Grupo", "Porcentaje")
+# Renombrar y ordenar los niveles de 'Personalidad'
+df.km5$`Personalidad` <- factor(df.km5$`Personalidad`,
+                              levels = c("1","3","2", "4"),
+                              labels = c("Extrovertido", "Más extrovertido que introvertido","Más introvertido que extrovertido","Introvertido"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Personalidad`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+**SATIS**
+
+```{r}
+frec.km5=table(Base_Multi$SATIS,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+
+```{r}
+group_colors <- c("#B70404", "#F55353","#F79327","#FFBC80", "#FFE15D")
+# Crear la tabla de frecuencias
+frec.km5 <- table(Base_Multi$SATIS, clust.km5)
+
+# Calcular la tabla de proporciones
+tab.km5 <- prop.table(frec.km5, 2) * 100
+
+# Convertir la tabla a un dataframe para ggplot2
+df.km5 <- as.data.frame(as.table(tab.km5))
+colnames(df.km5) <- c("Satisfacción", "Grupo", "Porcentaje")
+# Renombrar y ordenar los niveles de 'Satisfacción'
+df.km5$`Satisfacción` <- factor(df.km5$`Satisfacción`,
+                              levels = c("1","2","3", "4","5"),
+                              labels = c("Completamente insatisfecho", "Insatisfecho","Ni satisfecho ni insatisfecho","Satisfecho", "Completamente Satisfecho"))
+
+# Calcular las posiciones de las etiquetas
+df.km5 <- df.km5 %>%
+  group_by(Grupo) %>%
+  mutate(labels_pos = cumsum(Porcentaje) - 0.5 * Porcentaje)
+
+# Calcular las frecuencias totales por grupo
+frec_totales <- colSums(frec.km5)
+ggplot(df.km5, aes(x = as.factor(Grupo), y = Porcentaje, fill = `Satisfacción`)) +
+  geom_bar(stat = "identity") +
+  geom_text(data = data.frame(Grupo = names(frec_totales), Frecuencia = frec_totales),
+            aes(x = as.factor(Grupo), y = 105, label = Frecuencia), inherit.aes = FALSE) +
+  labs(title = "", x = "Grupo", y = "Porcentaje") +
+  theme_minimal() +
+  scale_fill_manual(values = group_colors)
+```
+
+

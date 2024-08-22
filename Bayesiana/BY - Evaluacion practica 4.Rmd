@@ -1,0 +1,89 @@
+---
+title: "Evaluacion practica 4"
+author:
+  - Cesar Peñaranda
+  - Keyla Zuñiga
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-06-02"
+---
+
+```{r}
+library(mvtnorm)
+library(LearnBayes)
+library(coda)
+library(lattice)
+```
+
+
+Resuelva las siguientes preguntas y adjunte sus soluciones y procedimientos de R en formato PDF únicamente. La evaluación se realiza en parejas y ambas personas deben enviar la solución vía Mediación Virtual. Cada ítem vale lo mismo.
+
+1. Ejercicio 4 del Albert, sección 5.13, ítem a).
+```{r}
+y=c(15,11,14,17,5,11,10,4,8,10,7,9,11,3,6,1,1,4)
+```
+
+```{r}
+#Para dar idea de los valores de B0 B1
+lm(y~c(1:18))
+```
+
+```{r}
+logpost <- function(beta, y) {
+  b0 <- beta[1]
+  b1 <- beta[2]
+  TO <- exp(b0 + b1 * 1:18)
+  sum(y * log(TO) - TO)
+}
+mycontour(logpost, c(2, 3.5, -0.16, 0),y, xlab = "beta0", ylab = "beta1")
+```
+
+2. Ejercicio 4 del Albert, sección 5.13, ítem b).
+
+
+```{r}
+fit <-laplace(logpost,c(2,-0.10),y)
+npar=list(m=fit$mode,v=fit$var)
+
+mu_sigma_post <- rmvnorm(1000,mean = npar$m,sigma = npar$v)
+
+mycontour(logpost, c(2, 3.5, -0.16, 0),y, xlab = "beta0", ylab = "beta1")
+points(mu_sigma_post,col="orange")
+
+cat("La media de B1 es:",round(mean(mu_sigma_post[,2]),4),"\n")
+cat("La desviacion estandar de B1 es:",round(sd(mu_sigma_post[,2]),4))
+```
+
+3. Ejercicio 6 del Albert, sección 6.13, ítem a).
+```{r}
+start = c(2,-0.10)
+fit = laplace(logpost,start,y)
+proposal = list(var = fit$var, scale =2)
+metro = rwmetrop(logpost,proposal,start,1000,y)
+cat("Tasa de aceptacion:",metro$accept,"\n")
+cat("Con metropoli la media de B1 es:",round(mean(metro$par[,2]),4),"\n")
+cat("Con metropoli la desviacion estandar de B1 es:",round(sd(metro$par[,2]),4))
+```
+
+
+```{r}
+dimnames(metro$par)[[2]]=c("B0","B1")
+mcmc = mcmc(metro$par[-c(1:100),]) 
+xyplot(mcmc,col="black")
+summary(mcmc)
+```
+
+
+4. Ejercicio 6 del Albert, sección 6.13, ítem c). Nota: en lugar de tres métodos, ustedes van a comparar solamente el método de Laplace y el de Metropolis-Hastings con caminata aleatoria.
+```{r}
+Laplace= c(NA,mean(mu_sigma_post[,2]),sd(mu_sigma_post[,2]))
+Metropoli=c(metro$accept,mean(metro$par[,2]),sd(metro$par[,2]))
+
+h=rbind(Laplace,Metropoli)
+colnames(h)=c("Acceptance Rate","mean B1","sd B1")
+round(h,4)
+```
+
+
+

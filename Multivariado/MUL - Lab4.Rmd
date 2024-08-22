@@ -1,0 +1,201 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-06-06"
+---
+
+### IRIS
+
+La base de datos Iris corresponde a Fisher o a Anderson y es famosa. Se cuenta con las medidas en centímetros de un conjunto de 150 flores: largo y ancho del sépalo, largo y ancho del pétalo. Se cuenta con 50 flores de cada una de 3 especies: Iris setosa, versicolor y virginica. Los datos se encuentran en el archivo `iris.Rdata`.
+```{r}
+load("iris.Rdata")
+```
+
+1. Haga una base con una muestra de 100 flores. Use `RNGkind(sample.kind = "Rounding")` y `set.seed(10)`. La base de aprendizaje se llamará `basea` y la de validación se llamará `basev`.
+```{r}
+RNGkind(sample.kind = "Rounding")
+set.seed(10)
+
+n=nrow(base)
+m=sample(1:n,100,replace = F)
+basea=base[m,]
+basev=base[-m,]
+```
+
+   - Observe cuántos datos quedaron en la base de entrenamiento de cada especie.
+```{r}
+table(basea$especie)
+```
+
+   - ¿Cómo podría hacerse para tener el mismo número de datos de cada especie en la base de entrenamiento? (no tiene que hacerlo)
+```{r}
+base$especie2=as.numeric(as.factor(base$especie))
+
+df=c()
+for(i in 1:3){
+  basei=base[base$especie2==i,]
+  m0=sample(1:50,33,replace = F)
+  base0=basei[m0,]
+  df=rbind(df,base0)
+}
+table(df$especie)
+```
+   
+
+2. Visualice los datos de la base de aprendizaje por pares de variables poniendo colores por especie.
+```{r}
+sp=unclass(basea$especie)
+pairs(basea[,-5],col=sp,pch=18)
+```
+
+   - Observe el comportamiento de los dos tipos para las diferentes combinaciones de variables. Vea en particular si algunas de ellas serían suficientes para clasificar.
+   
+**Los grupos estan bien definidos con los pares de variables por ejemplo, con ancho y largo del petalo se logra una agrupacion clara**
+
+3. Proponga un modelo logístico multinomial y estime sus parámetros usando la base de entrenamiento. Use la función `multinom` de la librería `nnet`.
+
+   - Observe si hubo convergencia. ¿Qué se entiende con que hay convergencia? ¿Qué se podría hacer si no hubiera convergencia?
+```{r}
+library(nnet)
+mod1=multinom(especie~.,basea)
+summary(mod1)
+mod1$convergence
+```
+
+
+**1 indica que convergio, si no convergia podemos cambiar el numero de iteraciones**
+
+   - Tome el individuo 32 de la base de validación. ¿Cuáles son los valores de las 4 variables para ese individuo? ¿A cuál especie pertenece?
+```{r}
+basev[32,]
+```
+   
+   - Obtenga la parte lineal para ese individuo en cada ecuación (versicolor y virginica).
+```{r}
+x=cbind(1,basev[32,1:4])
+coef.ver=summary(mod1)$coefficients[1,]
+coef.vir=summary(mod1)$coefficients[2,]
+
+PL1=sum(x*coef.ver)
+PL2=sum(x*coef.vir)
+```
+  
+   - Obtenga la probabilidad de pertenencia a la especie versicolor para ese individuo. Use 3 decimales.
+```{r}
+
+den=1+exp(PL1)+exp(PL2)
+
+round(exp(PL1)/den,3)
+```
+   
+   - Obtenga la probabilidad de pertenencia a la especie virginica para ese individuo. Use 3 decimales.
+```{r}
+round(exp(PL2)/den,3)
+```
+   - Obtenga la probabilidad de pertenencia a la especie setosa para ese individuo. Use 3 decimales.
+```{r}
+round(1/den,3)
+```
+
+   - Obtenga las probabilidades de pertenencia a cada especie para los individuos de la base de validación usando `predict`, indique `type="probs"` para obtener las probabilidades. Extraiga las probabilidades para el individuo 32 (use 3 decimales).
+   
+```{r}
+props=predict(mod1,basev,type="probs")
+round(props[32,],3)
+```
+   
+   
+   - Haga la tabla de confusión al clasificar los datos de la base de validación. Para obtener la clasificación use `predict` pero elimine `type="probs"`.
+```{r}
+sp2=predict(mod1,basev)
+table(basev$especie,sp2)
+```
+   
+   - Realice el proceso de selección de variables hacia atrás. ¿Cuál resultado es más conveniente? Use la función `step(mod1)` que usa el criterio de Akaike.
+```{r}
+step(mod1)
+```
+
+   - Obtenga la tabla de confusión y compárela con la obtenida con el modelo completo. Para almacenar el resultado del step en `mod2`, haga `mod2 = step(mod1)`.
+
+   
+```{r}
+mod2=step(mod1)
+summary(mod1)
+```
+
+
+
+```{r}
+
+table(basev$especie,predict(mod1,basev))
+
+table(basev$especie,predict(mod2,basev))
+
+```
+
+
+### SECUNDARIA
+
+El conjunto de datos contiene variables sobre 200 estudiantes. Los estudiantes que ingresan a la escuela secundaria hacen la elección de un programa entre tres posibles: general, vocacional y académico. Su elección puede ser modelada usando algunas variables predictoras. A continuación, se describen las variables:
+
+- **género**: género del estudiante (femenino, masculino).
+- **nivelsocio**: estrato socioeconómico (bajo, medio, alto).
+- **tipo**: tipo de escuela (privada, pública).
+- **programa**: tipo de programa elegido por el estudiante (general, vocacional, académico).
+- **lectura, escritura, mate, ciencias y sociales** son variables continuas que representan los puntajes en cada una de esas materias. 
+
+Los datos se encuentran en el archivo `secundaria.Rdata`.
+```{r}
+load("secundaria.Rdata")
+```
+
+1. Cargue la base y observe cuántos estudiantes hay de cada programa.
+```{r}
+str(base)
+table(base$programa)
+
+```
+
+2. Corra un modelo de regresión logística multinomial para el programa como respuesta. Use como predictores el género, el estrato socioeconómico y el tipo de colegio.
+```{r}
+library(nnet)
+mod1=multinom(programa~genero+nivelsocio+tipo,base)
+summary(mod1)
+mod1$convergence
+```
+
+   - Observe cuántos individuos hay en cada combinación de la variable respuesta y cada predictor.
+```{r}
+table(base$programa,base$genero)
+table(base$programa,base$nivelsocio)
+table(base$programa,base$tipo)
+```
+   
+   - Note que solo hay dos estudiantes de escuela privada en vocacional. Busque esos estudiantes y elimínelos de la base.
+```{r}
+
+base[base$tipo == "privada" & base$programa == "vocacional", ]
+base2=base[-c(98,116),]
+```
+   
+   - Corra nuevamente el modelo usando la base donde se eliminaron esos dos estudiantes.
+```{r}
+mod2=multinom(programa~genero+nivelsocio+tipo,base2)
+summary(mod2)
+mod2$convergence
+```
+
+   - Compare los errores estándar de los dos modelos.
+   
+   
+```{r}
+m1=summary(mod1)$standard.errors
+m2=summary(mod2)$standard.errors
+rbind(m1,m2)
+round(m1-m2,4)
+```
+
+**En la ecuacion vocacional hay un aumento sustancial de los errores del intercepto y del coeficiente tipo publica**
+   
+   

@@ -1,0 +1,168 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-19"
+---
+
+```{r}
+load("basemulti.km5.Rdata")
+clust.km5=Base_Multi$clust.km5
+```
+
+- **Caracterizacion**
+
+- **HORAS,INTERES,DESADIFI,CAPESTU**
+
+**HORAS**
+```{r}
+print(boxplot(Base_Multi$HORAS ~ clust.km5, xlab = "Grupo", ylab="Horas",main="clust.km5"))
+```
+
+**INTERES**
+```{r}
+print(boxplot(Base_Multi$INTERES ~ clust.km5, xlab = "Grupo", ylab="interes",main="clust.km5"))
+```
+
+```{r}
+frec.km5=table(Base_Multi$INTERES,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**DESADIFI**
+```{r}
+print(boxplot(Base_Multi$DESADIFI ~ clust.km5, xlab = "Grupo", ylab="motiva",main="clust.km5"))
+```
+
+```{r}
+frec.km5=table(Base_Multi$DESADIFI,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**CAPESTU**
+```{r}
+print(boxplot(Base_Multi$CAPESTU ~ clust.km5, xlab = "Grupo", ylab="ritmo",main="clust.km5"))
+```
+
+```{r}
+frec.km5=table(Base_Multi$CAPESTU,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+- **INDGRUP,RECURADI,ESTIL,SOLPROF,TODOPAS**
+
+**INDGRUP**
+
+```{r}
+frec.km5=table(Base_Multi$INDGRUP,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**RECURADI**
+
+```{r}
+frec.km5=table(Base_Multi$RECURADI,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**ESTIL**
+
+```{r}
+frec.km5=table(Base_Multi$ESTIL,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**SOLPROF**
+
+```{r}
+frec.km5=table(Base_Multi$SOLPROF,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**TODOPAS**
+
+```{r}
+frec.km5=table(Base_Multi$TODOPAS,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+- **EDAD,SEXO,AREA,ANIOCARR,INTEXTR,SATIS**
+
+**EDAD**
+```{r}
+print(boxplot(Base_Multi$EDAD ~ clust.km5, xlab = "Grupo", ylab="Edad",main="clust.km5"))
+```
+
+**SEXO**
+```{r}
+frec.km5=table(Base_Multi$SEXO,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**AREA**
+
+```{r}
+frec.km5=table(Base_Multi$AREA,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**ANIOCARR**
+
+```{r}
+frec.km5=table(Base_Multi$ANIOCARR,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**INTEXTR**
+```{r}
+frec.km5=table(Base_Multi$INTEXTR,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+**SATIS**
+
+```{r}
+frec.km5=table(Base_Multi$SATIS,clust.km5) ;tab.km5=prop.table(frec.km5,2)
+barra.km5=barplot(tab.km5*100,legend=T,main="clust.km5")
+text(barra.km5, y = colSums(tab.km5 * 100) + 5, labels = table(clust.km5), xpd = TRUE)
+labels_pos.km5 = apply(tab.km5 * 100, 2, cumsum) - 0.5 * tab.km5 * 100
+text(rep(barra.km5, each = nrow(tab.km5)), labels_pos.km5, labels = round(tab.km5 * 100, 1), col = "black", cex = 0.8)
+```
+
+
+
+

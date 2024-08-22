@@ -1,0 +1,80 @@
+---
+title: "Script para III Parcial"
+author: "Alejandra Arias-Salazar"
+date: "2024-06-28"
+output: html_document
+---
+
+Librerías
+```{r}
+library(emdi)
+library(dplyr)
+library(sf)
+```
+
+
+Funciones 
+
+
+```{r}
+combine_data(
+  pop_data = ,
+  pop_domains = "",
+  smp_data = ,
+  smp_domains = ""
+)
+```
+
+```{r}
+compare_plot(model=, direct=,CV = F, MSE=F, indicator="")
+#Al aplicar el modelo FH no se necesita el argumento "direct" ni "indicator".
+```
+
+
+```{r}
+direct(y="", smp_data = , smp_domains = "")
+#Permite agregar argumento "weights" y calcular varianzas "var". Se puede modificar el umbral para el cálculo de indicadores basados en ingresos con el argumento "threshold".
+```
+
+```{r}
+ebp(fixed = y ~ x, pop_data = ,
+  pop_domains = "", smp_data = , smp_domains = "",
+  na.rm = TRUE)
+
+#Permite obtener ECM agregando el argumento "MSE=T", además, permite cambiar el umbral (linea de pobreza) para estimar indicadores de pobreza y desigualdad basados en ingresos "threshold". También se pueden hacer transformaciones "no", "log" o Box Cox. El numero de replicas bootstrap y Monte Carlo se pueden ajustar con los argumentos "B" y "L".
+```
+
+
+```{r}
+fh(fixed = Y ~ X, vardir = "", combined_data = , domains = "", method = "ml")
+#ES posible agregar el argumento MSE=T para obtener estimaciones de ECM.
+```
+
+
+
+```{r}
+plot()
+```
+
+```{r}
+step()
+```
+
+
+
+```{r}
+st_read(".shp")
+```
+
+```{r}
+map_plot(object=, MSE=F, CV=F, map_obj = , 
+                map_dom_id = "")
+
+#map_obj es el argumento en donde se especifica el nombre del shapefile
+#map_dom_id= especifica el nombre de la variable que contiene los dominios en el shapefile
+#si se aplica un fh no se necesita agregar indicator =""
+#si se aplica un ebp o si se hace una estimación directa si se puede agregar el argumento indicator=""
+
+```
+
+

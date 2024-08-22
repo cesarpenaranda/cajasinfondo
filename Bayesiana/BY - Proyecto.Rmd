@@ -1,0 +1,204 @@
+---
+title: "Bayes"
+author: "Josue"
+date: '2024-06-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Cargar todas las bibliotecas necesarias
+library(readxl)
+library(mosaic)
+library(bayesplot)
+library(R2jags)
+library(ggformula)
+library(rstan)
+library(dplyr)
+library(CalvinBayes)
+library(brms)
+library(coda)
+library(runjags)
+```
+
+```{r load-data}
+# Cargar los datos desde un archivo .Rdata
+load("baseP.Rdata")
+base <- baseP
+
+# Convertir 'grupo' a factor y luego a entero
+base$grupo <- as.factor(base$grupo)
+base$grupo <- as.integer(base$grupo)
+
+# Crear un factor para 'persona'
+base$persona <- factor(1:72)
+```
+
+# Modelo Frecuentista
+```{r modelo-frecuentista}
+# Ajustar un modelo lineal usando lm
+modelo <- lm(nota_calculo ~ admision + ponderado_anual + horas_estudio * carga_academica, data = base)
+step(modelo)
+```
+
+# Modelo Bayesiano 1
+```{r modelo-1}
+# Ajustar un modelo Bayesiano usando brm
+mod1 <- brm(nota_calculo ~ admision + ponderado_anual + horas_estudio * carga_academica, data = base)
+mod1_res <- stanfit(mod1)
+mod1_res
+```
+
+```{r pairs-plot}
+# Graficar las relaciones por pares entre los parámetros del modelo 1
+pairs(mod1)
+```
+
+## Priors del Modelo 1
+```{r prior-mod1}
+# Resumen de los priors del modelo 1
+pp <- prior_summary(mod1)
+pp
+```
+
+```{r plot-t-student-vs-normal}
+# Comparación de distribuciones t-Student y Normal
+library(ggplot2)
+
+# Parámetros de la distribución t-Student
+nu <- 3
+mu <- 0
+sigma <- 14.6
+
+# Crear una secuencia de valores en el eje x para la distribución t-Student
+x_t <- seq(mu - 4 * sigma, mu + 4 * sigma, length.out = 1000)
+y_t <- dt((x_t - mu) / sigma, df = nu) / sigma
+
+# Distribución Normal
+y_norm <- dnorm(x_t, mean = mu, sd = 25)
+
+# Crear dataframes para las distribuciones
+data_t <- data.frame(x = x_t, y = y_t)
+data_norm <- data.frame(x = x_t, y = y_norm)
+
+# Graficar las distribuciones
+ggplot() +
+  geom_line(data = data_t, aes(x = x, y = y), color = "blue", linetype = "dashed", size = 1) +
+  geom_line(data = data_norm, aes(x = x, y = y), color = "red", size = 1) +
+  labs(title = "Comparación de Distribución t-Student y Normal",
+       x = "x",
+       y = "Densidad") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "red")) +
+  annotate("text", x = 40, y = max(y_t), label = "t-Student", color = "blue") +
+  annotate("text", x = -40, y = max(y_norm), label = "Normal", color = "red")
+```
+
+```{r plot-t-student-vs-gamma}
+# Comparación de distribuciones t-Student y Gamma
+library(ggplot2)
+
+# Parámetros de la distribución t-Student
+nu <- 3
+mu <- 85
+sigma <- 14.6
+
+# Crear una secuencia de valores en el eje x para la distribución t-Student
+x_t <- seq(mu - 4 * sigma, mu + 4 * sigma, length.out = 1000)
+y_t <- dt((x_t - mu) / sigma, df = nu) / sigma
+
+# Ajustar parámetros para la distribución Gamma
+shape <- 20
+scale <- 4.25
+
+# Crear una secuencia de valores en el eje x para la distribución Gamma
+x_gamma <- seq(0, 200, length.out = 1000)
+y_gamma <- dgamma(x_gamma, shape = shape, scale = scale)
+
+# Crear dataframes para las distribuciones
+data_t <- data.frame(x = x_t, y = y_t)
+data_gamma <- data.frame(x = x_gamma, y = y_gamma)
+
+# Graficar las distribuciones
+ggplot() +
+  geom_line(data = data_t, aes(x = x, y = y), color = "blue", linetype = "dashed", size = 1) +
+  geom_line(data = data_gamma, aes(x = x, y = y), color = "red", size = 1) +
+  labs(title = "Comparación de Distribución t-Student y Gamma",
+       x = "x",
+       y = "Densidad") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "red")) +
+  annotate("text", x = 150, y = max(y_t), label = "t-Student", color = "blue") +
+  annotate("text", x = 50, y = max(y_gamma), label = "Gamma", color = "red")
+```
+
+# Modelo Bayesiano 2
+```{r modelo-2}
+# Definir priors
+priors <- c(
+  set_prior("gamma(20,4)", class = "Intercept"),
+  set_prior("normal(0, 25)", class = "sigma")
+)
+
+# Ajustar un modelo Bayesiano usando brm con los priors definidos
+mod2 <- brm(
+  formula = nota_calculo ~ admision + ponderado_anual + horas_estudio * carga_academica,
+  data = base,
+  prior = priors,
+  family = gaussian()
+)
+
+stanfit(mod2)
+```
+
+## Priors del Modelo 2
+```{r prior-mod2}
+# Resumen de los priors del modelo 2
+p2 <- prior_summary(mod2)
+p2
+```
+
+# Comparación de Modelos según Prior
+```{r comparacion-modelos}
+# Comparar modelos usando loo
+library(loo)
+ori <- loo(mod1)
+ori
+otro <- loo(mod2)
+otro
+```
+
+# Selección de Variables Modelo 2
+```{r seleccion-mod2}
+# Ajustar modelos con diferentes combinaciones de variables
+mod1_1 <- brm(nota_calculo ~ admision + ponderado_anual + horas_estudio + carga_academica, data = base)
+mod1_sin <- stanfit(mod1_1)
+mod1_sin
+
+mod1_2 <- brm(nota_calculo ~ admision + ponderado_anual + horas_estudio, data = base)
+mod1_car <- stanfit(mod1_2)
+mod1_car
+
+mod1_3 <- brm(nota_calculo ~ admision + ponderado_anual, data = base)
+mod1_ch <- stanfit(mod1_3)
+mod1_ch
+
+mod1_4 <- brm(nota_calculo ~ admision, data = base)
+mod1_chp <- stanfit(mod1_4)
+mod1_chp
+```
+
+```{r loo-mod2}
+# Comparar modelos usando loo
+car <- loo(mod1_2)
+car
+
+nue <- loo(mod1_3)
+nue
+
+# Mostrar resultados
+ori
+nue
+mod1_ch
+```
+
+Elijo el modelo `nue` que solo tiene ponderado y admision porque es el que tiene el loo más bajo (499, solo baja 6 puntos con respecto al original, pero ese es el que me da el step).

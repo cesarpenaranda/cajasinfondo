@@ -1,0 +1,256 @@
+---
+title: "Práctica III Parcial: preguntas"
+author: "Alejandra Arias-Salazar"
+output: html_document
+---
+```{r}
+library(emdi)
+library(dplyr)
+library(sf)
+library(readxl)
+```
+
+### Problema 1. 
+
+Cargue los datos "datLCS" y "auxLCS". Estos son datos de información laboral en provincias en España. El Instituto Nacional de España define como estadísticas de calidad, aquellas con coeficientes de variación menores a 20%.
+
++ datLCS contiene: "dom" el dominio de interés, "sex" el sexo de la persona, "house" el id de la vivienda, "w" el peso muestra, "income" el ingreso, "lab" la categoría laboral. 
+
++ auxLCS contiene: "dom" el dominio de interés, "TOT" el total de unidades por dominio,  "Mwork" la proporción de la población que trabaja,   "Mnowork" la proporción de la población que no trabaja, "Minact" es la proporción de la población que recibe más del salario mínimo,  "ss" es la proporción de la población sin seguro social.  
+
+
+Hay dos indicadores que se requieren a nivel de dominio "dom": ingreso promedio (Mean) y el Gini, que es una medida de desigualdad. Para esto, se define como umbral (linea de pobreza) 6500 euros.
+
+```{r}
+datLCS <- read.delim2("datLCS.txt")
+
+auxLCS <- read.delim2("auxLCS.txt")
+```
+
+1.1. Para el ingreso promedio: 
+a. es necesario aplicar un modelo de estimaciones en áreas pequeñas? 
+b. Si su respuesta en a. es "si",qué tipo(s) de modelo(s) se podrían aplicar? Explique pero no aplique ningún modelo. 
+
+**Para a)**
+```{r}
+n_distinct(auxLCS$dom)
+n_distinct(datLCS$dom)
+```
+
+```{r}
+sort(unique(auxLCS$dom))
+sort(unique(datLCS$dom))
+```
+
+```{r}
+(variable=list(aux=names(auxLCS),dat=names(datLCS)))
+```
+
+```{r}
+directa1=direct(y="income", smp_data =datLCS , smp_domains = "dom",threshold = 6500,var = T,weights = "w")
+CV=sqrt(directa1$MSE$Mean)/(directa1$ind$Mean)*100 ; CV
+table(CV>20)
+```
+
+*SAE se aplica porque no hay dominios representados o porque el CV no es el deseado*
+- En este caso todos los dominios estan representados en la muestra
+- CV respetan lo deseado son menores al 20% 
+
+1.2. Para el Gini: 
+```{r}
+auxLCS %>% group_by(dom) %>% summarize(total = n())
+datLCS %>% group_by(dom) %>% summarize(total = n())
+```
+a. es necesario aplicar un modelo de estimaciones en áreas pequeñas? 
+b. Si su respuesta es "si",qué tipo(s) de modelo(s) se podrían aplicar? Explique pero no aplique ningún modelo. 
+
+```{r}
+table(sqrt(directa1$MSE$Gini)/directa1$ind$Gini*100<20)
+```
+**Para el coeficiente de gini aunque tenemos los dominios de interes encontramos que hay CV que no cumplen el estandar solicitado**
+
+**Ademas los datos de la encuesta estan agregados, mientras que los del censo estan a nivel individuo, por lo que el modelo que podemos aplicar es un modelo a nivel de area por dominio**
+
+
+### Pregunta 2. 
+
+Trabaje con los archivos preg2_a y preg2_b. Estos son datos de Costa Rica a nivel cantonal. En este caso, el indicador de interés son los años de escolaridad promedio de los jefes de hogar a nivel cantonal.
+```{r}
+preg2_a <- read_excel("preg2_a.xlsx")
+preg2_b <- read_excel("preg2_b.xlsx")
+preg2_a<-as.data.frame(preg2_a)
+preg2_b<-as.data.frame(preg2_b)
+```
+
+```{r}
+preg2_a %>% group_by(CODCANTON) %>% summarize(total=n())
+preg2_b %>% group_by(CODCANTON) %>% summarize(total=n())
+```
+
+```{r}
+(variables2=list(preg2_a=names(preg2_a),preg2_b=names(preg2_b),npreg2_a=nrow(preg2_a),preg2_b=nrow(preg2_b)))
+
+unique(preg2_a$CODCANTON)
+unique(preg2_b$CODCANTON)
+
+
+```
+
+1. Ajuste un modelo de estimaciones para áreas pequeñas con todas los predictores posibles. No utilice ninguna transformación. 
+```{r}
+combine=combine_data(
+  pop_data = preg2_b,
+  pop_domains = "CODCANTON",
+  smp_data = preg2_a,
+  smp_domains = "CODCANTON"
+)
+```
+
+```{r}
+formula= escolari_jefe~TAMHOG+edad_jefe+IPM_V1+IPM_V4+IPM_S2+IPM_P1
+mod1=fh(fixed = formula, vardir = "se", combined_data =combine , domains = "CODCANTON", method = "ml",MSE=T)
+#ES posible agregar el argumento MSE=T para obtener estimaciones de ECM.
+```
+
+1.1. Indique los requerimientos de datos necesarios para usar este tipo de modelos.
+**Para estos modelos es necesario:**
+* El cumplimiento de supuestos 
+* Datos de encuesta con el SE
+* Datos de censo/registro 
+* Ambos datos deben tener indicado el dominio 
+
+2. Haga una selección de variables usando AIC. 
+```{r}
+step(mod1)
+```
+
+```{r}
+formula2=escolari_jefe ~ IPM_P1
+mod2=fh(fixed = formula2, vardir = "se", combined_data =combine , domains = "CODCANTON", method = "ml",MSE=T)
+```
+
+3. Compare visualmente el modelo que resultó del paso 2 con las estimaciones directas en terminos de la estimación puntual y CVs. 
+```{r}
+compare_plot(model=mod2,CV = T)
+```
+
+
+3.1. Dé el código del cantón con mayor escolaridad promedio de los jefes de hogar, según el modelo.
+```{r}
+View(mod2$ind)
+```
+- El codigo canton con la mayor escolaridad promedio es COD=402
+
+3.2. Si el umbral es un CV de 20%, hay cantones que no cumplen ese requisito según las estimaciones basadas en el modelo?
+```{r}
+table(sqrt(mod2$MSE$FH)/mod2$ind$FH*100<20)
+```
+- Si hay cantones que no cumplen con el requisito
+
+4. Produzca los mapas para el indicador de interés. 
+```{r}
+cantones<-st_read("shp_CR_2008/cantones2008ctm05.shp")
+```
+
+```{r}
+map_plot(object=mod2, MSE=F, CV=T, map_obj =cantones , 
+                map_dom_id = "CODNUM", indicator = "Mean")
+#map_obj es el argumento en donde se especifica el nombre del shapefile
+#map_dom_id= especifica el nombre de la variable que contiene los dominios en el shapefile
+#si se aplica un fh no se necesita agregar indicator =""
+#si se aplica un ebp o si se hace una estimación directa si se puede agregar el argumento indicator=""
+```
+
+
+### Pregunta 3.
+
+Utilice los datos de EUSILC Austria que se encuentran en los archivos "preg_3a" y "preg_3b". El indicador de interés es el coeficiente Gini, que es un indicador de desigualdad de ingresos. Este coeficiente varía entre 0 y 1, en donde 1 implique completa desigualdad de ingresos. Los dominios de interés son distritos (district). El Instituto Nacional de Estadística de Austria publica únicamente resultados de sus estimaciones, si los coeficientes de variación son menores o iguales a 20%. Para todos los procedimientos utilice únicamente 10 réplicas.  
+```{r}
+preg_3a <- read_excel("preg_3a.xlsx")
+preg_3b <- read_excel("preg_3b.xlsx")
+
+preg_3a <- as.data.frame(preg_3a)
+preg_3b <- as.data.frame(preg_3b)
+
+variables3 <- list(preg_3a=names(preg_3a),preg_3b=names(preg_3b),na=nrow(preg_3a),nb=nrow(preg_3b))
+variables3
+```
+
+```{r}
+n_distinct(preg_3a$district)
+n_distinct(preg_3b$district)
+```
+
+```{r}
+preg_3a %>% group_by(district) %>% summarize(total=n())
+preg_3b %>% group_by(district) %>% summarize(total=n())
+```
+
+1. Para este indicador, es necesario utilizar modelos de estimación para áreas pequeñas? Justifique.
+```{r}
+direct3=direct(y="eqIncome", smp_data =preg_3a , smp_domains = "district",weights ="weight" ,var = T)
+summary(direct3)
+table(sqrt(direct3$MSE$Gini)/direct3$ind$Gini*100>20)
+```
+
+**Es necesesario por dos razones**
+- CV deficientes en algunos dominios 
+- Algunos dominios no estan representados
+
+2. Aplique un modelo con transformación Box-Cox con todos los predictores posibles (es decir, no haga selección de variables). Conteste las siguientes preguntas: 
+```{r}
+formula3= eqIncome~gender+eqsize+cash+self_empl+unempl_ben+age_ben+surv_ben+sick_ben+dis_ben+rent+house_allow+cap_inv+tax_adj
+mod3=ebp(fixed = formula3, pop_data = preg_3b ,
+  pop_domains = "district", smp_data =preg_3a , smp_domains = "district",
+  na.rm = TRUE,MSE=T,B = 10)
+
+#Permite obtener ECM agregando el argumento "MSE=T", además, permite cambiar el umbral (linea de pobreza) para estimar indicadores de pobreza y desigualdad basados en ingresos "threshold". También se pueden hacer transformaciones "no", "log" o Box Cox. El numero de replicas bootstrap y Monte Carlo se pueden ajustar con los argumentos "B" y "L".
+```
+
+2.1. Indique una ventaja y una desventaja de este tipo de modelo (no de la transformación, sino del modelo en sí.)
+* Los indicadores de interes no deben ser necesariamente lineales-ventaja
+* Brinda estimaciones robustas-ventaja
+* Sencible a valores extremos como todo modelo de unidad-desventaja
+* Cumplimiento de supuestos - desventaja
+* Computacionalmente intensivo - desventaja
+
+2.2. Qué quiere decir el resultado del ICC obtenido?
+```{r}
+summary(mod3)
+```
+**Esto me indica que tiene sentido usar efectos aleatorios ya que es mayor que el 20%**
+
+2.3. Si quisiera utilizar este modelo, tendría que asumir el cumplimiento de supuestos? porqué?
+
+**si, Porque no deja de ser un modelo estadistico y este como requisito tiene el cumplimiento de supuestos para asegurar buenas estimaciones**
+
+2.4. En términos de bondad de ajuste, se puede decir que es un modeloa adecuado?
+```{r}
+summary(mod3)
+```
+**En terminos de bondad de ajuste los R2 son mayores a 0.5 por lo que podemos decir que son buenos**
+
+3. Grafique los resultados de la estimación directa vs los resultados basados en el modelo para el indicador de interés. 
+
+```{r}
+compare_plot(model=mod3, direct=direct3,CV = T, MSE=F, indicator="Gini")
+```
+
+4. Asumiendo que se cumplen los supuestos del modelo, recomendaría al Instituto Nacional de Estadística de Austria estas estimaciones? Justifique. 
+```{r}
+table(sqrt(mod3$MSE$Gini)/mod3$ind$Gini*100>20)
+table(sqrt(direct3$MSE$Gini)/direct3$ind$Gini*100>20)
+summary(mod3)
+```
+
+```{r}
+csv1<-sort(100*(sqrt(direct3$MSE$Gini)/direct3$ind$Gini))
+table(csv1>20)
+```
+
+```{r}
+csv<-sort(100*(sqrt(mod3$MSE$Gini)/mod3$ind$Gini))
+table(csv>20)
+```
+
+**Si porque presenta una mejora en los CV con respecto a la estimacion directa, ademas al tener dominios no representados esto nos da a inclinarnos con prioridad a un modelo y no a una estimacion directa, para de esta manera obtener estimaciones de los dominios faltantes**

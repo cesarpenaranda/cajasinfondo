@@ -1,0 +1,220 @@
+---
+title: ''
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-11-22"
+---
+
+
+**Parte I (a), Calcular: \( \mathbb{E}[W_t] \)**
+
+\[
+W_t = Y_t - Y_{t-7}
+\]
+
+Por propiedad:
+
+\[
+\mathbb{E}[W_t] = \mathbb{E}[Y_t] - \mathbb{E}[Y_{t-7}].
+\]
+
+Dado que \(Y_t\) es estacionario, su esperanza es constante, es decir, \( \mathbb{E}[Y_t] = \mu \) para todo \( t \). Entonces:
+
+\[
+\mathbb{E}[W_t] = \mu - \mu = 0.
+\]
+
+---
+
+**Parte I (b), Calcule: \( \gamma_W(t, t+h) \)**
+
+Autocovarianza de \( W_t \):
+
+\[
+\gamma_W(t, t+h) = \text{Cov}(W_t, W_{t+h}),
+\]
+
+donde:
+\[
+W_t = Y_t - Y_{t-7}; \quad W_{t+h} = Y_{t+h} - Y_{t+h-7}.
+\]
+
+Aplicamos:
+
+\[
+\gamma_W(t, t+h) = \text{Cov}(Y_t - Y_{t-7}, Y_{t+h} - Y_{t+h-7}).
+\]
+
+Por propiedad de covarianza de combinaciones lineales:
+
+\[
+\gamma_W(t, t+h) = \text{Cov}(Y_t, Y_{t+h}) - \text{Cov}(Y_t, Y_{t+h-7}) - \text{Cov}(Y_{t-7}, Y_{t+h}) + \text{Cov}(Y_{t-7}, Y_{t+h-7}).
+\]
+
+Dado que \(Y_t\) es estacionario, las covarianzas solo dependen de la diferencia temporal, es decir:
+
+\[
+\text{Cov}(Y_t, Y_{t+h}) =\text{Cov}(Y_0, Y_{h}) := \gamma_Y(h),
+\]
+
+donde \( \gamma_Y(h) \) es la función de autocovarianza del proceso \(Y_t\). Por lo tanto:
+
+\[
+\gamma_W(t, t+h) = \gamma_Y(h) - \gamma_Y(h-7) - \gamma_Y(h+7) + \gamma_Y(h).
+\]
+
+\[
+\gamma_W(t, t+h) = 2\gamma_Y(h) - \gamma_Y(h-7) - \gamma_Y(h+7).
+\]
+
+Notemos que la autocovariansa depende de \(h\)
+
+---
+
+**Parte (c), \( W_t \) es un proceso estacionario?**
+
+Supuestos cumplidos para que \(W_t\) sea estacionario:
+
+* Dado que ya obtuvimos \( \mathbb{E}[W_t] = 0 \), cumplimos la condicion de que la media debe ser constante.
+
+* Observamos que \( \gamma_W(t, t+h) \) depende únicamente de \( h \), ya que está expresada en términos de \( \gamma_Y(h) \), \( \gamma_Y(h-7) \), y \( \gamma_Y(h+7) \), todas funciones de \( h \), por lo que se cumple la condicion de que la autocovarianza solo debe depender de la diferencia temporal \( h \)
+
+Por lo que \(W_t\) es estacionario.
+
+
+### **Pregunta 3**
+
+\[
+(1 + 0.7B - 0.2B^2)(1 - B^{12})Y_t = (1 - 0.5B^{12})a_t,
+\]
+
+**Parte (a): Polinomios autorregresivos, de medias móviles y operadores de diferenciación**
+
+* Polinomios autorregresivos (AR), \(\phi(B)\),\(\Phi(B)\):
+
+Polinomio AR no estacional: \( 1 + 0.7B - 0.2B^2 \).
+
+Polinomio AR estacional: \( 1 - B^{12} \).
+
+El polinomio autorregresivo completo:
+
+\(\phi(B) = (1 + 0.7B - 0.2B^2)\)
+
+\(\Phi(B) = 1\)
+
+
+Operador de diferenciación \(\nabla\):
+
+El término \( 1 - B^{12} \) es la **diferenciación estacional** de orden 1, con una periodicidad de 12.
+
+* Polinomios de medias móviles (MA), \(\theta(B)\):
+
+Polinomio MA estacional: \( 1 - 0.5B^{12} \).
+
+No se indica un polinomio MA no estacional
+
+Por lo que el polinomio completo de medias móviles es:
+
+\[
+\theta(B) = 1 - 0.5B^{12}.
+\]
+
+**Parte (b): Verificar las condiciones de estacionariedad e invertibilidad**
+
+* Condición de estacionariedad: se puede probar que un modelo es estacionario si, 
+
+\(|\phi_1|<1\)
+
+\(\phi_1+\phi_2<1\)
+
+\(-\phi_1+\phi_2<1\)
+
+
+El polinomio autorregresivo es:
+
+\[
+\phi(B) = (1 + 0.7B - 0.2B^2)(1 - B^{12}).
+\]
+
+1. Para \( 1 + 0.7B - 0.2B^2 \):
+   
+\(|\phi_1|=0.7<1\)
+
+\(\phi_1+\phi_2=0.5<1\)
+
+\(-\phi_1+\phi_2=-0.9<1\)
+
+**Por otra parte mediante raices imaginarias**
+
+El polinomio cuadrático asociado es:
+\[
+1 + 0.7B - 0.2B^2 = 0 \quad
+\]
+
+La fórmula general para encontrar las raíces de un polinomio cuadrático \(aB^2 + bB + c = 0\) es:
+\[
+B = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}.
+\]
+
+Aquí, \(a = -0.2\), \(b = 0.7\), y \(c = 1\). Sustituyendo estos valores:
+
+\[
+B = \frac{-0.7 \pm \sqrt{(0.7)^2 - 4(-0.2)(1)}}{2(-0.2)}.
+\]
+
+Calculamos cada término:
+
+- \(b^2 = 0.49\),
+
+- \(4ac = 4(-0.2)(1) = -0.8\),
+
+- \(b^2 - 4ac = 0.49 - (-0.8) = 1.29\).
+
+Entonces:
+\[
+B = \frac{-0.7 \pm \sqrt{1.29}}{-0.4}.
+\]
+
+La raíz cuadrada de \(1.29\) es aproximadamente \(1.136\). Por lo tanto:
+
+\[
+B = \frac{-0.7 \pm 1.136}{-0.4}.
+\]
+
+Calculamos las dos soluciones:
+
+1. \(B_1 = \frac{-0.7 + 1.136}{-0.4} = \frac{0.436}{-0.4} \approx -1.09\),
+
+2. \(B_2 = \frac{-0.7 - 1.136}{-0.4} = \frac{-1.836}{-0.4} \approx 4.59\).
+
+Para que la serie sea estacionaria, todas las raíces del polinomio deben estar **fuera del círculo unitario**, es decir, \(|B| > 1\).
+
+- Para \(B_1 = -1.09\), \(|B_1| = 1.09 > 1\).
+- Para \(B_2 = 4.59\), \(|B_2| = 4.59 > 1\).
+
+Ambas raíces cumplen la condición de estacionaridad.
+Por lo que esta parte cumple la condición de estacionariedad.
+
+2. Para \( 1 - B^{12} \):
+
+- Este término representa una diferenciación estacional donde \(|\phi_1=1|\) donde no se cumple que \(|\phi_1|<1\)
+
+Por tanto, **el modelo no es estacionario** debido al operador \( 1 - B^{12} \).
+
+* Condición de invertibilidad
+
+Se puede probar que un modelo es invertible si cumple que:
+
+\[
+|\theta_1|<1
+\]
+
+El polinomio MA es:
+
+\[
+\theta(B) = 1 - 0.5B^{12}.
+\]
+
+Donde $|\theta_1|=0.5$ y $0.5<1$ por lo tanto el modelo es invertible,en conclusión el modelo en cuanto a estacionariedad, no cumple las condiciones, debido a la diferenciación estacional \( 1 - B^{12} \) y en cuanto a invertibilidad, sí cumple, ya que $|\theta_1|<0.5$, por lo que el modelo es no estacionario e invertible.
+

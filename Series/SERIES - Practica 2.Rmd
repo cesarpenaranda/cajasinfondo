@@ -1,0 +1,96 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-09-20"
+---
+```{r}
+library(ggfortify)
+library(forecast)
+library(fpp2)
+library(data.table)
+library(TTR)
+library(xts)
+library(tidyverse)
+library(lubridate)
+library(quantmod)
+library(car)
+```
+##Lista de ejercicios 2
+1. En la base de datos cardiovascular.csv se refiere a las cifras de defunciones por problemas cardiovasculares en Costa Rica en el periodo 2000-2007.
+```{r}
+#a Cargar los datos
+cardiovascular <- read.csv("~/SERIES - datos practica 1/cardiovascular.csv")
+cardiovascular.ts <- ts(cardiovascular$y,start = c(2000),frequency = 12)
+autoplot(cardiovascular.ts)
+```
+
+a. Ajuste un modelo de regresión apropiado y produzca pronósticos para los 12 meses de 2008.
+```{r}
+y <- ts(cardiovascular$y,start = (2000),frequency = 12)
+mod <-tslm(y~trend+trend^2+season)
+pronostico <- forecast(mod,h=12)
+pronostico
+```
+```{r}
+autoplot(y) +
+  ylab("Y") +
+  autolayer(mod$fitted.values, series = "ajustado") +
+  autolayer(pronostico, series = "pronostico")
+```
+
+
+b. Analice los supuestos del modelo ajustado.
+```{r}
+e <- mod$residuals
+
+#Normalidad
+hist(e)
+qqPlot(e)
+shapiro.test(e)
+
+#Homoscedasticidad
+ts.plot(e)
+lmtest::bptest(mod)
+
+#Autocorrelación
+acf(e)
+checkresiduals(mod)
+```
+
+2. En la base de datos ventas.csv se refiere a las ventas mensuales de un producto realizadas por una empresa en el periodo 2001-2005.
+```{r}
+#a Cargar los datos
+library(readxl)
+ventas <- read_excel("SERIES - datos practica 1/ventas.xls")
+ventas.ts <- ts(ventas$y,start = (2001),frequency = 12)
+```
+
+a. Ajuste un modelo de regresión apropiado y produzca pronósticos para los 12 meses de 2006.
+```{r}
+mod <-tslm(ventas.ts~trend+trend^2+season)
+pronostico <- forecast(mod,h=12)
+pronostico
+```
+```{r}
+autoplot(ventas.ts) +
+  ylab("Y") +
+  autolayer(mod$fitted.values, series = "ajustado") +
+  autolayer(pronostico, series = "pronostico")
+```
+b. Analice los supuestos del modelo ajustado.
+```{r}
+e <- mod$residuals
+
+#Normalidad
+hist(e)
+qqPlot(e)
+shapiro.test(e)
+
+#Homoscedasticidad
+ts.plot(e)
+lmtest::bptest(mod)
+
+#Autocorrelación
+acf(e)
+checkresiduals(mod)
+```

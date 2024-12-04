@@ -1,0 +1,330 @@
+---
+title: "Parte II Cesar Peñaranda - B85922"
+output: html_document
+date: "2024-10-21"
+---
+```{r include=FALSE}
+library(foreign)
+library(Hmisc)
+library(corrplot)
+library(haven)
+library(nFactors)
+library(psych)
+library(GPArotation)
+library(CTT)
+library(haven) 
+library(ltm)
+library(gtheory)
+library(tidyr)
+```
+
+a) A partir de la base “nuevabase” con  respuestas realice un análisis de precisión con TRI y escriba las decisiones que toma con respecto a las métricas de calidad de los ítems. Seleccione el modelo apropiado.  Reporte y describa los indicadores (parámetros, ajuste, CCI, CII, curva de información del test) en función del modelo seleccionado para los datos. (6 puntos)
+
+# Analisis inicial
+```{r}
+datos <- read_sav("2018 ACTUALIDADES DATOS.sav") 
+nuevabase <-datos[,c("SC2","SC3","SC4","SC5","SC6","SC7","SC8", 
+"SC9","SC10","SC11","SC12","SC13","SC14")]  
+nuevabase[nuevabase== 9] <- NA
+nuevabase2 <- na.omit(nuevabase)
+```
+
+**Matriz de correlaciones**
+```{r}
+corrplot(cor(nuevabase2), method = "square", type = "lower")
+```
+
+*Se observan de 3 a 2 factores en las matriz de correlaciones*
+
+**Cantidad de factores**
+```{r}
+ev1 <- eigen(cor(nuevabase2))
+ev1$values
+radio<-ev1$values[1]/ev1$values[2]
+cat("El radio entre el primer y el segundo autovalor es:",radio)
+```
+
+*Indicion de presencia de mas de un factor*
+
+**Factor de aceleración**
+```{r}
+ev1$values[1]/ev1$values[2]
+a3<-ev1$values[3]-ev1$values[2]- (ev1$values[2]-ev1$values[1]); a3
+a4<-ev1$values[4]-ev1$values[3]- (ev1$values[3]-ev1$values[2]); a4
+a5<-ev1$values[5]-ev1$values[4]- (ev1$values[4]-ev1$values[3]); a5
+```
+
+*Indicios de precencia de 3 factores*
+
+**Análisis paralelo**
+```{r}
+
+ap1 <- parallel(subject=nrow(nuevabase2),var=ncol(nuevabase2),
+                rep=100, cent=.05)
+
+nS1 <- nScree(x=ev1$values, aparallel=ap1$eigen$qevpea)
+
+plotnScree(nS1)
+``` 
+
+*El radio entre el primer y segundo autovalor es de 1.35, lo que, al ser menor que 3, indica la posible presencia de más de un factor. El análisis paralelo también sugiere la existencia de tres factores, aunque es necesario confirmar si estos están bien representados. Además, el factor de aceleración respalda la presencia de tres factores, ya que el valor obtenido de 0.36 para j=3 es el mayor*
+
+**Comprobar si los datos son adecuados**
+```{r}
+KMO(nuevabase2)
+```
+
+*Valores no tan prometedores pero aceptables*
+
+**Probar si las variables estan suficientemente correlacionadas para realizar el analisis**
+```{r}
+cortest.bartlett(nuevabase2)
+```
+
+*Se rechaza la H0 la cual dice que la matriz es igual a la de identidad, por lo que se puede continuar con el analisis*
+
+*Aunque los datos son adecuados para el analisis, los indicadores pueden mejorar*
+
+**Análisis factorial, e indicadores de ajuste**
+
+**Para dos factore**
+```{r}
+#Con dos factores
+fit2 <- factanal(nuevabase2, 2, rotation="none") 
+fit2 
+N<-fit2$n.obs
+chicuad2<-fit2$STATISTIC
+gl2<-fit2$dof
+fit2$PVAL
+RMSEA2<- sqrt(  max( (chicuad2 - gl2)/( (N-1)*gl2), 0) )
+cat("chi/gl:",chicuad2/gl2,"RMSEA:",RMSEA2)
+```
+
+*chi/gl = 6.6, no muy alentardor*
+*RMSEA = cercano a 0 en un rango aceptable*
+
+**Para tres factores**
+```{r}
+#Con tres factores
+fit3 <- factanal(nuevabase2, 3, rotation="none")
+fit3 
+chicuad3<-fit3$STATISTIC
+gl3<-fit3$dof
+fit3$PVAL
+RMSEA3<- sqrt(   max( (chicuad3 - gl3)/( (N-1)*gl3) , 0) )
+cat("chi/gl:",chicuad3/gl3,"RMSEA:",RMSEA3)
+```
+
+*chi/gl = 3.8, aceptable*
+*RMSEA = cercano a 0 en un rango aceptable*
+
+**Rotación pro max**
+```{r}
+fitr2=factanal(nuevabase2,2,rotation = "promax"); fitr2
+```
+
+```{r}
+fitr3=factanal(nuevabase2,3,rotation = "promax"); fitr3
+```
+
+**Probar eliminando variables si el parametro de KMO mejora por pregunta y general 0.73**
+```{r}
+for (i in 1:13){
+  x=KMO(nuevabase2[,-i])
+  print(i)
+  print(x)
+}
+```
+
+*Vemos que el eliminar SC2 es la que mas mejora el KMO general, indicios de eliminar SC8 ya que no aporta al KMO general*
+
+*Dado todo el analisis anterior se decide eliminar SC2 ya que es la que tiene mayor peso en el tercer factor, ademas es la que mejora el KMO general al ser eliminada, ademas se decide eliminar SC8 ya que de igual forma no afecta el KMO general al ser eliminada ademas de ser la de menor peso en el segundo factor al trabajar con dos factores, dado a lo anterior se decide trabajar con 2 factores ya que al eliminar las preguntas anteriores es es el mas acertado ya que SC2 era la de mayor peso en el tercer factor y la usencia de esta deja el tercer factor con unas cargas con poco sentido, ademas el RMSEA con dos factores es aceptable, el primer factor agrupa las variables desde SC3 hasta SC10 (eliminando SC2 y 8) y el segundo factor agrupa las variables desde SC11 hasta SC14*
+
+## TRI
+
+**Separacion de las bases de trabajo**
+```{r}
+base1=nuevabase[,c(2,3,4,5,6,8,9)]
+base2=nuevabase[,c(10,11,12,13)]
+```
+
+## Factor 1
+
+**Eleccion del modelo**
+```{r}
+#modelo de crédito parcial de rasch 
+mcprasch <-gpcm(base1, constraint = "rasch",IRT.param = TRUE)
+#modelo de crédito parcial 1pl
+mcp1pl <-gpcm(base1, constraint = "1PL", control = list(iter.qN=250) )   
+#modelo de crédito parcial generalizado
+mcp2pl1 <-gpcm(base1, constraint = "gpcm",  control = list(iter.qN=250)) 
+```
+
+```{r}
+# Comparación de modelos
+anova(mcprasch, mcp1pl)
+```
+
+```{r}
+# Comparación de modelos
+anova(mcp1pl,mcp2pl1)
+```
+
+*Modelo selecionado: credito parcial generalizado, como resultado del anova, poseia el menor (AIC,BIC,devianza) ademas de rechazar la prueba de hipotesis indicando asi que es el mejor modelo con un 5% de significancia*
+
+```{r}
+plot(mcp2pl1, lwd = 2, cex = 0.8, legend = TRUE, cx = "topright",
+xlab = "Constructo", cex.main = 1, cex.lab = 1, cex.axis = 1)
+```
+
+*Se observa que la respuesta 3 (neutro) es la que menos aporta en todos los items por lo que se pudo haber eliminado*
+
+```{r}
+coef(mcp2pl1)
+```
+
+*tems como SC10,SC7 y SC6 son más útiles para discriminar entre niveles del constructo (la discriminación mas alta), mientras que ítems como SC4 tienen menor capacidad discriminativa*
+ 
+```{r}
+plot(mcp2pl1, type = "IIC", lwd = 2,
+cex = 0.8, legend = TRUE,
+cx = "topleft", xlab = "Constructo", cex.main = 1, cex.lab = 1, cex.axis = 1)
+```
+
+*En este caso, se observa que los ítems SC10, SC7 y SC9 proporcionan mayor información y son más eficaces para diferenciar en niveles específicos del constructo. En contraste, los ítems SC4, SC5 y SC6 aportan menos información y son menos precisos, aunque siguen siendo útiles para evaluar un rango más amplio del constructo.*
+
+## Factor 2
+
+**Eleccion del modelo**
+```{r}
+#modelo de crédito parcial de rasch 
+mcprasch <-gpcm(base2, constraint = "rasch",IRT.param = TRUE)
+#modelo de crédito parcial 1pl
+mcp1pl <-gpcm(base2, constraint = "1PL", control = list(iter.qN=250) )   
+#modelo de crédito parcial generalizado
+mcp2pl2 <-gpcm(base2, constraint = "gpcm",  control = list(iter.qN=250)) 
+```
+
+```{r}
+# Comparación de modelos
+anova(mcprasch, mcp1pl)
+```
+
+```{r}
+# Comparación de modelos
+anova(mcp1pl,mcp2pl2)
+```
+
+*Modelo selecionado: credito parcial generalizado, como resultado del anova, poseia el menor (AIC,BIC,devianza) ademas de rechazar la prueba de hipotesis indicando asi que es el mejor modelo con un 5% de significancia*
+
+```{r}
+plot(mcp2pl2, lwd = 2, cex = 0.8, legend = TRUE, cx = "topright",
+xlab = "Constructo", cex.main = 1, cex.lab = 1, cex.axis = 1)
+```
+
+*Se observa que la respuesta 3 (neutro) es la que menos aporta nuevamente en todos los items por lo que se pudo haber eliminado*
+
+```{r}
+coef(mcp2pl2)
+```
+
+*items como SC12,SC13 son más los mas útiles para discriminar entre niveles del constructo (discriminación alta), mientras que ítems como SC11 y 14 tienen menor capacidad discriminativa*
+ 
+```{r}
+plot(mcp2pl2, type = "IIC", lwd = 2,
+cex = 0.8, legend = TRUE,
+cx = "topleft", xlab = "Constructo", cex.main = 1, cex.lab = 1, cex.axis = 1)
+```
+
+*En este caso, se observa que los ítems SC11, SC12 proporcionan mayor información y son más eficaces para diferenciar en niveles específicos del constructo. En contraste, los ítems SC13 y SC14 aportan menos información y son menos precisos, aunque siguen siendo útiles para evaluar un rango más amplio del constructo.*
+
+b) Estime los niveles de habilidad o las puntuaciones theta de las personas según el modelo seleccionado. Transforme las puntuaciones theta a una escala con media de 50 y desviación estándar de 10 e interprete las puntuaciones en función del constructo medido. (4 puntos)
+```{r}
+#Para factor 1
+theta_scores1 <- factor.scores(mcp2pl1, method = "EAP")
+
+# Obtener los valores theta
+theta1 <- theta_scores1$score.dat$z1
+mu1<-mean(theta1)
+sigma1<-sd(theta1)
+theta_transformada1<-50 +10* ((theta1-mu1) / sigma1)
+head(theta_transformada1)
+```
+```{r}
+#Para factor 2
+theta_scores2 <- factor.scores(mcp2pl2, method = "EAP")
+
+# Obtener los valores theta
+theta2 <- theta_scores2$score.dat$z1
+mu2<-mean(theta2)
+sigma2<-sd(theta2)
+theta_transformada2<-50 +10* ((theta2-mu2) / sigma2)
+head(theta_transformada2)
+```
+
+*Para este caso sobre los mitos sobre el suicidio, una puntuación de 50 representa un nivel de habilidad promedio en relación con el constructo evaluado. Si una persona obtiene una puntuación superior a 50, esto indica que su persepcion/habilidad es mayor que la media. En contraste, puntajes inferiores sugieren una habilidad por debajo de la media. ademas, una puntuación de 40 indica que la persona se encuentra una desviación estándar por debajo de la media, lo que refleja una habilidad mas baja, y vicebersa una de 70 estaria dos desviaciones por arriba de la media, reflejando mayor habilidad*
+
+c) Seleccione una pregunta del instrumento. Use la pregunta seleccionada para describirle todas las caracterizaciones según el análisis. Explique si el contenido de la pregunta se corresponde con los parámetros del análisis. En las respuestas puede colocar gráficos, salidas de R, tablas, pero recuerde siempre justificar y explicar los resultados. (4 puntos)
+
+*Me llama la atencion el item 13 (Debe instruirse en el tema del suicidio a padres y madres de familia) ya que es el que tiene mayor peso en el factor ademas es posible observar que es el que en el modelo es el que aporta mayor informacion, por lo que es uno de los items que aporta mas en la formacion del contructo sobre mitos al suicidio, ademas que con un coeficiente de discriminacion de 4.516 queda claro que ayuda a discriminar*
+```{r}
+plot(mcp2pl2, type = "IIC", lwd = 2,
+cex = 0.8, legend = TRUE,
+cx = "topleft", xlab = "Constructo", cex.main = 1, cex.lab = 1, cex.axis = 1)
+```
+```{r}
+plot(mcp2pl2, type = "ICC", 3)
+```
+
+*vemos que para este item la respuesta neutra (3) es la que se pudo haber eliminado y las otras parecen aportar informacion de manera equilibrada*
+
+*En conclusion para un futuro estudio similar sobre mitos al sucidio agregaria este item ya que aporta al constructo por otra parte el unico cambio que efecturia es eliminar la opcion de respuesta 3 (neutra) ya que no le aporta informacion al item y no tiene igual prob de seleccion con respecto a los otros items, por lo que no es necesaria*
+
+## Pregunta 2
+2. Observe la matriz datos con las evaluaciones que dieron dos calificadores (Juez 1 y 2) a 6 personas evaluadas (S1 a S6) con 3 ítems. Las puntuaciones oscilan de 1 a 10.
+
+```{r}
+# Crear el data frame
+data <- cbind(
+  c(3.0, 9.0, 9.0, 7.0, 7.0, 7.5),
+  c(6.0, 9.0, 8.0, 7.0, 8.0, 7.5),
+  c(7.0, 9.0, 8.0, 7.0, 7.0, 9.5),
+  c(4.0, 10.0, 10.0, 8.0, 8.0, 8.5),
+  c(7.0, 10.0, 9.0, 8.0, 9.0, 8.5),
+  c(8.0, 10.0, 9.0, 8.0, 8.0, 10.5)
+)
+
+juez=c(rep(1,18),rep(2,18))
+item=c(rep(1,6),rep(2,6),rep(3,6),rep(1,6),rep(2,6),rep(3,6))
+data<-data.frame(as.factor(rep(1:6,6)),as.factor(juez),as.factor(item),c(data))
+names(data)<-c("pers","juez","item","punt")
+
+data
+
+```
+
+**Estimación mediante el paquete gtheory y modelos lineales mixtos**
+```{r}
+formula <- punt ~ (1|pers) + (1|juez) + (1|item)
+gfit <- gstudy(formula = formula, data = data)
+```
+
+```{r}
+dfit <- dstudy(gfit, colname.objects = "pers",
+               colname.scores = "punt", data = data)
+dfit$components
+```
+
+```{r}
+#dependability
+dfit$dependability
+```
+
+*El coeficiente de dependabilidad dio como resultado 80%, Este mide la precisión de las decisiones basadas en las evaluaciones. Este valor indica una alta precisión, lo que sugiere que las decisiones tomadas son bastante confiables y consistentes, con poca necesidad de mejoras en la consistencia evaluativa.*
+
+```{r}
+#generalizability
+dfit$generalizability
+```
+
+*El coeficiente de generalizabilidad dio como resultado 92%. Este mide qué tan bien se pueden generalizar los resultados del estudio a otras condiciones o contextos. Este valor indica una alta capacidad para extrapolar los resultados, lo que sugiere que las conclusiones del estudio son aplicables en diferentes situaciones con un alto grado de confianza.*

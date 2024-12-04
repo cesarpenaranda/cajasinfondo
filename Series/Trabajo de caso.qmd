@@ -1,0 +1,293 @@
+---
+title: "Case Study 1. Change in Business Inventories"
+format: html
+editor: visual
+---
+
+El Case Study 1 del libro "Forecasting with Univariate Box-Jenkins Models" de Alan Pankratz analiza los cambios trimestrales en inventarios empresariales, presentados en tasas anuales en miles de millones de dólares, para el periodo que abarca desde el primer trimestre de 1955 hasta el cuarto trimestre de 1969. La serie de datos ha sido ajustada estacionalmente para simplificar el análisis inicial y hacer que la serie sea más manejable para los principiantes en modelización Box-Jenkins​
+
+```{r}
+# Cargar la librería forecast para análisis de series temporales
+library(forecast)
+library(tseries)
+
+# Crear un vector con los datos trimestrales
+datos <- c(
+  4.4, 5.8, 6.7, 7.1,   # 1955
+  5.7, 4.1, 4.6, 4.3,   # 1956
+  2, 2.2, 3.6, -2.2,  # 1957
+  -5.1, -4.9, 0.1, 4.1, # 1958
+  3.8, 9.9, 0.0, 6.5,  # 1959
+  10.8, 4.1, 2.7, -2.9, # 1960
+  -2.9, 1.5, 5.7, 5.0,  # 1961
+  7.9, 6.8, 7.1, 4.1,   # 1962
+  5.5, 5.1, 8, 5.6,   # 1963
+  4.5, 6.1, 6.7, 6.1,   # 1964
+  10.6, 8.6, 11.6, 7.6, # 1965
+  10.9, 14.6, 14.5, 17.4, # 1966
+  11.7, 5.8, 11.5, 11.7, # 1967
+  5.0, 10.0, 8.9, 7.1,  # 1968
+  8.3, 10.2, 13.3, 6.2  # 1969
+)
+
+# Crear la serie temporal con frecuencia trimestral (frequency = 4) y comenzar en el año 1955
+ts_datos <- ts(datos, start = c(1955, 1), frequency = 4)
+
+# Ver la serie temporal
+plot(ts_datos, main = "Cambio en Inventarios Empresariales (1955-1969)",
+     ylab = "Billones de Dólares", xlab = "Años")
+abline(h=mean(ts_datos))
+
+```
+
+```{r}
+acf(ts_datos, main = "ACF de la serie original")
+```
+
+```{r}
+pacf(ts_datos, main = "PACF de la serie original")
+```
+
+```{r}
+adf_test <- adf.test(ts_datos)
+
+print(adf_test)
+
+```
+
+### Identificación
+
+Se observa decaimiento rápido en la función de autocorrelación, por lo que se concluye que la serie es estacionaria. En la función de autocorrelación se observó un decaimiento a 0 lo que es consistente con un modelo AR y un modelo ARMA. Pero se emlpeó un modelo AR por 3 razones
+
+-   Existe mayor complejidad para identificar inicialmente un modelo mixto.
+
+-   El principio de parsimonia sugiere emplear un modelo más simple.
+
+-   Un modelo mixto pude llevar a coeficientes redundantes.
+
+Se empleo el siguiente mode AR(1)
+
+$$
+(1-\phi_1B) \bar{z}_t = a_t
+$$
+
+### Estimación
+
+```{r}
+mod0e<-tseries::arma(ts_datos,order=c(1,0),include.intercept=TRUE)
+summary(mod0e)
+
+res<-mod0e$residuals 
+
+library(astsa)
+acf2(res)
+```
+
+El modelo satisface el supuesto de estacionariedad
+
+$$
+|\hat{\phi_1}| < 1
+$$
+
+También es significativamente diferente de cero según la hipótesis:
+
+$$
+H_0:\phi_1 = 0 
+$$
+
+$$
+t = \frac{\hat\phi_1-0}{s(\hat\phi_1)} = \frac{0.689}{0.093} = 7.4
+$$
+
+### Diagnostico
+
+En el caso presentado se realiza lo siguiente:
+
+1.  Analisis de random socks o choques aleatorios ai sean independientes usando los residuales de la ecuación estimada mediante la función de autocorrelación estimada (acf) de los residuales para verificar si los choques son independientes. (Ver el Capítulo 9 para una discusión sobre la acf de los residuales)
+
+    En el capitulo 9 mencionan "Si el valor absoluto de un valor z de la ACF residual es menor (aproximadamente) que 1.25 en los rezagos 1, 2 y 3, y menor a 1.6 en rezagos más grandes, concluimos que los choques aleatorios en ese rezago son independientes."
+
+    Asi mismo indican "Si algún valor t de la ACF residual es mayor que los valores críticos sugeridos arriba, rechazamos tentativamente la hipótesis nula y concluimos que los choques aleatorios del modelo estimado están correlacionados y que el modelo estimado puede ser inadecuado".
+
+    ```{r}
+    library(forecast)
+    #Modelo AR(1) con media y constante
+    modelo <- Arima(ts_datos, order = c(1, 0, 0), include.mean = TRUE)
+
+    #se extraen los residuales
+    residuales <- residuals(modelo)
+
+    # Calcular la ACF de los residuales y el valor crítico segun el caso de estudio
+    acf_residuales <- acf(residuales, plot = FALSE)
+    z_t <- acf_residuales$acf[-1] / sqrt(1 / length(residuales))
+
+    # Valores críticos
+    criticos <- c(rep(1.25, 3), rep(1.6, length(z_t) - 3))
+
+    # Comparar los z-scores con los valores críticos y mostrar resultados
+    resultados <- data.frame(
+      Lag = 1:length(z_t),
+      ACF = acf_residuales$acf[-1],
+      z_score = z_t,
+      Critic = criticos,
+      Exceden = abs(z_t) > criticos
+    )
+
+
+    #tabla bonita
+    library(kableExtra)
+
+    resultados %>%
+      kable("html") %>%
+      kable_styling("striped", full_width = F) %>%
+      add_header_above(c(" " = 1, "Resultados" = 4)) %>%
+      column_spec(1, bold = TRUE) %>%
+      column_spec(5, color = ifelse(resultados$Exceden, "red", "black")) %>%
+      row_spec(0, bold = TRUE, font_size = 14) %>%
+      row_spec(which(resultados$Exceden), background = "#f2dede") # Resaltar filas que exceden valores críticos
+
+    ```
+
+```{r}
+#graficamente
+plot(acf_residuales, main = "ACF de los Residuales con Límites Críticos")
+abline(h = c(-1.25, 1.25), col = "red", lty = 2) # Límites para los rezagos 1, 2 y 3
+abline(h = c(-1.6, 1.6), col = "blue", lty = 2)   # Límites para rezagos mayores
+legend("topright", legend = c("Límite 1.25 (rezagos 1-3)", "Límite 1.6 (rezagos >3)"),
+       col = c("red", "blue"), lty = 2, bty = "n")
+```
+
+Rezagos que utilizan: Se determinan como el número de autocorrelaciones a examinar.
+
+```{r}
+# Calcular el número de autocorrelaciones a examinar
+num_autocorrelaciones <- length(residuales) / 4
+num_autocorrelaciones
+```
+
+Basicamente con 59 (60-1) residuales se pueden examinar aproximadamente 15 autocorrelaciones residuales. Esto se calcula dividiendo el número total de residuales entre 4.
+
+Lo cual concluye en 15 rezagos. Por lo tanto, en este caso, se evaluan hasta 15 rezagos para determinar la independencia de los choques aleatorios en la serie temporal.
+
+Luego realizan la prueba Ljung box para autocorrelaciones, se basa en la hipótesis nula de que los residuos son independientes y no presentan autocorrelación. La prueba calcula un estadístico que compara las correlaciones observadas de los residuos en varios lags con las esperadas bajo la hipótesis nula.
+
+```{r}
+
+# Prueba de Ljung-Box para autocorrelaciones
+ljung_box_test <- Box.test(residuales, lag = 15, type = "Ljung-Box")
+
+# Resultados de la prueba
+ljung_box_test
+
+# Comparar la estadística chi-cuadrado con el valor crítico
+chi_square_statistic <- ljung_box_test$statistic
+p_value <- ljung_box_test$p.value
+
+# Grados de libertad
+df <- 15 - 1 # 15 rezagos menos 1 para ajustar por la media
+valor_critico <- qchisq(0.90, df) # Para el nivel del 10%
+
+# Mostrar resultados
+cat("Estadística chi-cuadrado:", chi_square_statistic, "\n")
+cat("Valor p:", p_value, "\n")
+cat("Valor crítico (nivel 10%):", valor_critico, "\n")
+
+# Verificación de significancia
+if (chi_square_statistic > valor_critico) {
+  cat("Rechazamos la hipótesis nula: hay dependencia estadística en los choques aleatorios.\n")
+} else {
+  cat("No rechazamos la hipótesis nula: los choques aleatorios parecen ser independientes.\n")
+}
+
+summary(modelo)$coef[1] #Estacionariedad
+```
+
+En cuanto al diagnostico concluyen lo siguiente:
+
+1.  **Autocorrelaciones de los residuales**: Las autocorrelaciones residuales no muestran valores absolutos superiores a los niveles de advertencia (1.25 para los rezagos 1, 2 y 3, y 1.6 en rezagos mayores). Esto sugiere que no hay patrones significativos de autocorrelación en los residuales, lo cual es un buen indicio de independencia.
+
+2.  **Prueba de Chi-cuadrado (Ljung-Box)**: La estadística de chi-cuadrado calculada no es significativa (0.86) para un nivel del 10%. Esto indica que los choques aleatorios en el modelo parecen ser independientes, lo que respalda la adecuación del modelo.
+
+3.  **Estacionariedad**: El coeficiente del modelo (0.68) cumple con la condición de estacionariedad, y es significativamente diferente de cero, lo cual es fundamental para la estabilidad del modelo. ***Recordar que si \|ϕ1∣\<1 el modelo es estacionario y el coeficiente significativo.***
+
+    En conclusión al cumplir con los criterios de independencia de choques, significancia del parámetro y estacionariedad, el modelo AR(1) es considerado satisfactorio y adecuado para pasar a la etapa de pronóstico.
+
+### Pronóstico
+
+Los valores de los pronósticos tienden a converger hacia la media estimada (6.19155), como es típico en los pronósticos de series estacionarias ARIMA.
+
+### Controles adicionales
+
+Sugieren realizar ciertas pruebas "informales" para evaluar la capacidad de pronóstico del modelo.
+
+1.  Gráfico de los residuos en la fase de estimación puede revelar si el modelo ajusta de manera desigual.
+
+    ```{r}
+    library(ggplot2)
+
+    residuals_plot <- autoplot(residuals(modelo)) + 
+      ggtitle("Residuos del Modelo ARIMA(1,0,0)") + 
+      ylab("Residuos") + 
+      xlab("Tiempo")
+    print(residuals_plot)
+    ```
+
+    Parece haber algunos patrones periódicos en los residuos, con fluctuaciones más pronunciadas en ciertos períodos.
+
+2.  Reestimar el modelo sin las últimas observaciones y verificar la estabilidad de los coeficientes y los residuos.
+
+    ```{r}
+    # Eliminar las últimas 10 observaciones
+    n_observaciones_a_eliminar <- 10
+    data_reducida <- head(datos, -n_observaciones_a_eliminar)
+
+    # Reestimar el modelo con los datos restantes
+    modelo_reestimado <- Arima(data_reducida, order = c(1, 0, 0))
+
+    # Verificar la estabilidad de los coeficientes
+    summary(modelo_reestimado)$coef[1] #menor a 1
+
+    # Obtener los residuos del modelo reestimado
+    residuales1 <- modelo_reestimado$residuals
+
+    # Verificar la autocorrelación de los residuos
+    acf(residuales1, main = "ACF de los Residuos del Modelo Reestimado")
+    ```
+
+```{r}
+# Prueba de Ljung-Box para autocorrelaciones
+ljung_box_test <- Box.test(residuales1, lag = 15, type = "Ljung-Box")
+
+# Resultados de la prueba
+ljung_box_test
+
+# Comparar la estadística chi-cuadrado con el valor crítico
+chi_square_statistic <- ljung_box_test$statistic
+p_value <- ljung_box_test$p.value
+
+# Grados de libertad
+df <- 15 - 1 # 15 rezagos menos 1 para ajustar por la media
+valor_critico <- qchisq(0.90, df) # Para el nivel del 10%
+
+# Mostrar resultados
+cat("Estadística chi-cuadrado:", chi_square_statistic, "\n")
+cat("Valor p:", p_value, "\n")
+cat("Valor crítico (nivel 10%):", valor_critico, "\n")
+
+# Verificación de significancia
+if (chi_square_statistic > valor_critico) {
+  cat("Rechazamos la hipótesis nula: hay dependencia estadística en los choques aleatorios.\n")
+} else {
+  cat("No rechazamos la hipótesis nula: los choques aleatorios parecen ser independientes.\n")
+}
+
+summary(modelo)$coef[1] #Estacionariedad
+```
+
+### Cometarios adicionales
+
+1.  **Precisión de pronóstico**: El modelo ARIMA (C1.1) es adecuado para pronósticos de corto plazo. Para mayor exactitud, podrían compararse otros métodos de pronóstico con el modelo ARIMA.
+
+-   **Actualización del modelo**: Es recomendable actualizar el modelo ARIMA con nuevos datos para mantener la precisión en el tiempo, repitiendo el ciclo de identificación, estimación y verificación de diagnósticos.
+
+-   **Uso de backcasting**: Se estimó el modelo (C1.1) sin backcasting y los resultados fueron casi idénticos a los obtenidos al utilizar backcasting con 15 observaciones adicionales.

@@ -1,0 +1,203 @@
+---
+title: "Asignación 3 Medición"
+author: "Cesar Peñaranda - B85922"
+output: html_document
+---
+```{r include=FALSE}
+library(foreign)
+library(Hmisc)
+library(corrplot)
+library(haven)
+library(nFactors)
+library(psych)
+library(GPArotation)
+library(CTT)
+```
+## Pregunta 1
+
+**Extraiga las preguntas DA8 a DA14 de la base de datos**
+```{r}
+datos <- read_sav("2017 ACTUALIDADES DATOS.sav") 
+nuevabase <-datos[,c("DA8","DA9","DA10", "DA11","DA12","DA13","DA14")]
+nuevabase[nuevabase== 9] <- NA
+nuevabase2 <- na.omit(nuevabase)
+summary(nuevabase2)
+```
+*Elininamos los NA y los codigo 9 de NS/NR*
+
+**Matriz de correlaciones**
+```{r}
+corrplot(cor(nuevabase2), method = "square", type = "lower")
+corrplot.mixed(cor(nuevabase2))
+```
+
+*Es posible observar cierta correlacion media-baja entre las variables algunas mas correlacionadas que otras, no se logra observar una agrupacion entre las variables, dado que todas parecen medir un constructo sobre alimentacion pero no parece que sus variables esten bien correlacionadas*
+
+**Establecimiento de la cantidad de factores a retener**
+```{r}
+ev1 <- eigen(cor(nuevabase2))
+ev1$values
+radio<-ev1$values[1]/ev1$values[2]
+cat("El radio entre el primer y el segundo autovalor es:",radio)
+```
+*Idicios de utilizar dos factores segun el resultado anterior, el radio entre el primer y segundo factor es de 2.24 siendo menor a tres, se podria suponer que deberia ser un factor ya que las preguntas parecen intentar medir temas de alimentacion*
+
+**Análisis paralelo**
+```{r}
+
+ap1 <- parallel(subject=nrow(nuevabase2),var=ncol(nuevabase2),
+                rep=100, cent=.05)
+
+nS1 <- nScree(x=ev1$values, aparallel=ap1$eigen$qevpea)
+
+plotnScree(nS1)
+```
+
+*Segun el umbral de analisis paralelo (linea verde) que indica a partir de donde los componentes son significativos, en este caso indica que se deberia considerar dos factor ya que el tercero no supera esta linea, ademas esto sugiere que el instrumento probablemente tiene dos dimensiónes importantes o dos factores que explican la mayor parte de la varianza en los datos.*
+
+**Factor de aceleración**
+```{r}
+ev1$values[1]/ev1$values[2]
+a3<-ev1$values[3]-ev1$values[2]- (ev1$values[2]-ev1$values[1]); a3
+a4<-ev1$values[4]-ev1$values[3]- (ev1$values[3]-ev1$values[2]); a4
+a5<-ev1$values[5]-ev1$values[4]- (ev1$values[4]-ev1$values[3]); a5
+```
+*Recapitulamos que, se observa que el radio es 2.243 entre el primer y segundo autovalor es menor que 3, lo cual nos indica que potencialmente existe más de un factor, por otra parte el factor de aceleracion sugiere dos componentes ya que a_3 es mayor a a_4 y a_5*
+
+**Comprobar si los datos son adecuados**
+```{r}
+KMO(nuevabase2)
+```
+*Esto nos indica un resultado aceptable en la mayoria de los intem seleccionados y uno general de igual manera aceptable, es posible realizar el analisis*
+
+
+**Probar si las variables estan suficientemente correlacionadas para realizar el analisis factorial**
+```{r}
+cortest.bartlett(nuevabase2)
+```
+*Se rechaza la H0 la cual dice que la matriz es igual a la de identidad, por lo que se puede continuar con el analisis factorial*
+
+*Aunque los datos son adecuados para el analisis, los indicadores pueden mejorar*
+
+**Análisis factorial, e indicadores de ajuste**
+
+Para un factor
+```{r}
+#Con un factor
+fit1 <- factanal(nuevabase2, 1, rotation="none") 
+fit1 
+N<-fit1$n.obs
+chicuad1<-fit1$STATISTIC
+gl1<-fit1$dof
+fit1$PVAL
+RMSEA1<- sqrt(  max( (chicuad1 - gl1)/( (N-1)*gl1), 0) );
+cat("chi/gl:",chicuad1/gl1)
+cat("RMSEA:",RMSEA1)
+```
+\(\chi^2/gl1\) *= 8.614166 no sirve*
+
+*Rangos mencionados en clase para este indicador*
+
+* 0-3 ideal
+
+* 3-5 aceptable
+
+* 5 o mas no sirve
+
+
+Para dos factores
+```{r}
+#Con dos factores
+fit2 <- factanal(nuevabase2, 2, rotation="none") 
+fit2 
+chicuad2<-fit2$STATISTIC
+gl2<-fit2$dof
+fit2$PVAL
+RMSEA2<- sqrt(  max( (chicuad2 - gl2)/( (N-1)*gl2), 0) )
+cat("chi/gl:",chicuad2/gl2)
+cat("RMSEA:",RMSEA2)
+```
+\(\chi^2/gl1\) *= 1.284345 ideal*
+
+Para tres factores
+```{r}
+#Con tres factores
+fit3 <- factanal(nuevabase2, 3, rotation="none")
+fit3 
+chicuad3<-fit3$STATISTIC
+gl3<-fit3$dof
+fit3$PVAL
+RMSEA3<- sqrt(   max( (chicuad3 - gl3)/( (N-1)*gl3) , 0) )
+cat("chi/gl:",chicuad3/gl3)
+cat("RMSEA:",RMSEA3)
+```
+\(\chi^2/gl1\) *= 0.6734714 ideal*
+
+**Otros métodos de estimación**
+```{r}
+f.solucion <- fa(nuevabase2, nfactors=2, rotate="oblimin", fm="wls")
+print(f.solucion$loadings, cutoff=0.)
+fa.diagram(f.solucion, main="Diagrama de la estructura")
+```
+
+*Se logra ver las agrupaciones segun los pesos de las preguntas en cada factor, Se observa que DA9 es la de menor peso en su factor correspondiente*
+```{r}
+#Curiosamente la agrupacion anterior sigue el patron que se observa en este boxplot por direccion
+boxplot(nuevabase2)
+```
+
+
+*Segun los indicadores anteriores igual se decide el uso de dos factores, aunque el de un factor es el ideal que se buscaba posiblemente ya que el intrumento media con estos items temas de alimentacion, el indicador chicuad/gl de un factor es inaceptable, aunque la prueba de hipotesis indique que un factor es suficiente mejor se tomara en cuenta todos los demas analisis que se han evaluado, dejando como mejor opcion el uso de dos factores ya que es lo que este (chicuad/gl) y lo demas indicadores nos sugieren, aunque la proporcion de la varianza explicada en el segundo factor no sea tanta*
+
+**Selecionar una pregunta del instrumento**
+```{r}
+label(nuevabase2)
+```
+**Probar eliminando variables si el parametro de KMO mejora por pregunta y general**
+```{r}
+for (i in 1:7){
+  x=KMO(nuevabase2[,-i])
+  print(i)
+  print(x)
+}
+```
+*Al quitar cada una de las preguntas la usencia de ninguna mejora los indicadores del KMO, quitar D11 es la que menos perjudica los indicadores de la prueba KMO*
+
+*Para elegir la pregunta vamos a usar un factor para ver los pesos e intentar sacar conclusiones*
+```{r}
+fit1 <- factanal(nuevabase2, 1, rotation="none") 
+fit1 
+```
+*Nuevamente la pregunta que resalta es D11 representando la de menor peso en el analisis con un factor*
+
+```{r}
+corrplot.mixed(cor(nuevabase2))
+```
+
+*Con lo los analisis anteriores vemos que la pregunta D11 "Solo las mujeres padecen desórdenes alimenticios" es la que presenta un comportamiento mas extraño estando mayormente correlacionada con la pregunta  DA14 "Los desórdenes alimenticios solo se dan en la adolescencia" en todo el analisis estas dos preguntas han ido de la mano agrupandose, dado lo anterior supongo que se encasillo a dicho sexo y a los adolecentes o algo por el estilo al mismo nivel (estoy suponiendo demasiado pero es la sensacion que da), pero de igual forma parece que la pregunta D11 es como la mas fuera de lugar por decirlo de una manera porque es la que aporta menos en varios sentidos (pesos, correlaciones, etc) en todos los resultados que se han ido observando, por lo que dicha pregunta tiene un contenido cualitativo que no parece encajar bien con las demas exceptuando la DA14*
+
+## Pregunta 2
+
+```{r}
+nuevabase3=as.data.frame(as.matrix(nuevabase2))
+analisis <- itemAnalysis(nuevabase3)
+analisis
+```
+*Tenemos 7 items y un alfa de alfa de Cronbach de 0.702 siendo segun los rangos sugeridos una fibilidad y consistencia interna aceptable*
+
+```{r}
+analisis$itemReport
+```
+*Al ir eliminando uno por uno los items no se logra mejorar el alfa de Cronbach, ya que ninguno es mayor que el 0.702 que se obtiene con los 7 items, por otra parte aqui de nuevo se logra apreciar como la pregunta D11 vuelve a resaltar siendo la que menos empobrece el alfa al eliminarla del analisis, por otro lado vemos que la media de opinion en la los items va hacia la izquierda ya que la media de la mayoria de los items no superal el 3 y la escala es de 1-5*
+
+**Puntuaciones de las personas**
+```{r}
+X <- rowMeans(nuevabase3)
+hist(X)
+```
+
+*Aqui se observa como las personas tuvieron unas respuestas variadas ante las afirmaciones pero que estas si tienden a la asimetria para el lado izquierdo, siendo estas tendencias a estar "ni de acuerdo ni en desacuerdo" con una inclinacion hacia estar en desacuerdo con las afirmaciones*
+
+**Escogiendo una pregunta**
+
+*Dado que ya he hablado mucho de la D11 sus indicadores pobres, en este caso se va a comentar sobre el ítem DA12 que es lo contrario, tiene una media de 2.79, lo que indica una tendencia de los encuestados a estar en "Ni de acuerdo ni en desacuerdo" tirando para "En desacuerdo"  con esta afirmación ("Los desórdenes alimenticios los padecen los que quieren"). La correlación biserial (bis), de 0.632, es aceptable o mas alta de los items, lo que da la idea de que este ítem discrimina bien en la escala. De manera similar, la correlación punto-biserial (pBis) de 0.58 también sugiere que la capacidad de este ítem para discriminar entre los participantes en función de sus puntuaciones totales es aceptable, por ultimo es el que mas penaliza el alfa al eliminarlo del analisis pasando de 0.702 con los 7 items a 0.617 al excluirlo. En conjunto, esto sugiere que el ítem DA12 podría estar contribuyendo adecuadamente a la fiabilidad general y que su contenido podría estar alineado con el constructo medido.*

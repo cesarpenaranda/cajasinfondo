@@ -1,0 +1,173 @@
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(plotly)
+
+#Suavizamiento exponencial simple
+
+#Serie mensual de defunciones de Costa Rica de los años 2001 y 2002.
+defunciones<-read.csv("SERIES - Tema_3/defunciones.csv",sep=",")
+y<-ts(defunciones$defunciones,start=c(2001,1),frequency=12)
+autoplot(y) 
+
+ses1 <- ses(y,alpha=0.3,initial="simple")
+names(ses1)
+
+ses1$model
+ses1$fitted #valores ajustados
+ses1$residuals #residuos
+
+#Estimación de alpha
+alpha<-seq(0,1,0.01)
+rmse<-as.numeric()
+for(i in 1:length(alpha)){
+  ses1 <- ses(y,alpha=alpha[i],initial="simple")
+  rmse[i]<-accuracy(ses1)[2]
+}
+rmse
+
+plot(rmse)
+
+plot(alpha,rmse,type = "l")
+abline(v=alpha[rmse==min(rmse)])
+alpha[rmse==min(rmse)]
+
+ses2 <- ses(y,h=12,initial="simple")
+names(ses2)
+ses2$model
+ses2
+autoplot(ses2)
+
+
+autoplot(ses2) +
+  autolayer(fitted(ses2), series="ajustado") +
+  ylab("defunciones") + xlab("mes")
+
+
+#Método de Holt
+#Serie de graduados del ITCR de 1975-2002.
+itcrgrad<-read.csv("SERIES - Tema_3/ITCR.csv",sep=",")
+y<-ts(itcrgrad$graduados,start=1975)
+autoplot(y) 
+
+holt1 <- holt(y,alpha=0.3 ,beta=0.64 , h=5, initial="simple")
+holt1
+
+names(holt1)
+holt1$model
+
+holt1$mean # pronóstico con 5 pasos para adelante.
+holt1$x # serie original
+holt1$fitted # valores ajustados
+
+holt2 <- holt(y , h=5, initial="simple")
+holt2
+holt2$model
+
+cbind(y,holt2$fitted)
+
+autoplot(holt2) +
+  autolayer(fitted(holt2), series="ajustado") +
+  ylab("defunciones") + xlab("mes")
+
+#Estimación de alpha y beta
+
+alpha<-seq(0,1,0.01)
+beta<-seq(0,1,0.01)
+rmse<-matrix(NA,nrow=length(alpha),ncol=length(beta))
+for(i in 1:length(alpha)){
+  for(j in 1:length(beta)){
+    ses1 <- holt(y,alpha=alpha[i],beta=beta[j],initial="simple")
+    rmse[i,j]<-accuracy(ses1)[2]
+  }
+}
+dim(rmse)
+
+rmse[1:5,1:5]
+
+rownames(rmse)<-alpha
+colnames(rmse)<-beta
+
+p <- plot_ly(z = rmse,x=alpha,y=beta, type = "surface")
+p %>% layout(scene = list(xaxis = list(title = 'alpha'),
+                          yaxis = list(title = 'beta'),
+                          zaxis = list(title = 'rmse')))
+
+
+par.min<-which(rmse==min(rmse),arr.ind=TRUE)
+(alpha.min<-alpha[par.min[1]])
+(beta.min<-beta[par.min[2]])
+
+holt1<-holt(y,alpha=alpha.min,beta=beta.min , initial="simple")
+holt1$model
+
+accuracy(holt1)
+
+holt2<-holt(y , initial="simple")
+holt2$model
+
+accuracy(holt2) #Minimo local 
+
+holt3<-holt(y , initial="optimal")
+holt3$model
+
+summary(holt3)
+
+
+#Comparación Holt - Holt amortiguado
+fc <- holt(y, h=15)
+fc2 <- holt(y, damped=TRUE, h=15)
+fc2$model
+
+ggplot2::autoplot(y) +
+  autolayer(fc, series="Holt", PI=FALSE) +
+  autolayer(fc2, series="Holt amortiguado", PI=FALSE) +
+  ggtitle('Pronóstico usando método Holt-Holt amortiguado') + xlab("Año") +
+  ylab("Graduados del ITCR (1975-2002)") +
+  guides(colour=guide_legend(title="Pronóstico"))
+
+#Método multiplicativo de Holt-Winters
+turistas<-read.csv("SERIES - Tema_3/turistas.csv",sep=";")
+y<-ts(turistas$turistas,start=c(1991,1),frequency=12)
+ts.plot(y)
+
+ht1 <- hw(y,seasonal="multiplicative")
+names(ht1)
+
+ht1$model
+
+ht2 <- hw(y,seasonal="additive")
+ht3 <- hw(y, damped=TRUE, seasonal="multiplicative")
+
+ht3$model
+
+autoplot(y) +
+  autolayer(ht1, series="HW multiplicativo", PI=FALSE, size = 1.2) +
+  autolayer(ht2, series="HW aditivo", PI=FALSE, size = 1.2) +
+  autolayer(ht3, series="HW M. amortiguado", PI=FALSE, size = 1.2) +
+  xlab("fecha") +
+  ylab("turistas") +
+  ggtitle("Turistas que ingresaron a CR") +
+  guides(colour=guide_legend(title="pronóstico"))
+
+accuracy(ht1)
+accuracy(ht2)
+accuracy(ht3)
+
+#ETS como modelo Espacio de Estados
+hw_ad<-ets(y,model="AAA",damped = FALSE)
+hw_ad_a<-ets(y,model="AAA",damped = TRUE)
+hw_mul<-ets(y,model="MAM",damped = FALSE)
+hw_mul_a<-ets(y,model="MAM",damped = TRUE)
+hw_auto<-ets(y,model="ZZZ") #selecciona el mejor modelo usando AIC.
+
+rbind(accuracy(hw_ad),accuracy(hw_ad_a),accuracy(hw_mul),accuracy(hw_mul_a),accuracy(hw_auto))
+hw_auto <- ets(y)
+summary(hw_auto)
+autoplot(hw_auto)
+
+plot(forecast(hw_auto))
+
+hw_auto %>% forecast(h=12) %>%
+  autoplot() +
+  ylab("Turistas")

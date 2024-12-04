@@ -1,0 +1,488 @@
+---
+title: "Parcial I Parte III"
+author: 
+- "Daniel Alfaro Figueroa C10201"   
+- "Luis Carlos González B83415"    
+- "César Peñaranda Chaves B85922"   
+- "Luis Fernando Solano C17573"    
+- "Sthephany Vega B57716"
+date: "2024-10-03"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+
+
+# Ejercicio 1
+
+# Preparación 
+
+```{r, warning=F}
+
+#librerias
+library(kableExtra)
+library(readxl)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(dplyr)
+library(xts)
+library(ggfortify)
+library(forecast)
+library(fpp2)
+library(data.table)
+library(TTR)
+library(tidyverse)
+library(lubridate)
+library(quantmod)
+library(patchwork)
+```
+
+```{r}
+#Carga y preparación de datos
+datos <- read_excel("Datos_llegadas_salidas_CR.xlsx")
+datos <- datos %>%
+  filter(Fecha <= "2020-02-01")
+colnames(datos)=c("Fecha","L","S")
+datos$D = datos$L - datos$S
+V <- diff(datos$D)
+datos$V <- NA
+datos[-nrow(datos),5] <- V*-1
+```
+
+# Análisis exploratorio y pronóstico
+
+## 1. Realice un análisis exploratorio de los datos y describa el comportamiento de las series $S_t$, $L_t$ y $V_t$.
+
+```{r}
+L.ts <- ts(datos$L, start = c(2011, 1), frequency = 12)
+S.ts=ts(datos$S, start = c(2011, 1), frequency = 12)
+V.ts=ts(datos$V,start = c(2011, 1), frequency = 12)
+
+ggplot(datos, aes(x = Fecha)) +
+  geom_line(aes(y = L, color = "Llegadas al pais")) +
+  geom_line(aes(y = S, color = "Salidas del pais")) +
+  labs(title = " Series mensuales de llegadas y salidas del país (Enero 2011-Feb 2020)", 
+       x = "Fecha", 
+       y = "Cantidad de personas",
+       color="Serie") +
+  scale_color_manual(values = c("#54C392", "#E78F81"))+
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y")
+```
+
+En la serie de llegadas al país, se observa una tendencia creciente sin presencia de ciclos. La estacionalidad refleja picos en enero de cada año, seguidos de una disminución leve para el mes de febrero, con un aumento para el mes de marzo, que es sucedido por una disminución hasta el mes de octubre (mes que refleja la menor cantidad de llegadas al país en todo el año), que posteriormente se revierte con un aumento en los meses de noviembre y diciembre; esto coincide con las temporadas altas y bajas de turismo en el país. La estacionalidad refleja ser proporcional al nivel de la serie, por lo que hay más variación en este componente a medida que aumenta su nivel. No se observa un componente de error muy marcado, debido a que los datos son agregados a nivel mensual. 
+
+Con respecto a las salidas del país, se observa una tendencia creciente sin presencia de ciclos. La estacionalidad refleja que la cantidad de salidas más baja se da en febrero de cada año, con un aumento para el mes de marzo y abril (que coinciden con vacaciones de Semana Santa), sucedidos por una estabilidad con pocas fluctuaciones hasta septiembre; a partir de octubre, se observa un aumento importante en el número de salidas, que tienen su pico en el mes de diciembre, sucedido de una disminución en el mes de enero y febrero, cuando se registra, nuevamente, el número más bajo de salidas del país. La estacionalidad refleja ser proporcional al nivel de la serie. No se observa un componente de error muy marcado, debido a que los datos son agregados a nivel mensual.   
+
+```{r}
+ggplot(datos, aes(x = Fecha)) +
+  geom_line(aes(y = V), color = "#7E60BF") +
+  labs(title = "Serie mensual de la diferencia St-Lt (Vt) (Febrero 2011-Febrero 2022)", 
+       x = "Fecha", 
+       y = "Diferencia")+
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y")
+```
+
+En la serie de la diferencia entre meses de la diferencia entre llegadas y salidas del país (Vt), no se observa el componente de tendencia ni de ciclo. Sí se observa un patrón estacional importante en el que el nivel más bajo de la serie se da en el mes de diciembre y el más alto se da hacia mediados de año, es decir, que el comportamiento estacional de la serie se ve marcado por tener el nivel más bajo al inicio del año, seguido por un aumento hasta entre el fin del primer trimestre y la mitad del año y una disminución nuevamente hacia finales de año. El componente estacional no es proporcional al nivel de la serie (pues el nivel es constante). También se refleja que el componente de movimiento irregular tiene un peso importante en la serie, pues las variaciones no se pueden explicar determinísticamente a partir del componente de estacionalidad y no se observa el componente de tendencia.
+
+## 2.  Realice la descomposición clásica más apropiada a las serie e interprete el resultado.
+
+```{r}
+S.d <- decompose(S.ts, type="multiplicative") 
+L.d <- decompose(L.ts, type="multiplicative")
+V.d <- decompose(V.ts, type="additive")
+```
+
+### $S_t$
+```{r}
+autoplot(S.d)
+```
+
+Se descompone la serie con el método multiplicativo debido a que, como se comentó en el análisis anterior, la estacionalidad varía de manera proporcional al nivel de la serie. En la serie de salidas, se observa un ciclo caracterizado por una tendencia positiva entre 2012 y finales de 2017, a partir de cuando hay una tendencia negativa que se revierte a partir de finales de 2018, obteniendo nuevamente una tendencia positiva hasta mediados de 2019. El componente estacional confirma lo expresado en el punto anterior, pues se observa un pico en el nivel de la serie hacia final del año, con picos locales en marzo-abril (Semana Santa) y mediados de año, así como los puntos más bajos en febrero. El componente de error demuestra tener una proporción baja en la composición de la serie al oscilar entre 0.8 y 1.2. 
+
+### $L_t$
+```{r}
+autoplot(L.d)
+```
+
+Se descompone la serie con el método multiplicativo debido a que, como se comentó en el análisis anterior, la estacionalidad varía de manera proporcional al nivel de la serie. En la serie de llegadas, se observa una tendencia creciente a lo largo de todo el período, con aumentos mayores en 2015. El componente estacional refleja picos en el mes de enero, con una disminución por el resto del período hasta el mes de octubre, donde vuelve a aumentar hasta el mes de enero; asimismo, se presentan picos locales hacia mediados de año. El componente de error demuestra tener una proporción muy baja en la composición de la serie al oscilar entre 0.96 y 1.04. 
+
+### $V_t$
+
+```{r}
+autoplot(V.d)
+```
+
+Se decidió descomponer la serie con el método aditivo porque la estacionalidad no varía proporcionalmente con el nivel de la serie. El componente de tendencia no tiene un comportamiento claro, demostrando que la serie tiene una tendencia no determinística. Asimismo, el componente estacional demuestra que la serie se ve marcads por tener el nivel más najo al inicio del año, seguido por un aumento hasta entre el fin del primer trimestre y la mitad del año y una disminución nuevamente hacia finales de año; asimismo, este componente refleja tener un peso importante en la composición de la serie al tener las unidades con el rango más grande en la descomposición. Por otro lado, el movimiento irregular también demuestra tener un peso importante en la composición de la serie, aunque la principal razón de la amplitud de su rango se debe a una observación en específico hacia mediados de 2019. 
+
+ 
+
+## 3. Separe la serie en datos de entrenamiento y testeo. Tome los últimos 12 meses observados (marzo de 2019 a febrero de 2020) como testeo y con los datos de entrenamiento. Ajuste un modelo de regresión (tendencia y estacionalidad) y un modelo de suavizamiento exponencial apropiado para cada una de las tres series de tiempo. Vefique y comente los supuestos de los modelos.
+
+### $L_t$ 
+
+```{r}
+L.train<-window(L.ts,start=c(2011,1),end=c(2019,2))
+L.test<-window(L.ts,start=c(2019,3),end=c(2020,2))
+```
+
+#### Regresión
+
+Se decide hacer un modelo de regresión de tendencia y estacionalidad ante la confirmación de la presencia de ambos componentes en el análisis anterior. Se decide modelar la tendencia como lineal al no observarse un comportamiento cuadrático ni exponencial en el punto 1. Como la variación estacional aumenta proporcionalmente con el nivel de la serie, se aplica una transformación logarítmica a la serie. 
+
+```{r}
+L.train.log <- log(L.train)
+L.1 <- tslm(L.train.log ~trend+season)
+summary(L.1)
+checkresiduals(L.1)
+```
+
+**Sobre el modelo**
+A partir del modelo, se obtienen coeficientes significativos para la tendencia lineal y la estacionalidad del modelo. Asimismo, se confirma que el pico más alto de la serie (al analizarla estacionalmente) se da en enero. El R cuadrado ajustado es casi 1, indicando un muy buen ajuste del modelo.
+
+**Sobre los supuestos**
+Los errores no tienen un comportamiento de ruido blanco a través del tiempo, y su media no está centrada en cero, incumpliendo con el supuesto. Asimismo, se incumple el supuesto de no autocorrelación de los errores, pues se observa que varios rezagos tienen una correlación significativa y se rechaza la hipótesis nula de no correlación de la prueba Breusch-Godfrey. Finalmente, se evidencia que los errores no se distribuyen normalmente, incumpliendo también con este supuesto. Por lo tanto, los errores estándar y los intervalos de confianza generados a partir de este modelo no serán confiables. 
+
+#### Suavizamiento
+
+Se decidió aplicar un suavizamiento exponencial por medio del método de Holt-Winters multiplicativo amortiguado, pues la serie presenta tendencia y estacionalidad proporcional al nivel de la serie. Se decide trabajar con el modelo amortiguado para evitar mantener una tendencia permanentemente creciente. Asimismo, se permite que el modelo encuentre los valores óptimos de cada parámetro.
+
+```{r}
+ht.L <-  hw(y = L.train, seasonal = "multiplicative", damped = TRUE) 
+ht.L$model
+```
+
+### $S_t$ 
+
+```{r}
+S.train<-window(S.ts,start=c(2011,1),end=c(2019,2))
+S.test<-window(S.ts,start=c(2019,3),end=c(2020,2))
+```
+
+#### Regresión
+
+Se decide hacer un modelo de regresión de tendencia y estacionalidad ante la confirmación de la presencia de ambos componentes en el análisis anterior. Se decide modelar la tendencia como lineal al no observarse un comportamiento cuadrático ni exponencial en el punto 1. Como la variación estacional aumenta proporcionalmente con el nivel de la serie, se aplica una transformación logarítmica a la serie. 
+
+```{r}
+S.train.log <- log(S.train)
+S.1 <- tslm(S.train.log ~trend+season)
+summary(S.1)
+checkresiduals(S.1)
+```
+**Sobre el modelo**
+A partir del modelo, se obtienen coeficientes significativos para la tendencia lineal y la estacionalidad del modelo. Asimismo, se confirma que el pico más alto de la serie (al analizarla estacionalmente) se da en diciembre. El R cuadrado ajustado del modelo es 0.9, indicando un muy buen ajuste del modelo. 
+
+**Sobre los supuestos**
+Los errores no tienen un comportamiento de ruido blanco a través del tiempo, y su media no está centrada en cero, incumpliendo con el supuesto. Asimismo, se incumple el supuesto de no autocorrelación de los errores, pues se observa que varios rezagos tienen una correlación significativa y se rechaza la hipótesis nula de no correlación de la prueba Breusch-Godfrey. Finalmente, se evidencia que los errores no se distribuyen normalmente, incumpliendo también con este supuesto. Por lo tanto, los errores estándar y los intervalos de confianza generados a partir de este modelo no serán confiables. 
+
+#### Suavizamiento
+
+Se decidió aplicar un suavizamiento exponencial por medio del método de Holt-Winters multiplicativo amortiguado, pues la serie presenta tendencia y estacionalidad proporcional al nivel de la serie. Se decide trabajar con el modelo amortiguado para evitar mantener una tendencia permanentemente creciente. Asimismo, se permite que el modelo encuentre los valores óptimos de cada parámetro.
+
+```{r}
+ht.S <-  hw(y = S.train, seasonal = "multiplicative", damped = TRUE) 
+ht.S$model
+```
+
+### $V_t$
+
+```{r}
+V.train<-window(V.ts,start=c(2011,1),end=c(2019,2))
+V.test<-window(V.ts,start=c(2019,3),end=c(2020,1))
+```
+
+#### Regresión
+Al no haber tendencia y confirmar que el modelo tiene estacionalidad por medio de la descomposición, se decide hacer un modelo que contemple estacionalidad y no la tendencia; sin embargo, para comparar el rendimiento, también se plantea un modelo con tendencia. No se transforma la serie al no observar que la estacionalidad varíe con el nivel de la serie. 
+
+
+##### Sin tendencia
+```{r}
+V.1 <- tslm(V.train ~season)
+summary(V.1)
+checkresiduals(V.1)
+
+```
+**Sobre el modelo**
+A partir del modelo, se obtienen coeficientes significativos para la estacionalidad del modelo. Asimismo, se confirma que el pico más alto de la serie (al analizarla estacionalmente) se da en agosto, seguido por marzo y el más bajo en diciembre.
+
+**Sobre los supuestos**
+Los errores sí tienen un comportamiento de ruido blanco a través del tiempo, con media cero, cumpliendo con el supuesto. Asimismo, sí se cumple el supuesto de normalidad de los errores, como se evidencia en el gráfico. Sin embargo, no se cumple el supuesto de no autocorrelación, pues el primer rezago demuestra tener una correlación significativa, lo cual se comprueba con la prueba de Breusch-Godfrey de no correlación, para la cual se rechaza la hipótesis nula. 
+
+**NOTA**: que en diciembre este valor sea el menor, permite identificar que diciembre es un mes al que se debe prestar atención; asimismo se le debe prestar atención a marzo y agosto, que son los meses donde hay picos. Este análisis tendría sentido al considerar que diciembre es el mes en el que se pagan aguinaldos, que marzo es un mes con un número importante de llegadas al país, probablemente motivado por Semana Santa y que septiembre es un mes de temporada baja.
+
+```{r}
+promedios_mensuales <- datos %>%
+  mutate(Mes = month(Fecha)) %>%  
+  group_by(Mes) %>%               
+  summarise(
+    Promedio_S = mean(S, na.rm = TRUE),
+    Promedio_L = mean(L, na.rm = TRUE),
+    Promedio_D = mean(D, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  mutate(Mes = month.abb[Mes]) 
+
+tabla <- promedios_mensuales %>%
+  kable("html", col.names = c("Mes", "Promedio de Salidas (S)", "Promedio de Llegadas (L)", "Promedio de Diferencias (D)")) %>%
+  kable_styling("striped", full_width = F)
+
+tabla
+```
+**Importante**:
+
+Como se puede observar, diciembre es el mes con más alto número de salidas, particularmente mayor a enero (mes con respecto al cual se determina la variable Vt); aunque el número de llegadas es alto, es menor al mes de enero, en el cual las salidas disminuyen de manera importante con respecto a diciembre. 
+
+Con respecto a marzo, el número de llegadas es considerablemente mayor que en abril, mientras que las salidas son bastante parecidas, lo cual permite entender por qué este mes tiene un pico en Vt.
+
+Con respecto a agosto, sucede una situación similar a la de marzo, en la que el número de salidas con respecto a septiembre es bastante similar, pero el de llegadas disminuye de manera importante en septiembre.
+
+A partir de esto, se puede resumir que diciembre es un mes caracterizado por un número alto de salidas y un número bajo de llegadas con respecto a enero. Nuevamente, esto se puede asociar con el pago de aguinaldos en el mes de diciembre y un aumento en el ingreso de turistas en enero, probablemente motivado por el fin de las fiestas de fin de año y el invierno en países de influencia de pasajeros importante.
+
+Con respecto a marzo, se puede concluir que es un mes con una cantidad de ingresos considerablemente alta en relación a abril, probablemente motivado por el fin de la temporada alta y Semana Santa.
+
+Finalmente, con respecto a agosto, una conclusión relevante se obtiene a partir de la disminución de ingresos en septiembre, que puede ser explicada como el punto más bajo de la temporada baja del turismo en el país. 
+
+
+##### Con tendencia
+
+```{r}
+V.2 <- tslm(V.train ~ trend+season)
+summary(V.2)
+checkresiduals(V.2)
+
+```
+**Sobre el modelo**
+A partir del modelo, se obtienen coeficientes significativos para la estacionalidad del modelo; sin embargo, como se esperaba, la tendencia es no significativa (con un valor p de casi 1). Asimismo, se confirma que el pico más alto de la serie (al analizarla estacionalmente) se da en febrero. Como notación importante, el R cuadrado ajustado del modelo es menor que el del modelo que no contempla la tendencia por muy poco; para ambos casos, el R cuadrado ajustado es de 0.93, indicando un muy buen ajuste del modelo.
+
+**Sobre los supuestos**
+Los errores sí tienen un comportamiento de ruido blanco a través del tiempo, con media cero, cumpliendo con el supuesto. Asimismo, sí se cumple el supuesto de normalidad de los errores, como se evidencia en el gráfico. Sin embargo, no se cumple el supuesto de no autocorrelación, pues el primer rezago demuestra tener una correlación significativa, lo cual se comprueba con la prueba de Breusch-Godfrey de no correlación, para la cual se rechaza la hipótesis nula. 
+
+#### Suavizamiento
+
+Se decidió aplicar un suavizamiento exponencial por medio del método de Holt-Winters aditivo amortiguado, pues la serie presenta  estacionalidad que no depende del nivel de la serie, aunque no presenta tendencia. Se decide trabajar con el modelo amortiguado para evitar mantener una tendencia permanentemente creciente. Asimismo, se permite que el modelo encuentre los valores óptimos de cada parámetro. Por otro lado, se modela un suavizamiento exponencial simple al no presentar tendencia; aunque no se valora este método como el más apropiado para esta serie, se pondrá a prueba su rendimiento en el punto siguiente.
+
+##### Holt-Winters aditivo
+
+```{r}
+ht.V <-  hw(y = V.train, seasonal = "additive", damped = TRUE) 
+ht.V$model
+```
+
+##### SES
+
+```{r}
+ses.V <- ses(y=V.train, h=12, initial = "optimal")
+ses.V$model
+```
+Por criterios de información, Holt-Winters aditivo es un mejor modelo que SES, por lo que se recomienda mantener el primero.
+
+## 4. Realice un pronóstico de las series 𝑆𝑡, 𝐿𝑡 y 𝑉𝑡 para los próximos 12 meses y verifique los errores de pronóstico.
+
+### $S_t$
+
+```{r}
+S.r <- exp(forecast(S.1, h=12)$mean)
+S.h <- forecast(ht.S, h=12)
+```
+
+```{r}
+
+accuracy.S.r <- accuracy(S.r, S.test)
+accuracy.S.h <- accuracy(S.h, S.test)[,-6]
+
+df.S.r <- as.data.frame(accuracy.S.r)
+df.S.h <- as.data.frame(accuracy.S.h)
+
+
+resultadosS <- rbind(df.S.r, df.S.h) [-2,]
+rownames(resultadosS) <- c("Regresión","H-W Mult.")
+library(kableExtra)
+
+tabla_resultados <- resultadosS %>%
+  kable("html") %>%
+  kable_styling("striped", full_width = F)
+
+print(tabla_resultados)
+```
+
+### $L_t$
+
+```{r}
+L.r <- exp(forecast(L.1, h=12)$mean)
+L.h <- forecast(ht.L, h=12)
+```
+
+```{r}
+
+accuracy.L.r <- accuracy(L.r, L.test)
+accuracy.L.h <- accuracy(L.h, L.test)[,-6]
+
+df.L.r <- as.data.frame(accuracy.L.r)
+df.L.h <- as.data.frame(accuracy.L.h)
+
+
+resultadosL <- rbind(df.L.r, df.L.h) [-2,]
+rownames(resultadosL) <- c("Regresión","H-W Mult.")
+library(kableExtra)
+
+tabla_resultados <- resultadosL %>%
+  kable("html") %>%
+  kable_styling("striped", full_width = F)
+
+print(tabla_resultados)
+```
+
+
+### $V_t$
+
+```{r}
+V.r <- forecast(V.1, h=11)$mean
+V.h <- forecast(ht.V, h=11)
+V.s <- forecast(ses.V, h=11)
+```
+
+```{r}
+
+accuracy.V.r <- accuracy(V.r, V.test)
+accuracy.V.h <- accuracy(V.h, V.test)[,-6]
+accuracy.V.s <- accuracy(ses.V, V.test)[,-6]
+
+
+df.V.r <- as.data.frame(accuracy.V.r)
+df.V.h <- as.data.frame(accuracy.V.h)
+df.V.S <- as.data.frame(accuracy.V.s)
+
+resultadosV <- rbind(df.V.r, df.V.h, df.V.S) [-c(2,4),]
+rownames(resultadosV) <- c("Regresión","H-W Mult.","SES")
+library(kableExtra)
+
+tabla_resultados <- resultadosV %>%
+  kable("html") %>%
+  kable_styling("striped", full_width = F)
+
+print(tabla_resultados)
+```
+
+# Ejercicio 2
+
+## $V_t$ a partir de los pronosticos de $S_t$ y $L_t$
+
+```{r}
+(S.r <- exp(forecast(S.1, h=12)$mean))
+(S.h <- forecast(ht.S, h=12))
+```
+
+```{r}
+L.r <- exp(forecast(L.1, h=12)$mean)
+L.h <- forecast(ht.L, h=12)
+```
+
+
+
+
+## 1. ¿Cuál es la mejor forma realizar el pronóstico 𝑉𝑡? ¿Qué ventajas o desventajas hay entre las metodologías?
+
+A continuación se presentan las tablas de medidas de precisión para ambas metodologías, la estimación directa y la estimación por medio de los pronósticos de $S_t$ y $L_t$:
+
+```{r}
+resultadosV <- rbind(df.V.r, df.V.h, df.V.S) [-c(2,4),]
+rownames(resultadosV) <- c("Regresión","H-W Mult.","SES")
+library(kableExtra)
+
+tabla_resultados <- resultadosV %>%
+  kable("html", caption = "Medidas de preción estimación directa Vt") %>%
+  kable_styling("striped", full_width = F)
+
+print(tabla_resultados)
+```
+
+
+```{r}
+D.r.2 = L.r - S.r
+V.r.2 <- diff(D.r.2)
+V.r.2 <- V.r.2*-1
+V.r.2=ts(V.r.2,start = c(2019, 3), frequency = 12)
+
+D.h.2 = L.h$mean - S.h$mean
+V.h.2 <- diff(D.h.2)
+V.h.2 <- V.h.2*-1
+V.h.2=ts(V.h.2,start = c(2019, 3), frequency = 12)
+
+accuracy.V.r.2 <- accuracy(V.r.2, V.test)[,-6]
+accuracy.V.h.2 <- accuracy(V.h.2, V.test)[,-6]
+
+df.V.r.2 <- as.data.frame(t(accuracy.V.r.2))
+df.V.h.2 <- as.data.frame(t(accuracy.V.h.2))
+
+
+resultadosV <- rbind(df.V.r.2, df.V.h.2)
+rownames(resultadosV) <- c("Regresión","H-W Mult.")
+library(kableExtra)
+
+tabla_resultados <- resultadosV %>%
+  kable("html", caption = "Medidas de preción Vt a partir de prónosticos") %>%
+  kable_styling("striped", full_width = F)
+
+print(tabla_resultados)
+
+```
+
+
+La estimación directa de $V_t$ por el modelo de regresión presentó un menor error para las métricas: ME, RMSE, MAE, MAPE y un valor más bajo de Theil's U en comparación con el modelo Holt-Winters (H-W) multiplicativo.
+
+Al realizar la estimación de $V_t$ a través de los pronósticos de $L_t$ y $S_t$, también se utilizaron los modelos de regresión y Holt-Winters. Para el modelo de regresión las métricas de precisión presentaron peores medidas sin embargo, utilizando el método Holt-Winters para pronósticar las series $L_t$ y $S_t$, y con esto calcular $V_t$ las métricas obtenidas arrojaron mejores resultados que la estimación directa de $V_t$. 
+
+
+Ventajas y desventajas:
+
+Estimación directa de $V_t$:
+
+Ventajas:
+
+- Sí se cumplen los supuestos de la regresión por lo que los intervalos de confianza del modelo son confiables, a diferencia de estimar $S_t$ y $L_t$ y después $D_t$ y finalmente $V_t$, porque los supuestos no se cumplen ni para $S_t$ ni para $Lt$. 
+- Más simple de implementar ya que no requiere realizar múltiples cálculos intermedios.
+
+Desventajas:
+
+- Puede ser menos intuitivo ya que no descompone la serie en llegadas y salidas.
+- No permite analizar individualmente las series ($L_t$ y $S_t$) que pueden ser relevantes para la toma de decisiones.
+
+Estimación a través de los pronósticos de $L_t$ y $S_t$:
+
+Ventajas:
+
+- Menor error en el pronóstico según las medidas de precisión presentadas (ME, RMSE, MAE, MAPE).
+- Permite un análisis más detallado y específico de las series de llegadas ($L_t$) y salidas ($S_t$), proporcionando información que puede ser útil para entender el flujo de turistas.
+- Da la oportunidad de ajustar modelos específicos para $L_t$ y $S_t$, lo que puede ser ventajoso cuando se tienen más datos detallados para cada una de estas series.
+
+Desventajas:
+
+- Más complejo ya que involucra pasos adicionales y requiere la modelación de dos series en lugar de una.
+
+La mejor forma de realizar el pronóstico de $V_t$, basandose en las medidas de precisión, es la estimación a través de los pronósticos de $L_t$ y $S_t$ debido a que este método ofrece un análisis más completo de las llegadas y salidas, considerando que en la práctica las medidas de precisión son más relevantes que el cumplimiento de supuestos.
+
+## 2. Suponiendo condiciones estables del país. ¿Recomienda la empresa realizar la campaña de promoción turística?
+
+En condiciones estables, los pronósticos de las series llegadas ($L_t$) y salidas ($S_t$) sugieren comportamientos estacionales típicos que deberían ser aprovechados. Los análisis indicaron picos en las llegadas al país en los meses de enero y marzo, y una disminución hacia octubre, seguidos de un aumento en noviembre y diciembre. Esto coincide con las temporadas altas y bajas de turismo en el país.
+
+### Recomendación:
+
+- Sí, se recomienda realizar la campaña de promoción turística, especialmente si se planifica antes de los meses con menor número de llegadas (septiembre y octubre) o para potenciar los picos ya identificados (enero, marzo).
+- Sin embargo, es fundamental monitorear continuamente las condiciones económicas y sanitarias, ya que factores externos pueden alterar en gran medida las tendencias.
+
+## 3. ¿Qué otros factores, aparte de su modelo, debería tomar en cuenta de la empresa antes de iniciar la campaña? 
+
+- Situación económica y política: La estabilidad financiera y las condiciones económicas en los países de origen de los turistas pueden influir en la decisión de viajar.
+
+- Condiciones sanitarias: Especialmente después de la pandemia, las condiciones sanitarias y restricciones de viaje son factores críticos que afectan las llegadas y salidas de personas.
+
+- Competencia de destinos turísticos: La empresa debe analizar la competencia con otros destinos turísticos similares, ya que puede afectar la demanda de llegadas.
+
+- Eventos estacionales o festivos: Festividades como Semana Santa y otras vacaciones impactan en las llegadas y salidas, lo cual debería ser aprovechado para planificar la campaña.

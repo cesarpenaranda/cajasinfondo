@@ -1,0 +1,167 @@
+---
+title: "Lista de Ejercicios 1"
+output: html_document
+---
+```{r}
+library(ggfortify)
+library(forecast)
+library(fpp2)
+library(data.table)
+library(TTR)
+library(xts)
+library(tidyverse)
+library(lubridate)
+library(quantmod)
+```
+
+## Ejercicio 1: Clasificación de series
+
+Clasifique las siguientes series como discreta o continua, univariada o multivariada:
+
+1. **Índice diario de bolsa de valores durante el período de enero 1990 a diciembre 2010:**  
+   **Clasificación:** discreto, univariada
+
+2. **Registro de la marea en un lugar específico durante 30 días:**  
+   **Clasificación:** continua, univariada
+
+3. **Presión sanguínea de una mujer durante el embarazo:**  
+   **Clasificación:** continua, univariada
+
+4. **Temperatura promedio diaria durante el año 2019:**  
+   **Clasificación:** discreto, univariada
+
+5. **Registro diario de nacimientos y defunciones durante el año 2010:**  
+   **Clasificación:** discreto, multivariada
+
+## Ejercicio 2: Análisis de la base de datos `matricula.csv`
+
+```{r}
+#a Cargar los datos
+matricula <- read.csv("~/SERIES - datos practica 1/matricula.csv")
+matricula.ts <- ts(matricula$matricula,start = (1957),frequency = 10)
+#b Gráfico de la serie
+autoplot(matricula.ts)
+decomps <- decompose(matricula.ts,type = "additive")
+autoplot(decomps)
+ggseasonplot(matricula.ts, year.labels=FALSE, continuous=TRUE)
+ggsubseriesplot(matricula.ts)
+```
+c. Comentario sobre las características de la serie
+*La estacionalidad tiene un efecto minimo en esta serie, ademas se ve una tendencia-ciclo creciente, pero posea un movimiento ciclico*
+
+
+## Ejercicio 3: Análisis de la base de datos `nacimiento.csv`
+
+```{r}
+#a Cargar los datos
+nacimiento <- read.csv("~/SERIES - datos practica 1/nacimiento.csv")
+#b Gráfico de la serie
+nacimiento.ts <- ts(nacimiento$X7228,start = c(1990,2),frequency=12)
+autoplot(nacimiento.ts)
+decomps <- decompose(nacimiento.ts,type = "additive")
+autoplot(decomps)
+```
+c. Comentario sobre las características de la serie
+*Una tendencia-ciclo con poco efecto sobre la serie, una estacionalidad marcada con efecto sobre la serie que muestra un crecimiento en los nacimientos segun se acerca el final del anio pero con una caida a finales del mismo que se mantine hasta ya iniciado el siguiente anio*
+
+## Ejercicio 4: Análisis de la base de datos `cardiovascular.csv`
+
+```{r}
+#a Cargar los datos
+cardiovascular <- read.csv("~/SERIES - datos practica 1/cardiovascular.csv")
+#b Gráfico de la serie
+cardiovascular.ts <- ts(cardiovascular$y,start = c(2000),frequency = 12)
+autoplot(cardiovascular.ts)
+#c Descomposición clásica aditiva
+decomps <- decompose(cardiovascular.ts,type="additive")
+autoplot(decomps)
+```
+c.2 Comentario sobre la descomposición clásica aditiva
+
+*se observa un movimiento ciclico, una tendencia creciente a algo creciente, principalmente de mediados del 2002 al final de la serie, ademas una estacionalidad que parece tener un efecto importante sobre la serie*
+
+```{r}
+#d Descomposición STL
+cardio.stl<-stl(cardiovascular.ts,t.window=20, s.window="periodic", robust=TRUE)
+plot(cardio.stl)
+```
+d.2 Comentario sobre la descomposición STL
+
+*Nuevamente vemos una tendencia creciente apartir de la mitad del 202 ademas una estacionalidad no despreciable*
+
+## Ejercicio 5: Análisis de la base de datos `ventas.csv`
+
+```{r}
+#a Cargar los datos
+library(readxl)
+ventas <- read_excel("SERIES - datos practica 1/ventas.xls")
+#b Gráfico de la serie
+ventas.ts <- ts(ventas$y,start = (2001),frequency = 12)
+autoplot(ventas.ts)
+#b Realice la descomposición clásica multiplicativa para la serie en el periodo 2001-2004.
+#ventas.ts2 <- ts(ventas$y,start = c(2001,1),end=c(2004,12),frequency = 12)
+#descomps <- decompose(ventas.ts2,type="multiplicative")
+autoplot(descomps)
+#d Pronostique la serie para el año 2005 y calcule las medidas de precisión de estos pronósticos.
+y.train<-window(ventas.ts,start=c(2001,1),end=c(2004,12))
+y.test<-window(ventas.ts,start=c(2005,1),end=c(2005,12))
+y.stl3<-stl(y.train,t.window=20, s.window="periodic", robust=TRUE)
+
+#Pronostico
+pronostico<-forecast(y.stl3,h=12)
+#default: suavizamiento exponencial
+
+plot(pronostico)
+points(y.test,type="l",col=2)
+
+# Cálculo de las medidas de precisión
+accuracy(pronostico,y.test)
+fitted(pronostico) #Valores predichos
+```
+
+## Ejercicio 6: Pronóstico utilizando suavizamiento exponencial
+
+### Serie de defunciones por problemas cardiovasculares
+Utilice R para ajustar un modelo de suavizamiento exponencial apropiado para la serie de defunciones por problemas cardiovasculares del ejercicio 4 y pronostique para enero, febrero y marzo de 2008.
+```{r}
+# Pronóstico para el año 2008
+y.train<-window(cardiovascular.ts,start=c(2000,1),end=c(2006,12))
+y.test<-window(cardiovascular.ts,start=c(2007,1),end=c(2007,12))
+y.stl3<-stl(y.train,t.window=20, s.window="periodic", robust=TRUE)
+
+#Pronostico
+pronostico<-forecast(y.stl3,h=15)
+#default: suavizamiento exponencial
+
+plot(pronostico)
+points(y.test,type="l",col=2)
+```
+
+### Serie de ventas
+Utilice R para ajustar un modelo de suavizamiento exponencial apropiado para la serie de ventas del ejercicio 5 y pronostique para los meses del año 2005. Compare los resultados con el ejercicio 5.d.
+```{r}
+# Pronóstico para el año 2005
+y.train<-window(ventas.ts,start=c(2001,1),end=c(2004,12))
+y.test<-window(ventas.ts,start=c(2005,1),end=c(2005,12))
+y.stl3<-stl(y.train,t.window=20, s.window="periodic", robust=TRUE)
+
+#Pronostico
+pronostico<-forecast(y.stl3,h=12)
+#default: suavizamiento exponencial
+
+plot(pronostico)
+points(y.test,type="l",col=2)
+```
+
+## Ejercicio 7: Análisis descriptivo de una serie temporal de interés
+
+```{r}
+# Cargar la serie de interés
+
+# Análisis descriptivo
+
+# Comentarios sobre los patrones observados, tendencias, estacionalidades, etc.
+
+```
+
+

@@ -1,0 +1,55 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-08-20"
+---
+
+# Valores observados
+```{r}
+y = c(52, 37, 11, 7, 49, 45.7, 15, 29, 8, 22)
+```
+
+# Valores predichos
+```{r}
+y_pred = c(59.25270, 30.63607, 13.87490, 12.23966, 51.07652, 32.68011, 16.32775, 24.50393, 12.64847, 22.45989)
+```
+
+# Cálculo del Error Absoluto Medio (MAE)
+```{r}
+MAE = mean(abs(y - y_pred))
+```
+
+# Cálculo del Error Cuadrático Medio (MSE)
+```{r}
+MSE = mean((y - y_pred) ** 2)
+```
+
+```{r}
+MAE
+MSE
+```
+
+
+```{r}
+n=10000
+u=runif(n,0,1)
+v=runif(n,0,1)
+x=2*u-1
+y=2*v-1
+n_d=x**2+y**2
+n_d2=n_d[n_d<=1]
+
+pi=(4*length(n_d2))/n
+pi
+
+
+y_2=y[n_d<=1]
+x_2=x[n_d<=1]
+```
+
+```{r}
+plot(x, y, pch = 16, asp = 1,xlab = "x", ylab = "y", main = "Puntos que caen dentro del circulo",)
+points(x_2, y_2,col="red",type = "p")
+```
+
+

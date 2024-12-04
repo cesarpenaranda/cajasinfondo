@@ -1,0 +1,1266 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+#Clasificación de Flare Solar (flare y  no flare) de la Serie Tiempo de Parámetros de Campo Magnético Solar.
+
+Cada serie de tiempo multivariado de muestra tiene 60 valores que representan una observación tocada a intervalos de 12 minutos.
+
+
+#Preparación de datos
+```{r}
+library(ggfortify)
+library(forecast)
+library(fpp2)
+library(data.table)
+library(TTR)
+library(xts)
+library(tidyverse)
+library(lubridate)
+library(quantmod)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(astsa)
+library(car)
+library(gamair)
+library(mgcv)
+library(dplyr)
+#tablas
+library(gt)
+#unir graficos
+library(patchwork)
+```
+
+## Cargar datos
+
+### No Flares
+
+```{r}
+nf1 <- read.delim("C1.0@3264_Primary_ar1367_s2012-02-09T01_00_00_e2012-02-09T12_48_00.csv", row.names=1)
+nf2 <- read.delim("C1.1@3258_Primary_ar1367_s2012-02-08T14_00_00_e2012-02-09T01_48_00.csv", row.names=1) 
+nf3 <- read.delim("C2.9@3256_Primary_ar1367_s2012-02-07T16_00_00_e2012-02-08T03_48_00.csv", row.names=1)
+nf4 <- read.delim("C2.9@3256_Primary_ar1367_s2012-02-08T10_00_00_e2012-02-08T21_48_00.csv", row.names=1) 
+nf5 <- read.delim("C3.8@2132_Primary_ar750_s2011-07-29T18_00_00_e2011-07-30T05_48_00.csv", row.names=1) 
+```
+
+### Flare
+
+```{r}
+f1 <- read.delim("M1.0@265_Primary_ar115_s2010-08-06T06_36_00_e2010-08-06T18_24_00.csv", row.names=1) 
+f2 <- read.delim("M2.0@84_Primary_ar54_s2010-06-11T08_24_00_e2010-06-11T20_12_00.csv", row.names=1) 
+f3 <- read.delim("M3.2@2372_Primary_ar814_s2011-09-03T18_00_00_e2011-09-04T05_48_00.csv", row.names=1) 
+f4 <- read.delim("M3.9@2566_Primary_ar902_s2011-09-30T17_48_00_e2011-10-01T05_36_00.csv", row.names=1)
+f5 <- read.delim("M7.9@3429_Primary_ar1449_s2012-03-12T14_24_00_e2012-03-13T02_12_00.csv", row.names=1) 
+```
+
+
+
+## Vectores de variables de interés
+
+### No flare: 
+```{r}
+TOTUSJH.nf1 <- scale(nf1[,1])
+TOTBSQ.nf1 <- scale(nf1[,2])
+TOTPOT.nf1 <- scale(nf1[,3])
+TOTUSJZ.nf1 <- scale(nf1[,4])
+ABSNJZH.nf1 <- scale(nf1[,5])
+
+TOTUSJH.nf2 <- scale(nf2[,1])
+TOTBSQ.nf2 <- scale(nf2[,2])
+TOTPOT.nf2 <- scale(nf2[,3])
+TOTUSJZ.nf2 <- scale(nf2[,4])
+ABSNJZH.nf2 <- scale(nf2[,5])
+
+TOTUSJH.nf3 <- scale(nf3[,1])
+TOTBSQ.nf3 <- scale(nf3[,2])
+TOTPOT.nf3 <- scale(nf3[,3])
+TOTUSJZ.nf3 <- scale(nf3[,4])
+ABSNJZH.nf3 <- scale(nf3[,5])
+
+TOTUSJH.nf4 <- scale(nf4[,1])
+TOTBSQ.nf4 <- scale(nf4[,2])
+TOTPOT.nf4 <- scale(nf4[,3])
+TOTUSJZ.nf4 <- scale(nf4[,4])
+ABSNJZH.nf4 <- scale(nf4[,5])
+
+TOTUSJH.nf5 <- scale(nf5[,1])
+TOTBSQ.nf5 <- scale(nf5[,2])
+TOTPOT.nf5 <- scale(nf5[,3])
+TOTUSJZ.nf5 <- scale(nf5[,4])
+ABSNJZH.nf5 <- scale(nf5[,5])
+
+```
+
+### Flare
+```{r}
+# Secuencia 1
+TOTUSJH.f1 <- scale(f1[,1])
+TOTBSQ.f1 <- scale(f1[,2])
+TOTPOT.f1 <- scale(f1[,3])
+TOTUSJZ.f1 <- scale(f1[,4])
+ABSNJZH.f1 <- scale(f1[,5])
+
+# Secuencia 2
+TOTUSJH.f2 <- scale(f2[,1])
+TOTBSQ.f2 <- scale(f2[,2])
+TOTPOT.f2 <- scale(f2[,3])
+TOTUSJZ.f2 <- scale(f2[,4])
+ABSNJZH.f2 <- scale(f2[,5])
+
+# Secuencia 3
+TOTUSJH.f3 <- scale(f3[,1])
+TOTBSQ.f3 <- scale(f3[,2])
+TOTPOT.f3 <- scale(f3[,3])
+TOTUSJZ.f3 <- scale(f3[,4])
+ABSNJZH.f3 <- scale(f3[,5])
+
+# Secuencia 4
+TOTUSJH.f4 <- scale(f4[,1])
+TOTBSQ.f4 <- scale(f4[,2])
+TOTPOT.f4 <- scale(f4[,3])
+TOTUSJZ.f4 <- scale(f4[,4])
+ABSNJZH.f4 <- scale(f4[,5])
+
+# Secuencia 5
+TOTUSJH.f5 <- scale(f5[,1])
+TOTBSQ.f5 <- scale(f5[,2])
+TOTPOT.f5 <- scale(f5[,3])
+TOTUSJZ.f5 <- scale(f5[,4])
+ABSNJZH.f5 <- scale(f5[,5])
+
+```
+
+## Conversión a TS
+
+### No-flare
+
+```{r}
+# Secuencia 1
+TOTUSJH.nf1.ts <- ts(data = TOTUSJH.nf1, frequency = 5)
+TOTBSQ.nf1.ts <- ts(data = TOTBSQ.nf1, frequency = 5)
+TOTPOT.nf1.ts <- ts(data = TOTPOT.nf1, frequency = 5)
+TOTUSJZ.nf1.ts <- ts(data = TOTUSJZ.nf1, frequency = 5)
+ABSNJZH.nf1.ts <- ts(data = ABSNJZH.nf1, frequency = 5)
+
+# Secuencia 2
+TOTUSJH.nf2.ts <- ts(data = TOTUSJH.nf2, frequency = 5)
+TOTBSQ.nf2.ts <- ts(data = TOTBSQ.nf2, frequency = 5)
+TOTPOT.nf2.ts <- ts(data = TOTPOT.nf2, frequency = 5)
+TOTUSJZ.nf2.ts <- ts(data = TOTUSJZ.nf2, frequency = 5)
+ABSNJZH.nf2.ts <- ts(data = ABSNJZH.nf2, frequency = 5)
+
+# Secuencia 3
+TOTUSJH.nf3.ts <- ts(data = TOTUSJH.nf3, frequency = 5)
+TOTBSQ.nf3.ts <- ts(data = TOTBSQ.nf3, frequency = 5)
+TOTPOT.nf3.ts <- ts(data = TOTPOT.nf3, frequency = 5)
+TOTUSJZ.nf3.ts <- ts(data = TOTUSJZ.nf3, frequency = 5)
+ABSNJZH.nf3.ts <- ts(data = ABSNJZH.nf3, frequency = 5)
+
+# Secuencia 4
+TOTUSJH.nf4.ts <- ts(data = TOTUSJH.nf4, frequency = 5)
+TOTBSQ.nf4.ts <- ts(data = TOTBSQ.nf4, frequency = 5)
+TOTPOT.nf4.ts <- ts(data = TOTPOT.nf4, frequency = 5)
+TOTUSJZ.nf4.ts <- ts(data = TOTUSJZ.nf4, frequency = 5)
+ABSNJZH.nf4.ts <- ts(data = ABSNJZH.nf4, frequency = 5)
+
+# Secuencia 5
+TOTUSJH.nf5.ts <- ts(data = TOTUSJH.nf5, frequency = 5)
+TOTBSQ.nf5.ts <- ts(data = TOTBSQ.nf5, frequency = 5)
+TOTPOT.nf5.ts <- ts(data = TOTPOT.nf5, frequency = 5)
+TOTUSJZ.nf5.ts <- ts(data = TOTUSJZ.nf5, frequency = 5)
+ABSNJZH.nf5.ts <- ts(data = ABSNJZH.nf5, frequency = 5)
+```
+
+### Flare
+```{r}
+# Secuencia 1
+TOTUSJH.f1.ts <- ts(data = TOTUSJH.f1, frequency = 5)
+TOTBSQ.f1.ts <- ts(data = TOTBSQ.f1, frequency = 5)
+TOTPOT.f1.ts <- ts(data = TOTPOT.f1, frequency = 5)
+TOTUSJZ.f1.ts <- ts(data = TOTUSJZ.f1, frequency = 5)
+ABSNJZH.f1.ts <- ts(data = ABSNJZH.f1, frequency = 5)
+
+# Secuencia 2
+TOTUSJH.f2.ts <- ts(data = TOTUSJH.f2, frequency = 5)
+TOTBSQ.f2.ts <- ts(data = TOTBSQ.f2, frequency = 5)
+TOTPOT.f2.ts <- ts(data = TOTPOT.f2, frequency = 5)
+TOTUSJZ.f2.ts <- ts(data = TOTUSJZ.f2, frequency = 5)
+ABSNJZH.f2.ts <- ts(data = ABSNJZH.f2, frequency = 5)
+
+# Secuencia 3
+TOTUSJH.f3.ts <- ts(data = TOTUSJH.f3, frequency = 5)
+TOTBSQ.f3.ts <- ts(data = TOTBSQ.f3, frequency = 5)
+TOTPOT.f3.ts <- ts(data = TOTPOT.f3, frequency = 5)
+TOTUSJZ.f3.ts <- ts(data = TOTUSJZ.f3, frequency = 5)
+ABSNJZH.f3.ts <- ts(data = ABSNJZH.f3, frequency = 5)
+
+# Secuencia 4
+TOTUSJH.f4.ts <- ts(data = TOTUSJH.f4, frequency = 5)
+TOTBSQ.f4.ts <- ts(data = TOTBSQ.f4, frequency = 5)
+TOTPOT.f4.ts <- ts(data = TOTPOT.f4, frequency = 5)
+TOTUSJZ.f4.ts <- ts(data = TOTUSJZ.f4, frequency = 5)
+ABSNJZH.f4.ts <- ts(data = ABSNJZH.f4, frequency = 5)
+
+# Secuencia 5
+TOTUSJH.f5.ts <- ts(data = TOTUSJH.f5, frequency = 5)
+TOTBSQ.f5.ts <- ts(data = TOTBSQ.f5, frequency = 5)
+TOTPOT.f5.ts <- ts(data = TOTPOT.f5, frequency = 5)
+TOTUSJZ.f5.ts <- ts(data = TOTUSJZ.f5, frequency = 5)
+ABSNJZH.f5.ts <- ts(data = ABSNJZH.f5, frequency = 5)
+
+```
+
+## Vaciado
+```{r}
+# Secuencia 1
+rm(f1, nf1, TOTUSJH.f1, TOTUSJH.nf1, TOTBSQ.f1, TOTBSQ.nf1, TOTPOT.f1, TOTPOT.nf1, TOTUSJZ.nf1, TOTUSJZ.f1, ABSNJZH.f1, ABSNJZH.nf1)
+
+# Secuencia 2
+rm(f2, nf2, TOTUSJH.f2, TOTUSJH.nf2, TOTBSQ.f2, TOTBSQ.nf2, TOTPOT.f2, TOTPOT.nf2, TOTUSJZ.nf2, TOTUSJZ.f2, ABSNJZH.f2, ABSNJZH.nf2)
+
+# Secuencia 3
+rm(f3, nf3, TOTUSJH.f3, TOTUSJH.nf3, TOTBSQ.f3, TOTBSQ.nf3, TOTPOT.f3, TOTPOT.nf3, TOTUSJZ.nf3, TOTUSJZ.f3, ABSNJZH.f3, ABSNJZH.nf3)
+
+# Secuencia 4
+rm(f4, nf4, TOTUSJH.f4, TOTUSJH.nf4, TOTBSQ.f4, TOTBSQ.nf4, TOTPOT.f4, TOTPOT.nf4, TOTUSJZ.nf4, TOTUSJZ.f4, ABSNJZH.f4, ABSNJZH.nf4)
+
+# Secuencia 5
+rm(f5, nf5, TOTUSJH.f5, TOTUSJH.nf5, TOTBSQ.f5, TOTBSQ.nf5, TOTPOT.f5, TOTPOT.nf5, TOTUSJZ.nf5, TOTUSJZ.f5, ABSNJZH.f5, ABSNJZH.nf5)
+
+
+```
+
+
+# Análisis
+
+## TOTUSJH
+
+### Serie de tiempo 
+
+#### Flare
+
+
+## grafico usando autoplot
+```{r}
+# Definir etiquetas personalizadas para la leyenda
+f1 <- "Flare 1"
+f2 <- "Flare 2"
+f3 <- "Flare 3"
+f4 <- "Flare 4"
+f5 <- "Flare 5"
+
+# Crear un data frame combinado con todas las series
+combined_data_flare <- data.frame(
+  Tiempo = seq_along(TOTUSJH.f1.ts),
+  `Flare 2` = as.numeric(TOTUSJH.f1.ts),
+  `Flare 4` = as.numeric(TOTUSJH.f2.ts),
+  `Flare 6` = as.numeric(TOTUSJH.f3.ts),
+  `Flare 8` = as.numeric(TOTUSJH.f4.ts),
+  `Flare 10` = as.numeric(TOTUSJH.f5.ts)
+)
+
+# Reorganizar los datos para ggplot
+library(tidyr)
+tidy_data_flare <- pivot_longer(
+  combined_data_flare,
+  cols = -Tiempo,
+  names_to = "Serie",
+  values_to = "Valor"
+)
+
+# Crear el gráfico con colores distintos para cada serie
+library(ggplot2)
+TOTUSJH_F_plot <- ggplot(tidy_data_flare, aes(x = Tiempo, y = Valor, colour = Serie)) +
+  geom_line(size = 0.7) +
+  scale_color_manual(
+    values = c(
+      "#C40C0C", # Rojo
+      "#0C72C4", # Azul
+      "#0CC478", # Verde
+      "#C4A50C", # Amarillo
+      "#8C0CC4"  # Morado
+    )
+  ) +
+  labs(
+    title = "Serie de tiempo de TOTUSJH (Flare)",
+    x = "Tiempo",
+    y = "Valor",
+    colour = "Serie"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# Mostrar el gráfico
+print(TOTUSJH_F_plot)
+
+```
+
+
+#### No Flare
+
+
+```{r}
+# Definir etiquetas personalizadas para la leyenda
+nf1 <- "No Flare 1"
+nf2 <- "No Flare 2"
+nf3 <- "No Flare 3"
+nf4 <- "No Flare 4"
+nf5 <- "No Flare 5"
+
+# Crear un data frame combinado con todas las series
+combined_data_nf <- data.frame(
+  Tiempo = seq_along(TOTUSJH.nf1.ts),
+  `Flare 1` = as.numeric(TOTUSJH.nf1.ts),
+  `Flare 3` = as.numeric(TOTUSJH.nf2.ts),
+  `Flare 5` = as.numeric(TOTUSJH.nf3.ts),
+  `Flare 7` = as.numeric(TOTUSJH.nf4.ts),
+  `Flare 9` = as.numeric(TOTUSJH.nf5.ts)
+)
+
+# Reorganizar los datos para ggplot
+tidy_data_nf <- pivot_longer(
+  combined_data_nf,
+  cols = -Tiempo,
+  names_to = "Serie",
+  values_to = "Valor"
+)
+
+# Crear el gráfico con colores distintos para cada serie
+TOTUSJH_NF_plot <- ggplot(tidy_data_nf, aes(x = Tiempo, y = Valor, colour = Serie)) +
+  geom_line(size = 0.7) +
+  scale_color_manual(
+    values = c(
+      "#C40C0C", # Rojo
+      "#0C72C4", # Azul
+      "#0CC478", # Verde
+      "#C4A50C", # Amarillo
+      "#8C0CC4"  # Morado
+    )
+  ) +
+  labs(
+    title = "Serie de tiempo de TOTUSJH (Non Flare)",
+    x = "Tiempo",
+    y = "Valor",
+    colour = "Serie"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# Mostrar el gráfico
+print(TOTUSJH_NF_plot)
+
+```
+
+
+### Suavizamiento exponencial
+
+### COMPARAR PARAMETROS
+
+#### Flare
+
+```{r}
+model_results_f <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTUSJH.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_f <- do.call(rbind, model_results_f)
+model_comparison_f <- model_comparison_f[order(factor(model_comparison_f$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_f[is.na(model_comparison_f)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_f <- model_comparison_f %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTUSJH (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_f)
+
+
+```
+
+#### No Flare 
+
+```{r}
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTUSJH.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Non Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Non Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+model_comparison_nf <- model_comparison_nf[order(factor(model_comparison_nf$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTUSJH (Non Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+## TOTBSQ
+
+### Serie de tiempo 
+
+#### Flare
+
+## grafico usando autoplot
+```{r}
+TOTBSQ_F=autoplot(TOTBSQ.f.ts, colour ="#FF6500",size = 0.7)+
+  labs(title = "Serie de tiempo de TOTBSQ (Flare)",       
+       x = "Tiempo",
+       y = "Valor")+
+    theme_minimal()
+```
+
+
+#### No Flare
+```{r}
+TOTBSQ_NF=autoplot(TOTBSQ.nf.ts, colour ="#FF6500",size = 0.7)+
+  labs(title = "Serie de tiempo de TOTBSQ (No flare)",       
+       x = "Tiempo",
+       y = "Valor")+
+    theme_minimal()
+
+#GRAFICOS
+TOTBSQ_F+TOTBSQ_NF
+```
+
+
+### Suavizamiento exponencial
+
+
+### COMPARAR PARAMETROS
+
+#### Flare
+
+```{r}
+model_results_f <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTBSQ.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_f <- do.call(rbind, model_results_f)
+model_comparison_f <- model_comparison_f[order(factor(model_comparison_f$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_f[is.na(model_comparison_f)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_f <- model_comparison_f %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTBSQ (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_f)
+
+
+```
+
+#### No Flare 
+
+```{r}
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTBSQ.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Non Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Non Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+model_comparison_nf <- model_comparison_nf[order(factor(model_comparison_nf$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTBSQ (Non Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+
+```
+
+
+##TOTPOT
+
+#FLARE
+
+## grafico usando autoplot
+```{r}
+TOTPOTF=autoplot(TOTPOT.f.ts, colour ="#FF8A08",size = 0.7)+
+  labs(title = "Serie de tiempo de TOTPOT (Flare)",       
+       x = "Tiempo",
+       y = "Valor")+
+    theme_minimal()
+```
+
+
+#### No Flare
+
+
+
+```{r}
+TOTPOTNF=autoplot(TOTPOT.nf.ts, colour ="#FF8A08",size = 0.7)+
+  labs(title = "Serie de tiempo de TOTPOT (No flare)",       
+       x = "Tiempo",
+       y = "Valor")+
+    theme_minimal()
+
+TOTPOTF+TOTPOTNF
+```
+
+
+### Suavizamiento exponencial
+
+### COMPARAR PARAMETROS
+
+#### Flare
+
+```{r}
+model_results_f <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTPOT.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_f <- do.call(rbind, model_results_f)
+model_comparison_f <- model_comparison_f[order(factor(model_comparison_f$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_f[is.na(model_comparison_f)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_f <- model_comparison_f %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTPOT (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_f)
+
+
+```
+
+#### No Flare 
+
+```{r}
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTPOT.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Non Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Non Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+model_comparison_nf <- model_comparison_nf[order(factor(model_comparison_nf$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTPOT (Non Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+
+### TOTUSJZ 
+
+#### Flare
+
+```{r}
+model_results_f <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTUSJZ.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_f <- do.call(rbind, model_results_f)
+model_comparison_f <- model_comparison_f[order(factor(model_comparison_f$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_f[is.na(model_comparison_f)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_f <- model_comparison_f %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTUSJZ (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_f)
+
+```
+
+
+#### No Flare
+
+```{r}
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("TOTUSJZ.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Non Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Non Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+model_comparison_nf <- model_comparison_nf[order(factor(model_comparison_nf$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - TOTUSJZ (Non Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+### ABSNJZH
+
+#### Flare
+
+```{r}
+model_results_f <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("ABSNJZH.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_f <- do.call(rbind, model_results_f)
+model_comparison_f <- model_comparison_f[order(factor(model_comparison_f$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_f[is.na(model_comparison_f)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_f <- model_comparison_f %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - ABSNJZH (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_f)
+
+```
+
+
+#### No Flare
+
+```{r}
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir los nombres de las series
+  series_name <- paste0("ABSNJZH.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Non Flare)"),
+      Model = c("SES", "Holt", "HW"),
+      Alpha = NA, Beta = NA, Gamma = NA,
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar los modelos y extraer métricas
+  ses_model <- tryCatch(ses(series, initial = "optimal"), error = function(e) NULL)
+  holt_model <- tryCatch(holt(series, initial = "optimal"), error = function(e) NULL)
+  hw_model <- tryCatch(hw(series, seasonal = "additive"), error = function(e) NULL)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Non Flare)"),
+    Model = c("SES", "Holt", "HW"),
+    Alpha = round(c(if (!is.null(ses_model)) ses_model$model$par[1] else NA,
+                    if (!is.null(holt_model)) holt_model$model$par[1] else NA,
+                    if (!is.null(hw_model)) hw_model$model$par[1] else NA), 4),
+    Beta = round(c(NA,
+                   if (!is.null(holt_model)) holt_model$model$par[2] else NA,
+                   if (!is.null(hw_model)) hw_model$model$par[2] else NA), 4),
+    Gamma = round(c(NA, NA, if (!is.null(hw_model)) hw_model$model$par[3] else NA), 4),
+    ME = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "ME"] else NA,
+                 if (!is.null(holt_model)) accuracy(holt_model)[1, "ME"] else NA,
+                 if (!is.null(hw_model)) accuracy(hw_model)[1, "ME"] else NA), 4),
+    RMSE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "RMSE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "RMSE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "RMSE"] else NA), 4),
+    MAE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAE"] else NA,
+                  if (!is.null(holt_model)) accuracy(holt_model)[1, "MAE"] else NA,
+                  if (!is.null(hw_model)) accuracy(hw_model)[1, "MAE"] else NA), 4),
+    MAPE = round(c(if (!is.null(ses_model)) accuracy(ses_model)[1, "MAPE"] else NA,
+                   if (!is.null(holt_model)) accuracy(holt_model)[1, "MAPE"] else NA,
+                   if (!is.null(hw_model)) accuracy(hw_model)[1, "MAPE"] else NA), 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+model_comparison_nf <- model_comparison_nf[order(factor(model_comparison_nf$Model, levels = c("SES", "Holt", "HW"))), ]
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos - ABSNJZH (Non Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    Model = "Modelo",
+    Alpha = "Alpha",
+    Beta = "Beta",
+    Gamma = "Gamma",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(Alpha, Beta, Gamma, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+
+```
+
+
+COLORES A UTILIZAR EN LOS GRAFICOS:
+TOTUSJZ:#FFC100
+ABSNJZH:#FFC55A
+

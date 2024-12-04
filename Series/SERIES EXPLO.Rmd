@@ -1,0 +1,272 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-11-26"
+---
+
+#Preparación de datos
+```{r}
+library(ggfortify)
+library(forecast)
+library(fpp2)
+library(data.table)
+library(TTR)
+library(xts)
+library(tidyverse)
+library(lubridate)
+library(quantmod)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(astsa)
+library(car)
+library(gamair)
+library(mgcv)
+library(dplyr)
+#tablas
+library(gt)
+#unir graficos
+library(patchwork)
+```
+
+## Cargar datos
+
+```{r}
+#ARCHI1
+nf <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/B1.0@1052_Primary_ar345_s2011-01-23T22_24_00_e2011-01-24T10_12_00.csv", row.names=1)
+
+
+f <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/M1.0@265_Primary_ar115_s2010-08-06T06_36_00_e2010-08-06T18_24_00.csv", row.names=1) 
+```
+
+```{r}
+#ARCHIS2
+f <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/M2.0@84_Primary_ar54_s2010-06-11T08_24_00_e2010-06-11T20_12_00.csv", row.names=1)
+
+
+nf <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/C2.9@3256_Primary_ar1367_s2012-02-07T16_00_00_e2012-02-08T03_48_00.csv", row.names=1) 
+```
+
+```{r}
+#ARCHIS3
+f <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/X1.1@3350_Primary_ar1449_s2012-03-03T19_24_00_e2012-03-04T07_12_00.csv", row.names=1)
+
+
+nf <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/C1.0@3264_Primary_ar1367_s2012-02-09T01_00_00_e2012-02-09T12_48_00.csv", row.names=1) 
+```
+
+```{r}
+#ARCHIS4
+f <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/M7.9@3429_Primary_ar1449_s2012-03-12T14_24_00_e2012-03-13T02_12_00.csv", row.names=1)
+
+
+nf <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/C1.1@3258_Primary_ar1367_s2012-02-08T14_00_00_e2012-02-09T01_48_00.csv", row.names=1) 
+```
+
+```{r}
+#ARCHIS5
+f <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/M3.9@2566_Primary_ar902_s2011-09-30T17_48_00_e2011-10-01T05_36_00.csv", row.names=1)
+
+
+nf <- read.delim("C:/Users/cesar/OneDrive/Documents/SERIES/Proyecto/B7.5@3260_Secondary_ar1367_s2012-02-09T00_00_00_e2012-02-09T11_48_00.csv", row.names=1) 
+```
+
+
+
+## Vectores de variables de interés
+
+### No flare: 
+```{r}
+  TOTUSJH.nf <- nf[,1] 
+  TOTBSQ.nf <- nf[,2]
+  TOTPOT.nf <- nf[,3]
+  TOTUSJZ.nf <- nf[,4]
+  ABSNJZH.nf <- nf[,5]
+```
+
+### Flare
+```{r}
+  TOTUSJH.f <- f[,1] 
+  TOTBSQ.f <- f[,2]
+  TOTPOT.f <- f[,3]
+  TOTUSJZ.f <- f[,4]
+  ABSNJZH.f <- f[,5]
+```
+
+## Conversión a TS
+
+### No-flare
+
+```{r}
+    TOTUSJH.nf.ts <- ts(data = TOTUSJH.nf,frequency = 5)
+    TOTBSQ.nf.ts <- ts(data = TOTBSQ.nf, frequency = 5)
+    TOTPOT.nf.ts <- ts(data = TOTPOT.nf,frequency = 5)
+    TOTUSJZ.nf.ts <- ts(data = TOTUSJZ.nf, frequency = 5)
+    ABSNJZH.nf.ts <- ts(data = ABSNJZH.nf,frequency = 5)
+
+```
+
+### Flare
+```{r}
+  TOTUSJH.f.ts <- ts(data = TOTUSJH.f, frequency = 5)
+  TOTBSQ.f.ts <- ts(data = TOTBSQ.f, frequency = 5)
+  TOTPOT.f.ts <- ts(data = TOTPOT.f, frequency = 5)
+  TOTUSJZ.f.ts <- ts(data = TOTUSJZ.f, frequency = 5)
+  ABSNJZH.f.ts <- ts(data = ABSNJZH.f, frequency = 5)
+```
+
+### Transformacion
+```{r}
+  TOTUSJH.f.ts <- log(TOTUSJH.f.ts)
+  TOTBSQ.f.ts  <- log(TOTBSQ.f.ts)
+  TOTPOT.f.ts  <- log(TOTPOT.f.ts)
+  TOTUSJZ.f.ts <- log(TOTUSJZ.f.ts)
+  ABSNJZH.f.ts <- log(ABSNJZH.f.ts)
+```
+
+```{r}
+  TOTUSJH.nf.ts <- log(TOTUSJH.nf.ts)
+  TOTBSQ.nf.ts  <- log(TOTBSQ.nf.ts)
+  TOTPOT.nf.ts  <- log(TOTPOT.nf.ts)
+  TOTUSJZ.nf.ts <- log(TOTUSJZ.nf.ts)
+  ABSNJZH.nf.ts <- log(ABSNJZH.nf.ts)
+```
+
+## Vaciado
+```{r}
+  rm(f,nf, TOTUSJH.f,TOTUSJH.nf,TOTBSQ.f,TOTBSQ.nf,TOTPOT.f,TOTPOT.nf, TOTUSJZ.nf, TOTUSJZ.f, ABSNJZH.f, ABSNJZH.nf)
+```
+
+## TOTUSJH
+## grafico usando autoplot
+```{r}
+autoplot(cbind(TOTUSJH.f.ts,TOTUSJH.nf.ts),size = 0.7)+
+  labs(title = "Serie de tiempo de TOTUSJH log (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor")+
+    theme_minimal()+
+  scale_color_manual(
+    values = c("TOTUSJH.f.ts" = "lightcoral", "TOTUSJH.nf.ts" = "skyblue"), 
+    labels = c("Flare", "No Flare")
+  )
+TOTUSJH.f.ts.norm <- (TOTUSJH.f.ts - min(TOTUSJH.f.ts)) / (max(TOTUSJH.f.ts) - min(TOTUSJH.f.ts)) * 100
+TOTUSJH.nf.ts.norm <- (TOTUSJH.nf.ts - min(TOTUSJH.nf.ts)) / (max(TOTUSJH.nf.ts) - min(TOTUSJH.nf.ts)) * 100
+
+autoplot(cbind(TOTUSJH.f.ts.norm,TOTUSJH.nf.ts.norm),size = 0.7)+
+  labs(title = "Serie de tiempo de TOTUSJH normalizadas (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor")+
+    theme_minimal()+
+  scale_color_manual(
+    values = c("TOTUSJH.f.ts.norm" = "lightcoral", "TOTUSJH.nf.ts.norm" = "skyblue"), 
+    labels = c("Flare", "No Flare")
+  )
+```
+
+##TOTBSQ
+## grafico usando autoplot
+```{r}
+autoplot(cbind(TOTBSQ.f.ts, TOTBSQ.nf.ts), size = 0.7) +
+  labs(title = "Serie de tiempo de TOTBSQ log (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("TOTBSQ.f.ts" = "lightcoral", "TOTBSQ.nf.ts" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+
+TOTBSQ.f.ts.norm <- (TOTBSQ.f.ts - min(TOTBSQ.f.ts)) / (max(TOTBSQ.f.ts) - min(TOTBSQ.f.ts)) * 100
+TOTBSQ.nf.ts.norm <- (TOTBSQ.nf.ts - min(TOTBSQ.nf.ts)) / (max(TOTBSQ.nf.ts) - min(TOTBSQ.nf.ts)) * 100
+
+autoplot(cbind(TOTBSQ.f.ts.norm, TOTBSQ.nf.ts.norm), size = 0.7) +
+  labs(title = "Serie de tiempo de TOTBSQ normalizadas (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("TOTBSQ.f.ts.norm" = "lightcoral", "TOTBSQ.nf.ts.norm" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+```
+
+##TOTPOT
+## grafico usando autoplot
+```{r}
+autoplot(cbind(TOTPOT.f.ts, TOTPOT.nf.ts), size = 0.7) +
+  labs(title = "Serie de tiempo de TOTPOT log (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("TOTPOT.f.ts" = "lightcoral", "TOTPOT.nf.ts" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+
+TOTPOT.f.ts.norm <- (TOTPOT.f.ts - min(TOTPOT.f.ts)) / (max(TOTPOT.f.ts) - min(TOTPOT.f.ts)) * 100
+TOTPOT.nf.ts.norm <- (TOTPOT.nf.ts - min(TOTPOT.nf.ts)) / (max(TOTPOT.nf.ts) - min(TOTPOT.nf.ts)) * 100
+
+autoplot(cbind(TOTPOT.f.ts.norm, TOTPOT.nf.ts.norm), size = 0.7) +
+  labs(title = "Serie de tiempo de TOTPOT normalizadas (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("TOTPOT.f.ts.norm" = "lightcoral", "TOTPOT.nf.ts.norm" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+```
+
+##TOTUSJZ
+## grafico usando autoplot
+```{r}
+autoplot(cbind(TOTUSJZ.f.ts, TOTUSJZ.nf.ts), size = 0.7) +
+  labs(title = "Serie de tiempo de TOTUSJZ log (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("TOTUSJZ.f.ts" = "lightcoral", "TOTUSJZ.nf.ts" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+
+TOTUSJZ.f.ts.norm <- (TOTUSJZ.f.ts - min(TOTUSJZ.f.ts)) / (max(TOTUSJZ.f.ts) - min(TOTUSJZ.f.ts)) * 100
+TOTUSJZ.nf.ts.norm <- (TOTUSJZ.nf.ts - min(TOTUSJZ.nf.ts)) / (max(TOTUSJZ.nf.ts) - min(TOTUSJZ.nf.ts)) * 100
+
+autoplot(cbind(TOTUSJZ.f.ts.norm, TOTUSJZ.nf.ts.norm), size = 0.7) +
+  labs(title = "Serie de tiempo de TOTUSJZ normalizadas (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("TOTUSJZ.f.ts.norm" = "lightcoral", "TOTUSJZ.nf.ts.norm" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+```
+
+##ABSNJZH
+## grafico usando autoplot
+```{r}
+autoplot(cbind(ABSNJZH.f.ts, ABSNJZH.nf.ts), size = 0.7) +
+  labs(title = "Serie de tiempo de ABSNJZH Log (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("ABSNJZH.f.ts" = "lightcoral", "ABSNJZH.nf.ts" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+
+ABSNJZH.f.ts.norm <- (ABSNJZH.f.ts - min(ABSNJZH.f.ts)) / (max(ABSNJZH.f.ts) - min(ABSNJZH.f.ts)) * 100
+ABSNJZH.nf.ts.norm <- (ABSNJZH.nf.ts - min(ABSNJZH.nf.ts)) / (max(ABSNJZH.nf.ts) - min(ABSNJZH.nf.ts)) * 100
+
+autoplot(cbind(ABSNJZH.f.ts.norm, ABSNJZH.nf.ts.norm), size = 0.7) +
+  labs(title = "Serie de tiempo de ABSNJZH normalizadas (Flare/No flare)",       
+       x = "Tiempo",
+       y = "Valor") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("ABSNJZH.f.ts.norm" = "lightcoral", "ABSNJZH.nf.ts.norm" = "skyblue"),
+    labels = c("Flare", "No Flare")
+  )
+```

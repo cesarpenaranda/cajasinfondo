@@ -1,0 +1,1468 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-11-28"
+---
+
+```{r}
+
+library(ggfortify)
+library(forecast)
+library(fpp2)
+library(data.table)
+library(TTR)
+library(xts)
+library(tidyverse)
+library(lubridate)
+library(quantmod)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(astsa)
+library(car)
+library(gamair)
+library(mgcv)
+library(dplyr)
+library(gt)
+library(patchwork)
+library(readr)
+```
+
+## Cargar datos
+
+### No Flares
+```{r}
+nf1 <- read.delim("C1.0@3264_Primary_ar1367_s2012-02-09T01_00_00_e2012-02-09T12_48_00.csv", row.names=1)
+nf2 <- read.delim("C1.1@3258_Primary_ar1367_s2012-02-08T14_00_00_e2012-02-09T01_48_00.csv", row.names=1) 
+nf3 <- read.delim("C2.9@3256_Primary_ar1367_s2012-02-07T16_00_00_e2012-02-08T03_48_00.csv", row.names=1)
+nf4 <- read.delim("C2.9@3256_Primary_ar1367_s2012-02-08T10_00_00_e2012-02-08T21_48_00.csv", row.names=1) 
+nf5 <- read.delim("C3.8@2132_Primary_ar750_s2011-07-29T18_00_00_e2011-07-30T05_48_00.csv", row.names=1) 
+```
+
+### Flare
+```{r}
+f1 <- read.delim("M1.0@265_Primary_ar115_s2010-08-06T06_36_00_e2010-08-06T18_24_00.csv", row.names=1) 
+f2 <- read.delim("M2.0@84_Primary_ar54_s2010-06-11T08_24_00_e2010-06-11T20_12_00.csv", row.names=1) 
+f3 <- read.delim("M3.2@2372_Primary_ar814_s2011-09-03T18_00_00_e2011-09-04T05_48_00.csv", row.names=1) 
+f4 <- read.delim("M3.9@2566_Primary_ar902_s2011-09-30T17_48_00_e2011-10-01T05_36_00.csv", row.names=1)
+f5 <- read.delim("M7.9@3429_Primary_ar1449_s2012-03-12T14_24_00_e2012-03-13T02_12_00.csv", row.names=1) 
+```
+
+
+
+## Vectores de variables de interés
+
+### No flare: 
+```{r}
+TOTUSJH.nf1 <- scale(nf1[,1])
+TOTBSQ.nf1 <- scale(nf1[,2])
+TOTPOT.nf1 <- scale(nf1[,3])
+TOTUSJZ.nf1 <- scale(nf1[,4])
+ABSNJZH.nf1 <- scale(nf1[,5])
+
+TOTUSJH.nf2 <- scale(nf2[,1])
+TOTBSQ.nf2 <- scale(nf2[,2])
+TOTPOT.nf2 <- scale(nf2[,3])
+TOTUSJZ.nf2 <- scale(nf2[,4])
+ABSNJZH.nf2 <- scale(nf2[,5])
+
+TOTUSJH.nf3 <- scale(nf3[,1])
+TOTBSQ.nf3 <- scale(nf3[,2])
+TOTPOT.nf3 <- scale(nf3[,3])
+TOTUSJZ.nf3 <- scale(nf3[,4])
+ABSNJZH.nf3 <- scale(nf3[,5])
+
+TOTUSJH.nf4 <- scale(nf4[,1])
+TOTBSQ.nf4 <- scale(nf4[,2])
+TOTPOT.nf4 <- scale(nf4[,3])
+TOTUSJZ.nf4 <- scale(nf4[,4])
+ABSNJZH.nf4 <- scale(nf4[,5])
+
+TOTUSJH.nf5 <- scale(nf5[,1])
+TOTBSQ.nf5 <- scale(nf5[,2])
+TOTPOT.nf5 <- scale(nf5[,3])
+TOTUSJZ.nf5 <- scale(nf5[,4])
+ABSNJZH.nf5 <- scale(nf5[,5])
+
+```
+
+### Flare
+```{r}
+# Secuencia 1
+TOTUSJH.f1 <- scale(f1[,1])
+TOTBSQ.f1 <- scale(f1[,2])
+TOTPOT.f1 <- scale(f1[,3])
+TOTUSJZ.f1 <- scale(f1[,4])
+ABSNJZH.f1 <- scale(f1[,5])
+
+# Secuencia 2
+TOTUSJH.f2 <- scale(f2[,1])
+TOTBSQ.f2 <- scale(f2[,2])
+TOTPOT.f2 <- scale(f2[,3])
+TOTUSJZ.f2 <- scale(f2[,4])
+ABSNJZH.f2 <- scale(f2[,5])
+
+# Secuencia 3
+TOTUSJH.f3 <- scale(f3[,1])
+TOTBSQ.f3 <- scale(f3[,2])
+TOTPOT.f3 <- scale(f3[,3])
+TOTUSJZ.f3 <- scale(f3[,4])
+ABSNJZH.f3 <- scale(f3[,5])
+
+# Secuencia 4
+TOTUSJH.f4 <- scale(f4[,1])
+TOTBSQ.f4 <- scale(f4[,2])
+TOTPOT.f4 <- scale(f4[,3])
+TOTUSJZ.f4 <- scale(f4[,4])
+ABSNJZH.f4 <- scale(f4[,5])
+
+# Secuencia 5
+TOTUSJH.f5 <- scale(f5[,1])
+TOTBSQ.f5 <- scale(f5[,2])
+TOTPOT.f5 <- scale(f5[,3])
+TOTUSJZ.f5 <- scale(f5[,4])
+ABSNJZH.f5 <- scale(f5[,5])
+
+```
+
+## Conversión a TS
+
+### No-flare
+```{r}
+# Secuencia 1
+TOTUSJH.nf1.ts <- ts(data = TOTUSJH.nf1, frequency = 5)
+TOTBSQ.nf1.ts <- ts(data = TOTBSQ.nf1, frequency = 5)
+TOTPOT.nf1.ts <- ts(data = TOTPOT.nf1, frequency = 5)
+TOTUSJZ.nf1.ts <- ts(data = TOTUSJZ.nf1, frequency = 5)
+ABSNJZH.nf1.ts <- ts(data = ABSNJZH.nf1, frequency = 5)
+
+# Secuencia 2
+TOTUSJH.nf2.ts <- ts(data = TOTUSJH.nf2, frequency = 5)
+TOTBSQ.nf2.ts <- ts(data = TOTBSQ.nf2, frequency = 5)
+TOTPOT.nf2.ts <- ts(data = TOTPOT.nf2, frequency = 5)
+TOTUSJZ.nf2.ts <- ts(data = TOTUSJZ.nf2, frequency = 5)
+ABSNJZH.nf2.ts <- ts(data = ABSNJZH.nf2, frequency = 5)
+
+# Secuencia 3
+TOTUSJH.nf3.ts <- ts(data = TOTUSJH.nf3, frequency = 5)
+TOTBSQ.nf3.ts <- ts(data = TOTBSQ.nf3, frequency = 5)
+TOTPOT.nf3.ts <- ts(data = TOTPOT.nf3, frequency = 5)
+TOTUSJZ.nf3.ts <- ts(data = TOTUSJZ.nf3, frequency = 5)
+ABSNJZH.nf3.ts <- ts(data = ABSNJZH.nf3, frequency = 5)
+
+# Secuencia 4
+TOTUSJH.nf4.ts <- ts(data = TOTUSJH.nf4, frequency = 5)
+TOTBSQ.nf4.ts <- ts(data = TOTBSQ.nf4, frequency = 5)
+TOTPOT.nf4.ts <- ts(data = TOTPOT.nf4, frequency = 5)
+TOTUSJZ.nf4.ts <- ts(data = TOTUSJZ.nf4, frequency = 5)
+ABSNJZH.nf4.ts <- ts(data = ABSNJZH.nf4, frequency = 5)
+
+# Secuencia 5
+TOTUSJH.nf5.ts <- ts(data = TOTUSJH.nf5, frequency = 5)
+TOTBSQ.nf5.ts <- ts(data = TOTBSQ.nf5, frequency = 5)
+TOTPOT.nf5.ts <- ts(data = TOTPOT.nf5, frequency = 5)
+TOTUSJZ.nf5.ts <- ts(data = TOTUSJZ.nf5, frequency = 5)
+ABSNJZH.nf5.ts <- ts(data = ABSNJZH.nf5, frequency = 5)
+```
+
+### Flare
+```{r}
+# Secuencia 1
+TOTUSJH.f1.ts <- ts(data = TOTUSJH.f1, frequency = 5)
+TOTBSQ.f1.ts <- ts(data = TOTBSQ.f1, frequency = 5)
+TOTPOT.f1.ts <- ts(data = TOTPOT.f1, frequency = 5)
+TOTUSJZ.f1.ts <- ts(data = TOTUSJZ.f1, frequency = 5)
+ABSNJZH.f1.ts <- ts(data = ABSNJZH.f1, frequency = 5)
+
+# Secuencia 2
+TOTUSJH.f2.ts <- ts(data = TOTUSJH.f2, frequency = 5)
+TOTBSQ.f2.ts <- ts(data = TOTBSQ.f2, frequency = 5)
+TOTPOT.f2.ts <- ts(data = TOTPOT.f2, frequency = 5)
+TOTUSJZ.f2.ts <- ts(data = TOTUSJZ.f2, frequency = 5)
+ABSNJZH.f2.ts <- ts(data = ABSNJZH.f2, frequency = 5)
+
+# Secuencia 3
+TOTUSJH.f3.ts <- ts(data = TOTUSJH.f3, frequency = 5)
+TOTBSQ.f3.ts <- ts(data = TOTBSQ.f3, frequency = 5)
+TOTPOT.f3.ts <- ts(data = TOTPOT.f3, frequency = 5)
+TOTUSJZ.f3.ts <- ts(data = TOTUSJZ.f3, frequency = 5)
+ABSNJZH.f3.ts <- ts(data = ABSNJZH.f3, frequency = 5)
+
+# Secuencia 4
+TOTUSJH.f4.ts <- ts(data = TOTUSJH.f4, frequency = 5)
+TOTBSQ.f4.ts <- ts(data = TOTBSQ.f4, frequency = 5)
+TOTPOT.f4.ts <- ts(data = TOTPOT.f4, frequency = 5)
+TOTUSJZ.f4.ts <- ts(data = TOTUSJZ.f4, frequency = 5)
+ABSNJZH.f4.ts <- ts(data = ABSNJZH.f4, frequency = 5)
+
+# Secuencia 5
+TOTUSJH.f5.ts <- ts(data = TOTUSJH.f5, frequency = 5)
+TOTBSQ.f5.ts <- ts(data = TOTBSQ.f5, frequency = 5)
+TOTPOT.f5.ts <- ts(data = TOTPOT.f5, frequency = 5)
+TOTUSJZ.f5.ts <- ts(data = TOTUSJZ.f5, frequency = 5)
+ABSNJZH.f5.ts <- ts(data = ABSNJZH.f5, frequency = 5)
+
+```
+
+## Vaciado
+```{r}
+# Secuencia 1
+rm(f1, nf1, TOTUSJH.f1, TOTUSJH.nf1, TOTBSQ.f1, TOTBSQ.nf1, TOTPOT.f1, TOTPOT.nf1, TOTUSJZ.nf1, TOTUSJZ.f1, ABSNJZH.f1, ABSNJZH.nf1)
+
+# Secuencia 2
+rm(f2, nf2, TOTUSJH.f2, TOTUSJH.nf2, TOTBSQ.f2, TOTBSQ.nf2, TOTPOT.f2, TOTPOT.nf2, TOTUSJZ.nf2, TOTUSJZ.f2, ABSNJZH.f2, ABSNJZH.nf2)
+
+# Secuencia 3
+rm(f3, nf3, TOTUSJH.f3, TOTUSJH.nf3, TOTBSQ.f3, TOTBSQ.nf3, TOTPOT.f3, TOTPOT.nf3, TOTUSJZ.nf3, TOTUSJZ.f3, ABSNJZH.f3, ABSNJZH.nf3)
+
+# Secuencia 4
+rm(f4, nf4, TOTUSJH.f4, TOTUSJH.nf4, TOTBSQ.f4, TOTBSQ.nf4, TOTPOT.f4, TOTPOT.nf4, TOTUSJZ.nf4, TOTUSJZ.f4, ABSNJZH.f4, ABSNJZH.nf4)
+
+# Secuencia 5
+rm(f5, nf5, TOTUSJH.f5, TOTUSJH.nf5, TOTBSQ.f5, TOTBSQ.nf5, TOTPOT.f5, TOTPOT.nf5, TOTUSJZ.nf5, TOTUSJZ.f5, ABSNJZH.f5, ABSNJZH.nf5)
+
+
+```
+
+#Analisis
+
+## TOTUSJH - FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTUSJH.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+   
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+ 
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTUSJH (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+```
+```{r}
+auto.arima(TOTUSJH.f1.ts)
+auto.arima(TOTUSJH.f2.ts)
+auto.arima(TOTUSJH.f3.ts)
+auto.arima(TOTUSJH.f4.ts)
+auto.arima(TOTUSJH.f5.ts)
+```
+
+## TOTUSJH - NO FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTUSJH.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (No Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTUSJH (No Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(TOTUSJH.nf1.ts)
+auto.arima(TOTUSJH.nf2.ts)
+auto.arima(TOTUSJH.nf3.ts)
+auto.arima(TOTUSJH.nf4.ts)
+auto.arima(TOTUSJH.nf5.ts)
+```
+
+## TOTBSQ - FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTBSQ.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ar2_coeff <- ifelse("ar2" %in% names(arima_params), round(arima_params["ar2"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  ma2_coeff <- ifelse("ma2" %in% names(arima_params), round(arima_params["ma2"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    AR1 = ar1_coeff,
+    AR2 = ar2_coeff,
+    MA1 = ma1_coeff,
+    MA2 = ma2_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTBSQ (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    AR2 = "AR(2)",
+    MA1 = "MA(1)",
+    MA2="MA(2)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1,AR2,MA1,MA2, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(TOTBSQ.f1.ts)
+auto.arima(TOTBSQ.f2.ts)
+auto.arima(TOTBSQ.f3.ts)
+auto.arima(TOTBSQ.f4.ts)
+auto.arima(TOTBSQ.f5.ts)
+``` 
+
+## TOTBSQ - NO FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTBSQ.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (No Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTBSQ (No Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(TOTBSQ.nf1.ts)
+auto.arima(TOTBSQ.nf2.ts)
+auto.arima(TOTBSQ.nf3.ts)
+auto.arima(TOTBSQ.nf4.ts)
+auto.arima(TOTBSQ.nf5.ts)
+```
+
+## TOTPOT - FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTPOT.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  ma2_coeff <- ifelse("ma2" %in% names(arima_params), round(arima_params["ma2"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    MA2 = ma2_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTPOT (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    MA2= "MA(2)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1,MA2, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+```{r}
+auto.arima(TOTPOT.f1.ts)
+auto.arima(TOTPOT.f2.ts)
+auto.arima(TOTPOT.f3.ts)
+auto.arima(TOTPOT.f4.ts)
+auto.arima(TOTPOT.f5.ts)
+```
+
+## TOTPOT - NO FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTPOT.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (No Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTPOT (No Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(TOTPOT.nf1.ts)
+auto.arima(TOTPOT.nf2.ts)
+auto.arima(TOTPOT.nf3.ts)
+auto.arima(TOTPOT.nf4.ts)
+auto.arima(TOTPOT.nf5.ts)
+```
+## TOTUSJZ - FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTUSJZ.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ar2_coeff <- ifelse("ar2" %in% names(arima_params), round(arima_params["ar2"], 4), "*")
+  ar3_coeff <- ifelse("ar3" %in% names(arima_params), round(arima_params["ar3"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    AR1 = ar1_coeff,
+    AR2 = ar2_coeff,
+    AR3 = ar3_coeff,
+    MA1 = ma1_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTUSJZ (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    AR2 = "AR(2)",
+    AR3 = "AR(3)",
+    MA1 = "MA(1)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1,AR2,AR3, MA1, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(TOTUSJZ.f1.ts)
+auto.arima(TOTUSJZ.f2.ts)
+auto.arima(TOTUSJZ.f3.ts)
+auto.arima(TOTUSJZ.f4.ts)
+auto.arima(TOTUSJZ.f5.ts)
+```
+
+## TOTUSJZ - NO FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("TOTUSJZ.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  ma2_coeff <- ifelse("ma2" %in% names(arima_params), round(arima_params["ma2"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (No Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    MA2 = ma2_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - TOTUSJZ (No Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    MA2 = "MA(2)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1,MA2, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(TOTUSJZ.nf1.ts)
+auto.arima(TOTUSJZ.nf2.ts)
+auto.arima(TOTUSJZ.nf3.ts)
+auto.arima(TOTUSJZ.nf4.ts)
+auto.arima(TOTUSJZ.nf5.ts)
+```
+
+## ABSNJZH - FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("ABSNJZH.f", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ar2_coeff <- ifelse("ar2" %in% names(arima_params), round(arima_params["ar2"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  ma2_coeff <- ifelse("ma2" %in% names(arima_params), round(arima_params["ma2"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (Flare)"),
+    AR1 = ar1_coeff,
+    AR2 = ar2_coeff,
+    MA1 = ma1_coeff,
+    MA2 = ma2_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - ABSNJZH (Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    AR2 = "AR(2)",
+    MA1 = "MA(1)",
+    MA2 = "MA(2)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1,AR2, MA1,MA2, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(ABSNJZH.f1.ts)
+auto.arima(ABSNJZH.f2.ts)
+auto.arima(ABSNJZH.f3.ts)
+auto.arima(ABSNJZH.f4.ts)
+auto.arima(ABSNJZH.f5.ts)
+```
+## ABSNJZH - NO FLARE
+```{r}
+library(forecast)
+library(gt)
+
+# Función para ajustar el modelo ARIMA y extraer las métricas
+model_results_nf <- lapply(1:5, function(i) {
+  # Definir el nombre de la serie
+  series_name <- paste0("ABSNJZH.nf", i, ".ts")
+  series <- tryCatch(get(series_name), error = function(e) NULL)
+  
+  if (is.null(series)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Ajustar el modelo ARIMA
+  arima_model <- tryCatch(auto.arima(series), error = function(e) NULL)
+  
+  if (is.null(arima_model)) {
+    return(data.frame(
+      Serie = paste0("Serie ", i, " (No Flare)"),
+      Model = "ARIMA",
+      AR1 = "*", MA1 = "*", SMA1 = "*", SMA2 = "*", SAR1 = "*", Intercepto = "*", Drift = "*",  # Columnas para los coeficientes
+      AIC = "*", BIC = "*",
+      ME = NA, RMSE = NA, MAE = NA, MAPE = NA
+    ))
+  }
+  
+  # Extraer los coeficientes del modelo ARIMA
+  arima_params <- coef(arima_model)
+  
+  # Obtener AIC y BIC
+  aic_value <- AIC(arima_model)
+  bic_value <- BIC(arima_model)
+  
+  # Extraer los coeficientes específicos (ar1, ma1, sma1, sma2, sar1, intercepto, drift)
+  ar1_coeff <- ifelse("ar1" %in% names(arima_params), round(arima_params["ar1"], 4), "*")
+  ma1_coeff <- ifelse("ma1" %in% names(arima_params), round(arima_params["ma1"], 4), "*")
+  ma2_coeff <- ifelse("ma2" %in% names(arima_params), round(arima_params["ma2"], 4), "*")
+  sma1_coeff <- ifelse("sma1" %in% names(arima_params), round(arima_params["sma1"], 4), "*")
+  sma2_coeff <- ifelse("sma2" %in% names(arima_params), round(arima_params["sma2"], 4), "*")
+  sar1_coeff <- ifelse("sar1" %in% names(arima_params), round(arima_params["sar1"], 4), "*")
+  intercepto_coeff <- ifelse("intercept" %in% names(arima_params), round(arima_params["intercept"], 4), "*")
+  drift_coeff <- ifelse("drift" %in% names(arima_params), round(arima_params["drift"], 4), "*")
+  
+  # Calcular las métricas de error
+  accuracy_metrics <- accuracy(arima_model)
+  
+  data.frame(
+    Serie = paste0("Serie ", i, " (No Flare)"),
+    AR1 = ar1_coeff,
+    MA1 = ma1_coeff,
+    MA2 = ma2_coeff,
+    SMA1 = sma1_coeff,
+    SMA2 = sma2_coeff,
+    SAR1 = sar1_coeff,
+    Intercepto = intercepto_coeff,
+    Drift = drift_coeff,
+    AIC = round(aic_value, 2),
+    BIC = round(bic_value, 2),
+    ME = round(accuracy_metrics[1, "ME"], 4),
+    RMSE = round(accuracy_metrics[1, "RMSE"], 4),
+    MAE = round(accuracy_metrics[1, "MAE"], 4),
+    MAPE = round(accuracy_metrics[1, "MAPE"], 4)
+  )
+})
+
+# Combinar resultados y ordenar por modelo
+model_comparison_nf <- do.call(rbind, model_results_nf)
+
+# Reemplazar NA con "*"
+model_comparison_nf[is.na(model_comparison_nf)] <- "*"
+
+# Crear la tabla en formato APA
+model_table_nf <- model_comparison_nf %>%
+  gt() %>%
+  tab_header(
+    title = "Comparación de Modelos ARIMA - ABSNJZH (No Flare)"
+  ) %>%
+  cols_label(
+    Serie = "Serie",
+    AR1 = "AR(1)",
+    MA1 = "MA(1)",
+    MA2 = "MA(2)",
+    SMA1 = "SMA(1)",
+    SMA2 = "SMA(2)",
+    SAR1 = "SAR(1)",
+    Intercepto = "Intercepto",
+    Drift = "Drift",
+    AIC = "AIC",
+    BIC = "BIC",
+    ME = "Error Medio",
+    RMSE = "RMSE",
+    MAE = "MAE",
+    MAPE = "MAPE"
+  ) %>%
+  fmt_number(
+    columns = c(AR1, MA1,MA2, SMA1, SMA2, SAR1, Intercepto, Drift, AIC, BIC, ME, RMSE, MAE, MAPE),
+    decimals = 4
+  )
+
+# Imprimir la tabla
+print(model_table_nf)
+
+```
+
+```{r}
+auto.arima(ABSNJZH.nf1.ts)
+auto.arima(ABSNJZH.nf2.ts)
+auto.arima(ABSNJZH.nf3.ts)
+auto.arima(ABSNJZH.nf4.ts)
+auto.arima(ABSNJZH.nf5.ts)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

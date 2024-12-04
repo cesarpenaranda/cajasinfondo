@@ -1,0 +1,356 @@
+## {{current_canton}}
+
+```{r include=FALSE, message=FALSE, warning=FALSE}
+
+suppressMessages({
+  mensaje <- capture.output({
+
+knitr::opts_chunk$set(echo = TRUE)
+library(gt)
+library(readxl)
+library(TSA)
+library(dplyr)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(astsa)
+library(car)
+library(TSA)
+library(tseries)
+library(sarima)
+library(vars)
+  })
+})
+
+```
+
+```{r echo=FALSE}
+
+datos <- read_excel("datos_finales.xlsx")
+canton_especifico <- "{{current_canton}}"
+
+datos_canton <- datos %>%
+  filter(canton==canton_especifico)
+matriz_RR <- matrix(datos_canton$RR, ncol = 12, byrow = FALSE) 
+serie_RR <- ts(c(matriz_RR), start = c(2000,1), frequency = 12)
+    
+```
+
+### Temperatura máxima promedio
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$Tmax_mean))) {
+
+matriz_tmax_mean <- matrix(datos_canton$Tmax_mean, ncol = 12, byrow = FALSE) 
+serie_tmax_mean <- ts(c(matriz_tmax_mean), start = c(2000,1), frequency = 12)
+} else {
+ }
+
+
+```
+
+#### Correlación Cruzada entre Riesgo relativo y Temperatura máxima media (Lags hasta 12)
+
+```{r echo=FALSE}
+
+if (!all(is.na(datos_canton$Tmax_mean))) {
+
+lag2.plot (serie_tmax_mean,serie_RR , 12) 
+  
+} else {
+    cat("No hay observaciones de temperatura para este cantón.")
+
+ }
+```
+
+
+#### Función de correlación cruzada
+
+```{r echo=FALSE}
+
+if (!all(is.na(datos_canton$Tmax_mean))) {
+par(mfrow = c(2, 1))
+ccf2(serie_RR, serie_tmax_mean, 48, 
+     main = "Función de correlación cruzada de RR contra Temperatura máxima media", cex.main = 0.8)
+
+
+ccf2(serie_tmax_mean,serie_RR, 48, main="Función de correlación cruzada de Temperatura máxima media contra RR", cex.main = 0.8)
+} else {
+    cat("No hay observaciones de temperatura para este cantón.")
+
+ }
+
+```
+
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$Tmax_mean))) {
+
+r1 <- ccf(serie_RR,serie_tmax_mean, 12, plot = FALSE)
+
+ccf_results <- data.frame(Lag = as.integer(r1$lag*12),
+                          Correlation = r1$acf)
+
+ccf_results <- ccf_results[order(-abs(ccf_results$Correlation)), ]
+
+ccf_results %>%
+  gt() %>%
+  tab_header(
+    title = "Correlación cruzada",
+    subtitle = "Ordenados por Correlación Absoluta"
+  ) %>%
+  cols_label(
+    Lag = "Desfase (Lag)",
+    Correlation = "Correlación"
+  ) %>%
+  fmt_number(
+    columns = c(Correlation),  
+    decimals = 4
+  )
+} else {
+    cat("No hay observaciones de temperatura para este cantón.")
+
+ }
+
+
+
+```
+
+### Temperatura mínima promedio
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$Tmin_mean))) {
+
+
+matriz_tmin_mean <- matrix(datos_canton$Tmin_mean, ncol = 12, byrow = FALSE) 
+serie_tmin_mean <- ts(c(matriz_tmin_mean), start = c(2000,1), frequency = 12)
+} else {
+
+ }
+
+```
+
+#### Correlación Cruzada entre Riesgo relativo y Temperatura mínima media (Lags hasta 12)
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$Tmin_mean))) {
+
+lag2.plot (serie_tmin_mean,serie_RR, 12) 
+
+} else {
+    cat("No hay observaciones de temperatura para este cantón.")
+
+ }
+
+```
+
+
+
+#### Función de correlación cruzada
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$Tmin_mean))) {
+
+
+par(mfrow = c(2, 1))
+ccf2(serie_RR, serie_tmin_mean, 48, 
+     main = "Función de correlación cruzada de RR contra Temperatura mínima media", cex.main = 0.8)
+
+
+ccf2(serie_tmin_mean,serie_RR, 48, main="Función de correlación cruzada de Temperatura mínima media contra RR", cex.main = 0.8)
+} else {
+    cat("No hay observaciones de temperatura para este cantón.")
+
+ }
+
+```
+
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$Tmin_mean))) {
+
+r1 <- ccf(serie_RR,serie_tmin_mean, 12, plot = FALSE)
+
+ccf_results <- data.frame(Lag = as.integer(r1$lag*12),Correlation = r1$acf)
+
+ccf_results <- ccf_results[order(-abs(ccf_results$Correlation)), ]
+
+ccf_results %>%
+  gt() %>%
+  tab_header(
+    title = "Correlación cruzada",
+    subtitle = "Ordenados por Correlación Absoluta"
+  ) %>%
+  cols_label(
+    Lag = "Desfase (Lag)",
+    Correlation = "Correlación"
+  ) %>%
+  fmt_number(
+    columns = c(Correlation),  
+    decimals = 4
+  )
+} else {
+    cat("No hay observaciones de temperatura para este cantón.")
+
+ }
+
+```
+
+
+
+### Precipitación media media
+
+#### Sin transformación
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+matriz_pmean_mean <- matrix(datos_canton$precip_mean_mean, ncol = 12, byrow = FALSE) 
+serie_pmean_mean <- ts(c(matriz_pmean_mean), start = c(2000,1), frequency = 12)
+} else {
+
+ }
+
+```
+
+##### Correlación Cruzada entre Riesgo relativo y Precipitación media media (Lags hasta 12)
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+lag2.plot (serie_pmean_mean,serie_RR, 12) 
+
+} else {
+    cat("No hay observaciones de precipitación para este cantón.")
+
+ }
+
+```
+
+
+##### Función de correlación cruzada
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+
+par(mfrow = c(2, 1))
+ccf2(serie_RR, serie_pmean_mean, 48, 
+     main = "Función de correlación cruzada de RR contra Precipitación media media", cex.main = 0.8)
+
+
+ccf2(serie_tmin_mean,serie_RR, 48, main="Función de correlación cruzada de Precipitación media media contra RR", cex.main = 0.8)
+
+} else {
+    cat("No hay observaciones de precipitación para este cantón.")
+
+ }
+
+```
+
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+r1 <- ccf(serie_RR, serie_pmean_mean, 12, plot = FALSE)
+
+ccf_results <- data.frame(Lag = as.integer(r1$lag*12),Correlation = r1$acf)
+
+ccf_results <- ccf_results[order(-abs(ccf_results$Correlation)), ]
+
+ccf_results %>%
+  gt() %>%
+  tab_header(
+    title = "Correlación cruzada",
+    subtitle = "Ordenados por Correlación Absoluta"
+  ) %>%
+  cols_label(
+    Lag = "Desfase (Lag)",
+    Correlation = "Correlación"
+  ) %>%
+  fmt_number(
+    columns = c(Correlation),  
+    decimals = 4
+  )
+} else {
+    cat("No hay observaciones de precipitación para este cantón.")
+
+}
+```
+
+#### Logaritmo de precipitación media media
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+matriz_pmean_mean <- matrix(log(datos_canton$precip_mean_mean+1), ncol = 12, byrow = FALSE) 
+serie_pmean_mean <- ts(c(matriz_pmean_mean), start = c(2000,1), frequency = 12)
+} else {
+
+ }
+
+```
+
+##### Correlación Cruzada entre Riesgo relativo y Precipitación media media (Lags hasta 12)
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+lag2.plot (serie_pmean_mean,serie_RR, 12) 
+
+} else {
+    cat("No hay observaciones de precipitación para este cantón.")
+
+ }
+
+```
+
+##### Función de correlación cruzada
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+
+par(mfrow = c(2, 1))
+ccf2(serie_RR, serie_pmean_mean, 48, 
+     main = "Función de correlación cruzada de RR contra Precipitación media media", cex.main = 0.8)
+
+
+ccf2(serie_tmin_mean,serie_RR, 48, main="Función de correlación cruzada de Precipitación media media contra RR", cex.main = 0.8)
+
+} else {
+    cat("No hay observaciones de precipitación para este cantón.")
+
+ }
+
+```
+
+
+```{r echo=FALSE}
+if (!all(is.na(datos_canton$precip_mean_mean))) {
+
+r1 <- ccf(serie_RR, serie_pmean_mean, 12, plot = FALSE)
+
+ccf_results <- data.frame(Lag = as.integer(r1$lag*12),Correlation = r1$acf)
+
+ccf_results <- ccf_results[order(-abs(ccf_results$Correlation)), ]
+
+ccf_results %>%
+  gt() %>%
+  tab_header(
+    title = "Correlación cruzada",
+    subtitle = "Ordenados por Correlación Absoluta"
+  ) %>%
+  cols_label(
+    Lag = "Desfase (Lag)",
+    Correlation = "Correlación"
+  ) %>%
+  fmt_number(
+    columns = c(Correlation),  
+    decimals = 4
+  )
+} else {
+    cat("No hay observaciones de precipitación para este cantón.")
+
+}
+```
